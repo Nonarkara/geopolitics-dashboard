@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Geopolitics Dashboard
 
-## Getting Started
+Map-first monitoring dashboard for Thailand-border security, market stress, rainfall anomalies, fires, and population movement. The frontend is a Next.js app; the data layer is PostgreSQL/PostGIS plus Python ingestion scripts.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 App Router
+- React 19 + TypeScript
+- Deck.gl + react-map-gl
+- PostgreSQL + PostGIS
+- Python ingestion for conflict, market, fire, rainfall, and refugee datasets
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+- PostgreSQL with PostGIS installed
+- Python 3.9+ if you want to run ingestion
+
+## Environment
+
+Create a local env file:
+
+```bash
+cp .env.example .env
+```
+
+Key variables:
+
+- `DATABASE_URL`: PostgreSQL connection string
+- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: public Mapbox token for basemaps
+- `FIRMS_KEY`: NASA FIRMS key for live fire ingestion
+
+## Setup
+
+Install frontend dependencies:
+
+```bash
+npm install
+```
+
+Initialize the database schema:
+
+```bash
+./scripts/setup-db.sh
+```
+
+Install ingestion dependencies if needed:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r ingestion/requirements.txt
+```
+
+## Run
+
+Start the app:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The UI can still render with empty fallback data if the database is not populated yet.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Ingestion
 
-## Learn More
+Run whichever scripts you need:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+python ingestion/acled_ingest.py
+python ingestion/hdx_ingest.py
+python ingestion/firms_ingest.py
+python ingestion/rainfall_ingest.py
+python ingestion/refugee_ingest.py
+python ingestion/fetch_borders.py
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Quality Checks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run lint
+npm run build
+```
 
-## Deploy on Vercel
+## Render Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This repo now includes a root `render.yaml` for a single Render web service.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Required for a real basemap: `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`
+- Optional for live backend data: `DATABASE_URL`
+- If `DATABASE_URL` is omitted, the app still boots and the API routes serve fallback sample data
+
+To deploy with the Blueprint flow, push the repo to GitHub, GitLab, or Bitbucket, then create the Render Blueprint from that repo.
+
+## Data Flow
+
+1. Python scripts fetch external data and write normalized rows to Postgres.
+2. Next.js API routes read from Postgres and shape data for the UI.
+3. React components fetch those routes and render map overlays, charts, and dashboard panels.
