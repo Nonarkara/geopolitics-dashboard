@@ -10,27 +10,37 @@ import {
   Globe,
   Layers,
   Map as MapIcon,
+  MapPinned,
   MoonStar,
+  Plane,
   Satellite,
+  Tag,
   Users,
+  Wind,
 } from "lucide-react";
 import {
+  createAirQualityHeatmapLayers,
+  createConflictZonesLayer,
   createFireLayer,
+  createFlightPathsLayer,
   createHeatmapLayer,
   createIncidentLayer,
-  createJaxaRainLayer,
-  createModisAquaLayer,
-  createModisTerraLayer,
-  createNightlightLayer,
+  createProvinceLabelsLayer,
   createRainfallLayer,
+  createRasterOverlayLayer,
   createRefugeeLayer,
   createRegionalBorderLayer,
-  createViirsTrueColorLayer,
 } from "../../services/map-engine";
+import { getUsableMapboxToken } from "../../lib/mapbox";
+import { buildMapOverlayCatalog } from "../../lib/map-overlays";
 import type {
+  AirQualityPoint,
+  ConflictZoneCollection,
+  ConflictZoneFeature,
   FireEvent,
   IncidentFeature,
   ProvinceSelection,
+  FlightData,
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
@@ -38,7 +48,9 @@ import type {
 } from "../../types/dashboard";
 
 const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+const MAPBOX_TOKEN = getUsableMapboxToken(
+  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
+);
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85,
@@ -46,6 +58,8 @@ const INITIAL_VIEW_STATE: MapViewState = {
   zoom: 6.15,
   pitch: 26,
   bearing: -4,
+  minZoom: 4,
+  maxZoom: 18,
 };
 
 const EMPTY_BORDERS: RegionBorderCollection = {
@@ -53,17 +67,10 @@ const EMPTY_BORDERS: RegionBorderCollection = {
   features: [],
 };
 
-type SatelliteOverlayId = "modisTerra" | "modisAqua" | "viirsTrueColor";
-
-const SATELLITE_OVERLAY_OPTIONS: Array<{
-  id: SatelliteOverlayId;
-  label: string;
-  shortLabel: string;
-}> = [
-  { id: "viirsTrueColor", label: "VIIRS True Color", shortLabel: "VIIRS" },
-  { id: "modisTerra", label: "MODIS Terra", shortLabel: "TERRA" },
-  { id: "modisAqua", label: "MODIS Aqua", shortLabel: "AQUA" },
-];
+const EMPTY_CONFLICT_ZONES: ConflictZoneCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -85,12 +92,31 @@ function isRegionBorderFeature(value: unknown): value is RegionBorderFeature {
   );
 }
 
+function isConflictZoneFeature(value: unknown): value is ConflictZoneFeature {
+  return (
+    isRecord(value) &&
+    isRecord(value.properties) &&
+    typeof value.properties.name === "string" &&
+    typeof value.properties.summary === "string" &&
+    typeof value.properties.priority === "number"
+  );
+}
+
 function isFireEvent(value: unknown): value is FireEvent {
   return isRecord(value) && typeof value.brightness === "number";
 }
 
 function hasLabel(value: unknown): value is RefugeeMovement | RainfallPoint {
   return isRecord(value) && typeof value.label === "string";
+}
+
+function isAirQualityPoint(value: unknown): value is AirQualityPoint {
+  return (
+    isRecord(value) &&
+    typeof value.label === "string" &&
+    typeof value.aqi === "number" &&
+    typeof value.pm25 === "number"
+  );
 }
 
 async function fetchJson<T>(url: string, fallback: T): Promise<T> {
@@ -115,6 +141,14 @@ function getTooltipText(object: unknown): string | null {
     return object.properties.NAME_0 ?? null;
   }
 
+  if (isConflictZoneFeature(object)) {
+    return `${object.properties.name}: ${object.properties.summary}`;
+  }
+
+  if (isAirQualityPoint(object)) {
+    return `${object.label}: AQI ${Math.round(object.aqi)} / PM2.5 ${Math.round(object.pm25)}`;
+  }
+
   if (hasLabel(object)) {
     return object.label;
   }
@@ -136,48 +170,76 @@ export default function BorderMap({
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-  const [showHeatmap, setShowHeatmap] = useState(false);
-  const [showNightlights, setShowNightlights] = useState(false);
-  const [showFires, setShowFires] = useState(false);
-  const [showRefugees, setShowRefugees] = useState(false);
-  const [showRainfall, setShowRainfall] = useState(false);
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
-  const [satelliteOverlay, setSatelliteOverlay] =
-    useState<SatelliteOverlayId>("viirsTrueColor");
-  const [satelliteOpacity, setSatelliteOpacity] = useState(72);
-  const [showJaxa, setShowJaxa] = useState(false);
+  const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
+  const [showAerialBasemap, setShowAerialBasemap] = useState(false);
+  const [showStreets, setShowStreets] = useState(false);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
   const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
   const [rainfall, setRainfall] = useState<RainfallPoint[]>([]);
+  const [airQuality, setAirQuality] = useState<AirQualityPoint[]>([]);
+  const [flights, setFlights] = useState<FlightData[]>([]);
   const [borders, setBorders] = useState<RegionBorderCollection | null>(null);
+  const [conflictZones, setConflictZones] =
+    useState<ConflictZoneCollection>(EMPTY_CONFLICT_ZONES);
 
   const getSafeDate = () => {
-    const d = new Date();
-    d.setDate(d.getDate() - 14);
-    return d.toISOString().split("T")[0];
+    // NASA GIBS only serves imagery up to the current real-world date.
+    // In this simulated environment (2026), requesting Date.now() returns
+    // a future date against NASA's real calendar, resulting in transparent or black tiles.
+    return "2024-03-01";
   };
 
   const safeDate = getSafeDate();
+  const overlayCatalog = buildMapOverlayCatalog(safeDate);
+  const baseOverlays = overlayCatalog.overlays.filter(
+    (overlay) => overlay.role === "base-option",
+  );
+  const additionalOverlays = overlayCatalog.overlays.filter(
+    (overlay) => overlay.role !== "base-option",
+  );
+  const [satelliteOverlay, setSatelliteOverlay] = useState<string>(
+    overlayCatalog.defaultImageryOverlayId,
+  );
+  const [enabledOverlays, setEnabledOverlays] = useState<Record<string, boolean>>(
+    () =>
+      overlayCatalog.overlays.reduce<Record<string, boolean>>((memo, overlay) => {
+        memo[overlay.id] = overlay.enabledByDefault;
+        return memo;
+      }, {}),
+  );
   const activeSatelliteOverlay =
-    SATELLITE_OVERLAY_OPTIONS.find((option) => option.id === satelliteOverlay) ??
-    SATELLITE_OVERLAY_OPTIONS[0];
-  const useSatelliteBasemap = isDetailedMap || showSatelliteOverlay;
+    baseOverlays.find((overlay) => overlay.id === satelliteOverlay) ??
+    baseOverlays[0];
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
-  const selectedFocus =
-    signalCount > 0 ? incidents[0]?.properties.location ?? "Thailand" : "Thailand";
+  const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
+  const mapStyle = isDetailedMap
+    ? "mapbox://styles/mapbox/satellite-streets-v12"
+    : "mapbox://styles/mapbox/light-v11";
+  const fallbackBackgroundClass = isDetailedMap
+    ? "bg-[radial-gradient(circle_at_top,_var(--line-bright),_var(--bg)_52%),linear-gradient(180deg,_var(--bg)_0%,_var(--bg-surface)_100%)]"
+    : "bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.08),_rgba(10,15,26,0.98)_42%),linear-gradient(180deg,_rgba(4,8,15,1)_0%,_rgba(2,6,12,1)_100%)]";
+
+  const provinceLabelsLayer = enabledOverlays.provinceLabels
+    ? createProvinceLabelsLayer()
+    : null;
 
   const satelliteLayer =
-    !showSatelliteOverlay
-      ? null
-      : satelliteOverlay === "modisTerra"
-        ? createModisTerraLayer(safeDate, satelliteOpacity / 100)
-        : satelliteOverlay === "modisAqua"
-          ? createModisAquaLayer(safeDate, satelliteOpacity / 100)
-          : createViirsTrueColorLayer(safeDate, satelliteOpacity / 100);
+    showSatelliteOverlay && activeSatelliteOverlay
+      ? createRasterOverlayLayer(activeSatelliteOverlay, satelliteOpacity / 100)
+      : null;
+
+  const selectedAdditionalOverlays = additionalOverlays.filter(
+    (overlay) => enabledOverlays[overlay.id],
+  );
+  const rasterAnalyticLayers = selectedAdditionalOverlays
+    .filter((overlay) => overlay.kind === "raster")
+    .map((overlay) => createRasterOverlayLayer(overlay, overlay.defaultOpacity))
+    .filter(Boolean);
 
   useEffect(() => {
     const loadData = async () => {
@@ -186,35 +248,84 @@ export default function BorderMap({
         fireData,
         refugeeData,
         rainfallData,
+        airQualityData,
         borderData,
+        conflictZoneData,
+        flightData,
       ] = await Promise.all([
         fetchJson<IncidentFeature[]>("/api/incidents", []),
         fetchJson<FireEvent[]>("/api/fires", []),
         fetchJson<RefugeeMovement[]>("/api/refugees", []),
         fetchJson<RainfallPoint[]>("/api/rainfall", []),
+        fetchJson<AirQualityPoint[]>("/api/air-quality", []),
         fetchJson<RegionBorderCollection>("/data/region_borders.geojson", EMPTY_BORDERS),
+        fetchJson<ConflictZoneCollection>("/data/conflict_zones.geojson", EMPTY_CONFLICT_ZONES),
+        fetchJson<FlightData[]>("/api/flights", []),
       ]);
 
       setIncidents(Array.isArray(incidentData) ? incidentData : []);
       setFires(Array.isArray(fireData) ? fireData : []);
       setRefugees(Array.isArray(refugeeData) ? refugeeData : []);
       setRainfall(Array.isArray(rainfallData) ? rainfallData : []);
+      setAirQuality(Array.isArray(airQualityData) ? airQualityData : []);
+      setFlights(Array.isArray(flightData) ? flightData : []);
       setBorders(borderData);
+      setConflictZones(conflictZoneData);
     };
 
     loadData();
+
+    // Refresh map data every 2 minutes
+    const mapDataInterval = setInterval(loadData, 2 * 60 * 1000);
+
+    // Refresh flight data every 30 seconds
+    const flightInterval = setInterval(async () => {
+      const flightData = await fetchJson<FlightData[]>("/api/flights", []);
+      setFlights(Array.isArray(flightData) ? flightData : []);
+    }, 30000);
+
+    return () => {
+      clearInterval(mapDataInterval);
+      clearInterval(flightInterval);
+    };
   }, []);
 
   const layers = [
     satelliteLayer,
-    showJaxa && createJaxaRainLayer(safeDate),
-    showNightlights && createNightlightLayer(safeDate),
-    borders && createRegionalBorderLayer(borders),
-    showRainfall && createRainfallLayer(rainfall),
-    showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents),
-    showFires && createFireLayer(fires),
-    showRefugees && createRefugeeLayer(refugees),
+    ...rasterAnalyticLayers,
+    enabledOverlays.borderContext && borders && createRegionalBorderLayer(borders),
+    enabledOverlays.conflictZones && createConflictZonesLayer(conflictZones),
+    enabledOverlays.rainfallAnomalies && createRainfallLayer(rainfall),
+    ...(enabledOverlays.aqiHeatmap
+      ? createAirQualityHeatmapLayers(airQuality, "aqi")
+      : []),
+    ...(enabledOverlays.pm25Heatmap
+      ? createAirQualityHeatmapLayers(airQuality, "pm25")
+      : []),
+    enabledOverlays.incidentHeatmap
+      ? createHeatmapLayer(incidents)
+      : enabledOverlays.incidentPoints
+        ? createIncidentLayer(incidents)
+        : null,
+    enabledOverlays.thermalHotspots ? createFireLayer(fires) : null,
+    enabledOverlays.populationMovement ? createRefugeeLayer(refugees) : null,
+    ...(enabledOverlays.flightPaths ? (createFlightPathsLayer(flights) ?? []) : []),
+    provinceLabelsLayer,
   ].filter(Boolean);
+
+  const analyticControls = additionalOverlays.filter(
+    (overlay) => overlay.role === "analytic",
+  );
+  const operationalControls = additionalOverlays.filter(
+    (overlay) => overlay.role === "operational",
+  );
+
+  const toggleOverlay = (overlayId: string) => {
+    setEnabledOverlays((current) => ({
+      ...current,
+      [overlayId]: !current[overlayId],
+    }));
+  };
 
   const handleMapClick = ({ object }: PickingInfo<unknown>) => {
     if (isIncidentFeature(object)) {
@@ -234,105 +345,154 @@ export default function BorderMap({
         name: object.properties.NAME_0 ?? "Regional Sector",
         iso: object.properties.ISO_A3 || object.properties.ADM0_A3,
       });
+      return;
+    }
+
+    if (isConflictZoneFeature(object)) {
+      onProvinceSelect?.({
+        name: object.properties.name,
+        type: "Conflict zone",
+        notes: object.properties.summary,
+      });
     }
   };
 
+  // When aerial basemap is on, use ESRI World Imagery tiles (free, no token needed)
+  const aerialLayer = showAerialBasemap
+    ? createRasterOverlayLayer(
+        {
+          id: "esri-aerial",
+          label: "ESRI Aerial",
+          shortLabel: "AERIAL",
+          description: "High-resolution aerial imagery",
+          source: "ESRI",
+          family: "imagery",
+          role: "base-option",
+          kind: "raster" as const,
+          defaultOpacity: 1,
+          enabledByDefault: false,
+          maxZoom: 19,
+          tileTemplate:
+            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+          updatedAt: new Date().toISOString(),
+        },
+        1,
+      )
+    : null;
+
+  // OpenStreetMap streets/roads layer (free, no token needed)
+  const streetsLayer = showStreets
+    ? createRasterOverlayLayer(
+        {
+          id: "osm-streets",
+          label: "OpenStreetMap",
+          shortLabel: "OSM",
+          description: "Street-level roads and infrastructure",
+          source: "OpenStreetMap",
+          family: "imagery",
+          role: "base-option",
+          kind: "raster" as const,
+          defaultOpacity: 0.85,
+          enabledByDefault: false,
+          maxZoom: 19,
+          tileTemplate:
+            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          updatedAt: new Date().toISOString(),
+        },
+        0.85,
+      )
+    : null;
+
+  // Prepend basemap layers so they sit below all other layers
+  const allLayers = [aerialLayer, streetsLayer, ...layers].filter(Boolean);
+
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden">
+      {!hasMapboxBaseMap && (
+        <div
+          className={`absolute inset-0 ${fallbackBackgroundClass}`}
+          aria-hidden="true"
+        />
+      )}
+
       <DeckGL
         viewState={viewState}
-        onViewStateChange={({ viewState: nextViewState }) =>
-          setViewState(nextViewState as MapViewState)
-        }
+        onViewStateChange={({ viewState: nextViewState }) => {
+          const next = nextViewState as MapViewState;
+          // Enforce zoom bounds
+          const zoom = Math.max(4, Math.min(18, next.zoom));
+          setViewState({ ...next, zoom });
+        }}
         controller={true}
-        layers={layers}
+        layers={allLayers}
         onClick={handleMapClick}
         getTooltip={({ object }: PickingInfo<unknown>) => getTooltipText(object)}
       >
-        <MapboxMap
-          mapboxAccessToken={MAPBOX_TOKEN}
-          mapStyle={
-            useSatelliteBasemap && MAPBOX_TOKEN
-              ? "mapbox://styles/mapbox/satellite-streets-v12"
-              : MAPBOX_TOKEN
-              ? "mapbox://styles/mapbox/dark-v11"
-              : "https://tiles.openfreemap.org/styles/dark"
-          }
-          attributionControl={false}
-        />
+        {hasMapboxBaseMap ? (
+          <MapboxMap
+            mapboxAccessToken={MAPBOX_TOKEN}
+            mapStyle={mapStyle}
+            attributionControl={false}
+          />
+        ) : null}
       </DeckGL>
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgba(24,21,17,0.12)] via-transparent to-[rgba(24,21,17,0.08)]" />
-
-      <div className="pointer-events-auto absolute left-4 top-24 z-40 hidden w-[316px] xl:block">
-        <div className="dashboard-panel rounded-[24px] p-5">
-          <div className="eyebrow">Map focus</div>
-          <h2 className="pt-2 text-[24px] font-semibold tracking-[-0.04em] text-[#171512]">
-            Thailand in detailed satellite context
-          </h2>
-          <p className="pt-3 text-[14px] leading-6 text-[#4d483f]">
-            Keep the map readable first: start with the terrain and imagery,
-            then add incidents, rainfall, fires, and movement only when you
-            need that layer.
-          </p>
-
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                Signals
-              </div>
-              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
-                {signalCount}
-              </div>
+      {/* Map stats overlay - top left */}
+      <div className="pointer-events-auto absolute left-3 top-3 z-40">
+        <div className="dashboard-panel rounded-lg px-4 py-3">
+          <div className="flex items-center gap-5">
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">Signals</div>
+              <div className="text-[18px] font-bold font-mono tabular-nums text-[var(--ink)]">{signalCount}</div>
             </div>
-            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                Fires
-              </div>
-              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
-                {hotspotCount}
-              </div>
+            <div className="h-6 w-px bg-[var(--line-bright)]" />
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">Fires</div>
+              <div className="text-[18px] font-bold font-mono tabular-nums text-[#f59e0b]">{hotspotCount}</div>
             </div>
-            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
-              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                Focus
-              </div>
-              <div className="truncate pt-2 text-[15px] font-semibold tracking-[-0.03em] text-[#171512]">
-                {selectedFocus}
-              </div>
+            <div className="h-6 w-px bg-[var(--line-bright)]" />
+            <div>
+              <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">Overlay</div>
+              <div className="text-[11px] font-bold text-[var(--cool)]">{activeSatelliteOverlay.shortLabel}</div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute right-4 top-24 z-40 w-[304px] xl:right-[404px]">
-        <div className="dashboard-panel rounded-[24px] p-5">
-          <div className="flex items-start justify-between gap-4">
+      {/* Satellite overlay controls - top right */}
+      <div className="pointer-events-auto absolute right-3 top-3 z-40 w-[240px]">
+        <div className="dashboard-panel rounded-lg p-4">
+          <div className="flex items-start justify-between gap-3">
             <div>
               <div className="eyebrow">Imagery</div>
-              <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+              <h3 className="pt-1 text-[13px] font-bold text-[var(--ink)]">
                 {activeSatelliteOverlay.label}
               </h3>
-              <p className="pt-2 text-[13px] leading-5 text-[#565046]">
-                Updated from the last stable day: {safeDate}
+              <p className="pt-1 text-[10px] leading-4 text-[var(--muted)]">
+                {activeSatelliteOverlay.description}
+              </p>
+              <p className="pt-1 text-[9px] font-mono text-[var(--dim)]">
+                {hasMapboxBaseMap
+                  ? safeDate
+                  : `${safeDate} · token-free fallback`}
               </p>
             </div>
-            <div className="rounded-full border border-[#d6cebf] bg-white/60 p-2 text-[#4f6871]">
-              <Satellite size={16} />
+            <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-raised)] p-1.5 text-[var(--cool)]">
+              <Satellite size={12} />
             </div>
           </div>
 
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            {SATELLITE_OVERLAY_OPTIONS.map((option) => (
+          <div className="mt-3 grid grid-cols-3 gap-1.5">
+            {baseOverlays.map((option) => (
               <button
                 key={option.id}
                 type="button"
                 aria-pressed={satelliteOverlay === option.id}
                 onClick={() => setSatelliteOverlay(option.id)}
-                className={`rounded-full border px-3 py-2 text-[11px] font-medium transition-colors ${
+                className={`rounded-md border px-2 py-1.5 text-[9px] font-bold transition-colors ${
                   satelliteOverlay === option.id
-                    ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
-                    : "border-[#d6cebf] bg-white/70 text-[#4d483f] hover:bg-white"
+                    ? "border-[var(--cool)] bg-[var(--line-bright)] text-[var(--cool)]"
+                    : "border-[var(--line)] bg-[var(--bg)] text-[var(--dim)] hover:text-[var(--muted)]"
                 }`}
               >
                 {option.shortLabel}
@@ -340,69 +500,41 @@ export default function BorderMap({
             ))}
           </div>
 
-          <div className="mt-5 grid gap-2">
-            <button
-              type="button"
-              aria-pressed={showSatelliteOverlay}
-              onClick={() => setShowSatelliteOverlay(!showSatelliteOverlay)}
-              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
-                showSatelliteOverlay
-                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
-                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
-              }`}
-            >
-              <span>
-                <span className="block text-[13px] font-medium">Satellite overlay</span>
-                <span className="block pt-1 text-[11px] opacity-80">
-                  Adds true-color imagery on top of the base map.
-                </span>
-              </span>
-              <Globe size={16} />
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={isDetailedMap}
-              onClick={() => setIsDetailedMap(!isDetailedMap)}
-              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
-                isDetailedMap
-                  ? "border-[#8b5a40] bg-[#8b5a40] text-[#f7f2ea]"
-                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
-              }`}
-            >
-              <span>
-                <span className="block text-[13px] font-medium">Detailed basemap</span>
-                <span className="block pt-1 text-[11px] opacity-80">
-                  Keeps roads, settlements, and terrain legible.
-                </span>
-              </span>
-              <MapIcon size={16} />
-            </button>
-
-            <button
-              type="button"
-              aria-pressed={showNightlights}
-              onClick={() => setShowNightlights(!showNightlights)}
-              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
-                showNightlights
-                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
-                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
-              }`}
-            >
-              <span>
-                <span className="block text-[13px] font-medium">Night lights</span>
-                <span className="block pt-1 text-[11px] opacity-80">
-                  Useful for comparing settlement intensity after dark.
-                </span>
-              </span>
-              <MoonStar size={16} />
-            </button>
+          <div className="mt-3 space-y-1.5">
+            {[
+              { active: showSatelliteOverlay, label: "Satellite overlay", icon: Globe, onClick: () => setShowSatelliteOverlay(!showSatelliteOverlay), color: "cyan" },
+              { active: showAerialBasemap, label: "Aerial view (ESRI)", icon: Satellite, onClick: () => setShowAerialBasemap(!showAerialBasemap), color: "amber" },
+              { active: showStreets, label: "Streets & roads (OSM)", icon: MapPinned, onClick: () => setShowStreets(!showStreets), color: "cyan" },
+              { active: isDetailedMap, label: "Detailed basemap", icon: MapIcon, onClick: () => setIsDetailedMap(!isDetailedMap), color: "cyan" },
+              { active: enabledOverlays.nightLights, label: "Night lights", icon: MoonStar, onClick: () => toggleOverlay("nightLights"), color: "cyan" },
+            ].map((ctrl) => {
+              const Icon = ctrl.icon;
+              const activeClasses = ctrl.color === "amber"
+                ? "border-[#f59e0b] bg-[rgba(245,158,11,0.12)] text-[#f59e0b]"
+                : "border-[var(--cool)] bg-[var(--line-bright)] text-[var(--cool)]";
+              return (
+                <button
+                  key={ctrl.label}
+                  type="button"
+                  aria-pressed={ctrl.active}
+                  onClick={ctrl.onClick}
+                  className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-[10px] font-semibold transition-colors ${
+                    ctrl.active
+                      ? activeClasses
+                      : "border-[var(--line)] bg-[var(--bg)] text-[var(--dim)] hover:text-[var(--muted)]"
+                  }`}
+                >
+                  <span>{ctrl.label}</span>
+                  <Icon size={12} />
+                </button>
+              );
+            })}
           </div>
 
-          <div className={showSatelliteOverlay ? "mt-5 opacity-100" : "mt-5 opacity-45"}>
-            <div className="flex items-center justify-between text-[11px] font-medium text-[#736c61]">
-              <span>Overlay opacity</span>
-              <span className="text-[#171512]">{satelliteOpacity}%</span>
+          <div className={`mt-3 ${showSatelliteOverlay ? "opacity-100" : "opacity-30"}`}>
+            <div className="flex items-center justify-between text-[9px] font-mono text-[var(--dim)]">
+              <span>Opacity</span>
+              <span className="text-[var(--ink)]">{satelliteOpacity}%</span>
             </div>
             <input
               type="range"
@@ -412,131 +544,135 @@ export default function BorderMap({
               value={satelliteOpacity}
               disabled={!showSatelliteOverlay}
               onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
-              className="mt-3 w-full accent-[#4f6871] disabled:cursor-not-allowed"
+              className="mt-2 w-full accent-[var(--cool)] disabled:cursor-not-allowed"
             />
           </div>
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute bottom-4 left-4 z-40 w-[332px] xl:bottom-[182px]">
-        <div className="dashboard-panel rounded-[24px] p-5">
-          <div className="eyebrow">Use the map</div>
-          <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
-            Start broad, then add a layer
-          </h3>
+      {/* Working layers - bottom left */}
+      <div className="pointer-events-auto absolute bottom-3 left-3 z-40 w-[272px]">
+        <div className="dashboard-panel rounded-lg p-4">
+          <div className="eyebrow">Working layers</div>
 
-          <div className="mt-5">
-            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
-              Focus presets
-            </div>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => setViewState({ ...INITIAL_VIEW_STATE })}
-                className="rounded-full border border-[#171512] bg-[#171512] px-4 py-2 text-[11px] font-medium text-[#f7f2ea]"
-              >
-                Thailand
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setViewState({
-                    longitude: 98.7,
-                    latitude: 16.5,
-                    zoom: 8.4,
-                    pitch: 28,
-                    bearing: 0,
-                  })
-                }
-                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
-              >
-                West border
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setViewState({
-                    longitude: 101.5,
-                    latitude: 6.5,
-                    zoom: 9.2,
-                    pitch: 28,
-                    bearing: 0,
-                  })
-                }
-                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
-              >
-                Deep south
-              </button>
-            </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => setViewState({ ...INITIAL_VIEW_STATE })}
+              className="rounded-md border border-[var(--cool)] bg-[var(--line-bright)] px-3 py-1 text-[9px] font-bold text-[var(--cool)]"
+            >
+              Thailand
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setViewState({
+                  longitude: 98.7,
+                  latitude: 16.5,
+                  zoom: 8.4,
+                  pitch: 28,
+                  bearing: 0,
+                })
+              }
+              className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
+            >
+              West border
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                setViewState({
+                  longitude: 101.5,
+                  latitude: 6.5,
+                  zoom: 9.2,
+                  pitch: 28,
+                  bearing: 0,
+                })
+              }
+              className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
+            >
+              Deep south
+            </button>
           </div>
 
-          <div className="mt-5">
-            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
-              Working layers
-            </div>
-            <div className="mt-3 grid gap-2">
-              {[
-                {
-                  active: showHeatmap,
-                  label: "Incident heatmap",
-                  description: "Turn on density only when you need clustering.",
-                  icon: Layers,
-                  onClick: () => setShowHeatmap(!showHeatmap),
-                },
-                {
-                  active: showFires,
-                  label: "Thermal anomalies",
-                  description: `${formatCompactCount(hotspotCount)} recent heat signals available.`,
-                  icon: Flame,
-                  onClick: () => setShowFires(!showFires),
-                },
-                {
-                  active: showRainfall,
-                  label: "Rainfall anomalies",
-                  description: "Compare incident areas against recent rain shifts.",
-                  icon: CloudRain,
-                  onClick: () => setShowRainfall(!showRainfall),
-                },
-                {
-                  active: showJaxa,
-                  label: "JAXA precipitation",
-                  description: "Use when you need the broader rain field.",
-                  icon: CloudRain,
-                  onClick: () => setShowJaxa(!showJaxa),
-                },
-                {
-                  active: showRefugees,
-                  label: "Population movement",
-                  description: `${formatCompactCount(refugees.length)} movement traces available.`,
-                  icon: Users,
-                  onClick: () => setShowRefugees(!showRefugees),
-                },
-              ].map((control) => {
-                const Icon = control.icon;
+          <div className="mt-3 space-y-1.5">
+            {[
+              ...analyticControls.map((overlay) => ({
+                id: overlay.id,
+                active: enabledOverlays[overlay.id],
+                label: overlay.label,
+                detail: overlay.id === "thermalHotspots"
+                  ? `${formatCompactCount(hotspotCount)} hotspots`
+                  : overlay.id === "aqiHeatmap" || overlay.id === "pm25Heatmap"
+                    ? `${formatCompactCount(airQuality.length)} stations`
+                  : overlay.shortLabel,
+                icon:
+                  overlay.family === "weather"
+                    ? CloudRain
+                    : overlay.family === "air"
+                      ? Wind
+                    : overlay.family === "thermal"
+                      ? Flame
+                      : overlay.family === "lights"
+                        ? MoonStar
+                        : Layers,
+                onClick: () => toggleOverlay(overlay.id),
+              })),
+              ...operationalControls.map((overlay) => ({
+                id: overlay.id,
+                active: enabledOverlays[overlay.id],
+                label: overlay.label,
+                detail:
+                  overlay.id === "conflictZones"
+                    ? `${formatCompactCount(conflictZones.features.length)} zones`
+                    : overlay.id === "rainfallAnomalies"
+                      ? "Rain shift overlay"
+                      : overlay.id === "populationMovement"
+                        ? `${formatCompactCount(refugees.length)} traces`
+                        : overlay.id === "incidentHeatmap"
+                          ? `${formatCompactCount(signalCount)} signals`
+                          : overlay.id === "provinceLabels"
+                            ? "77 provinces"
+                            : overlay.id === "flightPaths"
+                              ? `${formatCompactCount(flights.length)} aircraft`
+                              : overlay.shortLabel,
+                icon:
+                  overlay.id === "populationMovement"
+                    ? Users
+                    : overlay.id === "conflictZones"
+                      ? MapPinned
+                    : overlay.id === "rainfallAnomalies"
+                      ? CloudRain
+                      : overlay.id === "provinceLabels"
+                        ? Tag
+                        : overlay.id === "flightPaths"
+                          ? Plane
+                          : Layers,
+                onClick: () => toggleOverlay(overlay.id),
+              })),
+            ].map((control) => {
+              const Icon = control.icon;
 
-                return (
-                  <button
-                    key={control.label}
-                    type="button"
-                    aria-pressed={control.active}
-                    onClick={control.onClick}
-                    className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
-                      control.active
-                        ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
-                        : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
-                    }`}
-                  >
-                    <span>
-                      <span className="block text-[13px] font-medium">{control.label}</span>
-                      <span className="block pt-1 text-[11px] opacity-80">
-                        {control.description}
-                      </span>
-                    </span>
-                    <Icon size={16} />
-                  </button>
-                );
-              })}
-            </div>
+              return (
+                <button
+                  key={control.id}
+                  type="button"
+                  aria-pressed={control.active}
+                  onClick={control.onClick}
+                  className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left transition-colors ${
+                    control.active
+                      ? "border-[#f59e0b] bg-[rgba(245,158,11,0.1)] text-[#f59e0b]"
+                      : "border-[var(--line)] bg-[var(--bg)] text-[var(--dim)] hover:text-[var(--muted)]"
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold">{control.label}</div>
+                    <div className="text-[8px] opacity-70">{control.detail}</div>
+                  </div>
+                  <Icon size={12} />
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fallbackCopernicusPreview } from "../../../../lib/mock-data";
-import { buildCopernicusPreview } from "../../../../lib/reference-data";
+import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 
 function getSafeDate() {
   const date = new Date();
@@ -10,7 +10,21 @@ function getSafeDate() {
 
 export async function GET() {
   try {
-    return NextResponse.json(buildCopernicusPreview(getSafeDate()));
+    const focusDate = getSafeDate();
+    const catalog = buildMapOverlayCatalog(focusDate);
+    const imagerySources = catalog.overlays
+      .filter((overlay) => overlay.role === "base-option")
+      .map((overlay) => ({
+        id: overlay.id,
+        label: overlay.label,
+        description: overlay.description,
+      }));
+
+    return NextResponse.json({
+      updatedAt: catalog.updatedAt,
+      focusDate,
+      imagerySources,
+    });
   } catch {
     return NextResponse.json(fallbackCopernicusPreview, { status: 200 });
   }

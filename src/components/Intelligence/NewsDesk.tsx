@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { fallbackNews } from "../../lib/mock-data";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import type { NewsResponse } from "../../types/dashboard";
 
 function isNewsResponse(value: unknown): value is NewsResponse {
@@ -15,77 +15,106 @@ function isNewsResponse(value: unknown): value is NewsResponse {
 
 function severityClass(severity: string) {
   if (severity === "alert") {
-    return "bg-[#171512] text-[#f7f2ea]";
+    return "bg-[rgba(239,68,68,0.15)] text-[#ef4444]";
   }
 
   if (severity === "watch") {
-    return "bg-[#ead8ce] text-[#8b5a40]";
+    return "bg-[rgba(245,158,11,0.15)] text-[#f59e0b]";
   }
 
-  return "bg-[#dce7ea] text-[#4f6871]";
+  return "bg-[var(--line-bright)] text-[var(--cool)]";
 }
 
 export default function NewsDesk() {
-  const [news, setNews] = useState<NewsResponse>(fallbackNews);
+  const [payload, setPayload] = useState<NewsResponse | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const response = await fetch("/api/news");
-        const payload: unknown = await response.json();
+  const load = useCallback(async () => {
+    try {
+      const response = await fetch("/api/news");
+      const nextPayload: unknown = await response.json();
 
-        if (isNewsResponse(payload)) {
-          setNews(payload);
-        }
-      } catch {
-        setNews(fallbackNews);
+      if (isNewsResponse(nextPayload)) {
+        setPayload(nextPayload);
       }
-    };
-
-    load();
+    } catch {
+      setPayload(null);
+    }
   }, []);
 
+  useEffect(() => {
+    const initialLoad = setTimeout(() => {
+      void load();
+    }, 0);
+    const interval = setInterval(() => {
+      void load();
+    }, 2 * 60 * 1000);
+    return () => {
+      clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
+  }, [load]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    load().then(() => setTimeout(() => setRefreshing(false), 600));
+  };
+
+  const items = payload?.news ?? [];
+
+  if (items.length === 0) {
+    return (
+      <section className="flex h-full items-center justify-center bg-[var(--bg-surface)]">
+        <span className="eyebrow">Loading live signal stream</span>
+      </section>
+    );
+  }
+
   return (
-    <section className="flex h-full flex-col bg-[#f7f2ea] p-6">
-      <div className="border-b border-[#d6cebf] pb-4">
-        <div className="eyebrow">
-          Live feed
+    <section className="flex h-full flex-col bg-[var(--bg-surface)] p-5 overflow-y-auto">
+      <div className="border-b border-[var(--line)] pb-3">
+        <div className="flex items-center gap-3">
+          <div className="eyebrow">Live feed</div>
+          <span className="live-badge">LIVE</span>
+          <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors ml-auto" title="Refresh news feed">
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
-        <div className="pt-2 text-[24px] font-semibold tracking-[-0.03em] text-[#171512]">
-          What changed across the system
+        <div className="pt-2 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+          Signal stream
         </div>
       </div>
 
-      <div className="space-y-5 overflow-y-auto pt-5">
-        {news.news.slice(0, 5).map((item) => (
+      <div className="space-y-3 overflow-y-auto pt-4">
+        {items.map((item) => (
           <article
             key={item.id}
-            className="rounded-[20px] border border-[#ddd5c7] bg-white/65 p-4"
+            className="rounded-lg border border-[var(--line)] bg-[var(--bg)] p-3"
           >
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span
-                  className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] ${severityClass(item.severity)}`}
+                  className={`rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.18em] ${severityClass(item.severity)}`}
                 >
                   {item.tag}
                 </span>
-                <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                  {item.source}
-                </span>
               </div>
-              <span className="text-[10px] uppercase tracking-[0.18em] text-[#7a7468]">
+              <span className="text-[9px] font-mono tabular-nums text-[var(--dim)]">
                 {new Date(item.publishedAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "2-digit",
                 })}
               </span>
             </div>
-            <h3 className="pt-3 text-[16px] font-semibold leading-6 text-[#151515]">
+            <h3 className="pt-2 text-[13px] font-semibold leading-5 text-[var(--ink)]">
               {item.title}
             </h3>
-            <p className="pt-2 text-[13px] leading-6 text-[#4e4a42]">
+            <p className="pt-1 text-[11px] leading-5 text-[var(--muted)]">
               {item.summary}
             </p>
+            <div className="pt-2 text-[9px] uppercase tracking-[0.16em] text-[var(--dim)]">
+              {item.source}
+            </div>
           </article>
         ))}
       </div>

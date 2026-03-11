@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Border Sentinel | Thailand Geopolitics",
-  description: "Advanced monitoring platform for border stability and economic stress.",
+  title: "Sentinel X | Thailand Geopolitical Watch",
+  description: "Thailand Geopolitical Watch: Sentinel X — Advanced monitoring platform for border stability, provincial intelligence, and economic stress by Assoc. Prof. Poon Thiengburanathum, PhD.",
 };
 
 export default function RootLayout({
@@ -12,8 +12,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body className="bg-black text-white antialiased overflow-hidden">
+    <html lang="en">
+      <body className="bg-[var(--bg)] text-[var(--ink)] antialiased overflow-hidden">
         {children}
       </body>
     </html>

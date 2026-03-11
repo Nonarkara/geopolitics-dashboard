@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { RefreshCw } from "lucide-react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -30,17 +31,31 @@ ChartJS.register(
 
 export default function ConflictTrends() {
   const [data, setData] = React.useState<ConflictTrendsResponse | null>(null);
+  const [refreshing, setRefreshing] = React.useState(false);
+
+  const load = React.useCallback(
+    () =>
+      fetch("/api/conflict-trends")
+        .then((res) => res.json())
+        .then(setData)
+        .catch(() => setData(null)),
+    [],
+  );
 
   React.useEffect(() => {
-    fetch("/api/conflict-trends")
-      .then((res) => res.json())
-      .then(setData)
-      .catch(() => setData(null));
-  }, []);
+    load();
+    const interval = setInterval(load, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [load]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    load().then(() => setTimeout(() => setRefreshing(false), 600));
+  };
 
   if (!data) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-[#f7f2ea] select-none">
+      <div className="flex h-full w-full items-center justify-center bg-[var(--bg-surface)] select-none">
         <span className="eyebrow">Preparing incident trend view</span>
       </div>
     );
@@ -63,18 +78,18 @@ export default function ConflictTrends() {
       {
         label: "Current",
         data: data.provincialData.current,
-        backgroundColor: "#171512",
-        borderColor: "#171512",
+        backgroundColor: "#38bdf8",
+        borderColor: "#38bdf8",
         borderWidth: 0,
-        barThickness: 12,
+        barThickness: 8,
       },
       {
         label: "Baseline",
         data: data.provincialData.yoy,
-        backgroundColor: "#c9bca9",
-        borderColor: "#c9bca9",
+        backgroundColor: "#1e293b",
+        borderColor: "#1e293b",
         borderWidth: 0,
-        barThickness: 12,
+        barThickness: 8,
       },
     ],
   };
@@ -86,7 +101,7 @@ export default function ConflictTrends() {
         fill: false,
         label: "Fatalities",
         data: data.fatalities.data,
-        borderColor: "#8b5a40",
+        borderColor: "#f59e0b",
         tension: 0.25,
         pointRadius: 0,
         borderWidth: 2,
@@ -100,77 +115,84 @@ export default function ConflictTrends() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: "#171512",
-        titleFont: { size: 10, weight: 700 as const },
-        bodyFont: { size: 10 },
-        padding: 12,
-        cornerRadius: 12,
+        backgroundColor: "#0f1628",
+        borderColor: "var(--line-bright)",
+        borderWidth: 1,
+        titleFont: { size: 9, weight: 700 as const },
+        bodyFont: { size: 9 },
+        titleColor: "#111827",
+        bodyColor: "#94a3b8",
+        padding: 8,
+        cornerRadius: 6,
         displayColors: false,
       },
     },
     scales: {
       y: {
-        grid: { color: "#ddd5c8", drawBorder: false },
-        ticks: { color: "#6a6458", font: { size: 9, family: "IBM Plex Sans" } },
+        grid: { color: "var(--line)", drawBorder: false },
+        ticks: { color: "#475569", font: { size: 8, family: "IBM Plex Mono" } },
       },
       x: {
         grid: { display: false },
-        ticks: { color: "#6a6458", font: { size: 9, family: "IBM Plex Sans" } },
+        ticks: { color: "#475569", font: { size: 8, family: "IBM Plex Mono" } },
       },
     },
   };
 
   return (
-    <section className="grid h-full grid-cols-1 bg-[#f7f2ea] select-none lg:grid-cols-2">
-      <div className="flex flex-col border-b border-[#d6cebf] p-6 lg:border-b-0 lg:border-r">
-        <div className="mb-6 flex items-start justify-between gap-4">
+    <section className="grid h-full grid-cols-1 bg-[var(--bg-surface)] select-none lg:grid-cols-2">
+      <div className="flex flex-col border-b border-[var(--line)] p-4 lg:border-b-0 lg:border-r">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <div className="eyebrow">Incidents by area</div>
-            <div className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
-              Spatial concentration
+          <div className="flex items-center justify-between gap-3">
+            <div className="eyebrow">By area</div>
+            <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh conflict data">
+              <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+            </button>
+          </div>
+            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+              Concentration
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-              Current / baseline
+            <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+              Cur / base
             </div>
-            <div className="pt-1 text-[18px] font-semibold tracking-[-0.03em] text-[#171512]">
+            <div className="pt-0.5 text-[13px] font-mono font-bold tabular-nums text-[var(--ink)]">
               {totalCurrent} / {totalBaseline}
             </div>
           </div>
         </div>
-        <p className="pb-4 text-[12px] leading-5 text-[#5c564c]">
-          Use this view to compare current clustering against a simple baseline,
-          so local spikes stand out without overwhelming the map.
-        </p>
         <div className="flex-1">
           <Bar options={options} data={provincialData} />
         </div>
+        <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+          Source: ACLED Conflict Database · Refreshes every 5 min
+        </div>
       </div>
 
-      <div className="flex flex-col p-6">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="flex flex-col p-4">
+        <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <div className="eyebrow">Fatality trend</div>
-            <div className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
-              Severity over time
+            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+              Severity
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-              Latest reading
+            <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+              Latest
             </div>
-            <div className="pt-1 text-[18px] font-semibold tracking-[-0.03em] text-[#171512]">
+            <div className="pt-0.5 text-[13px] font-mono font-bold tabular-nums text-[#f59e0b]">
               {latestFatalityValue}
             </div>
           </div>
         </div>
-        <p className="pb-4 text-[12px] leading-5 text-[#5c564c]">
-          This line should be read after the map. It helps confirm whether a
-          visible cluster is merely active or genuinely worsening.
-        </p>
         <div className="flex-1">
           <Line options={options} data={fatalitiesTrend} />
+        </div>
+        <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+          Source: ACLED / Events Database · 5-min polling
         </div>
       </div>
     </section>

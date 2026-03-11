@@ -90,3 +90,50 @@ CREATE TABLE IF NOT EXISTS env_proxies (
     ref_date DATE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Normalized intelligence items cache
+CREATE TABLE IF NOT EXISTS intelligence_items_cache (
+    id SERIAL PRIMARY KEY,
+    item_id TEXT UNIQUE NOT NULL,
+    package_id TEXT NOT NULL,
+    source_label TEXT NOT NULL,
+    source_url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    url TEXT NOT NULL,
+    published_at TIMESTAMPTZ NOT NULL,
+    severity TEXT NOT NULL,
+    score FLOAT NOT NULL,
+    kind TEXT NOT NULL,
+    tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+    payload JSONB NOT NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS intelligence_items_package_idx ON intelligence_items_cache(package_id);
+CREATE INDEX IF NOT EXISTS intelligence_items_published_idx ON intelligence_items_cache(published_at DESC);
+
+-- Cached package snapshots
+CREATE TABLE IF NOT EXISTS intelligence_package_snapshots (
+    id SERIAL PRIMARY KEY,
+    package_id TEXT UNIQUE NOT NULL,
+    snapshot JSONB NOT NULL,
+    status TEXT NOT NULL DEFAULT 'live',
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS intelligence_package_updated_idx ON intelligence_package_snapshots(updated_at DESC);
+
+-- Source health and refresh state
+CREATE TABLE IF NOT EXISTS intelligence_source_health (
+    id SERIAL PRIMARY KEY,
+    source_id TEXT UNIQUE NOT NULL,
+    source_label TEXT NOT NULL,
+    url TEXT NOT NULL,
+    status TEXT NOT NULL,
+    checked_at TIMESTAMPTZ NOT NULL,
+    response_time_ms INTEGER,
+    message TEXT
+);
+
+CREATE INDEX IF NOT EXISTS intelligence_source_checked_idx ON intelligence_source_health(checked_at DESC);

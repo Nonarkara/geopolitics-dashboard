@@ -1,6 +1,7 @@
 import path from "node:path";
 
 const nextConfig = {
+  turbopack: {},
   env: {
     NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
       process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??

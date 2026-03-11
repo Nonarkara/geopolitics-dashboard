@@ -274,14 +274,14 @@ export const fallbackCopernicusPreview: CopernicusPreviewResponse = {
       description: "Broad true-color composite for fast regional situational review.",
     },
     {
-      id: "modisTerra",
-      label: "MODIS Terra",
-      description: "Daily daytime composite for land/water and cloud field inspection.",
+      id: "modisFalseColor",
+      label: "MODIS False Color",
+      description: "False-color land and burn-scar view with stronger terrain and vegetation contrast.",
     },
     {
-      id: "modisAqua",
-      label: "MODIS Aqua",
-      description: "Second-pass true-color imagery for comparative atmospheric reads.",
+      id: "blueMarble",
+      label: "Blue Marble Relief",
+      description: "Shaded relief base for terrain-first orientation and corridor framing.",
     },
   ],
 };

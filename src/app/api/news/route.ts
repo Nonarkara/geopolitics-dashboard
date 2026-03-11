@@ -1,19 +1,10 @@
 import { NextResponse } from "next/server";
 import { fallbackNews } from "../../../lib/mock-data";
-import {
-  buildThailandNews,
-  loadThailandEconomics,
-  loadThailandIncidents,
-} from "../../../lib/thailand-monitor";
+import { buildNewsFromPackages } from "../../../lib/intelligence";
 
 export async function GET() {
   try {
-    const [incidents, indicators] = await Promise.all([
-      loadThailandIncidents(),
-      loadThailandEconomics(),
-    ]);
-
-    return NextResponse.json(buildThailandNews(incidents, indicators));
+    return NextResponse.json(await buildNewsFromPackages());
   } catch {
     return NextResponse.json(fallbackNews, { status: 200 });
   }

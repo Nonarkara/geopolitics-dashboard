@@ -28,44 +28,44 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
   ];
 
   return (
-    <div className="absolute bottom-28 right-8 z-[60] w-[360px] rounded-[28px] border border-[#d6cebf] bg-[#efe7dc]/96 p-7 shadow-[0_20px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
-      <div className="mb-6 flex items-start justify-between">
+    <div className="absolute bottom-28 right-8 z-[60] w-[340px] rounded-xl border border-[var(--line-bright)] bg-[var(--bg)] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+      <div className="mb-5 flex items-start justify-between">
         <div className="space-y-1">
           <div className="eyebrow">Selected place</div>
-          <h2 className="text-[26px] font-semibold tracking-[-0.04em] text-[#171512]">
+          <h2 className="text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
             {province.name}
           </h2>
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
-            {province.type ?? `Sector code: ${province.iso ?? "Regional"}`}
+          <p className="text-[9px] font-mono uppercase tracking-[0.18em] text-[var(--dim)]">
+            {province.type ?? `Sector: ${province.iso ?? "Regional"}`}
           </p>
         </div>
         <button
           onClick={onClose}
-          className="rounded-full border border-[#d6cebf] bg-white/60 p-2 transition-colors hover:bg-white"
+          className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-raised)] p-2 transition-colors hover:bg-[var(--bg-surface)]"
         >
-          <X size={14} className="text-[#5f5b52]" />
+          <X size={12} className="text-[var(--muted)]" />
         </button>
       </div>
 
-      <p className="text-[14px] leading-6 text-[#4f4a42]">{summaryLine}</p>
+      <p className="text-[12px] leading-5 text-[var(--muted)]">{summaryLine}</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4">
-        <div className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
-          <label className="block text-[9px] uppercase tracking-[0.18em] text-[#7a7468]">
-            Stability index
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3">
+          <label className="block text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
+            Stability
           </label>
-          <div className="flex items-baseline gap-1 pt-2 text-[30px] font-semibold tracking-[-0.04em] text-[#171512]">
+          <div className="flex items-baseline gap-1 pt-1 text-[24px] font-bold font-mono tabular-nums text-[var(--ink)]">
             {stabilityIndex}
-            <span className="text-[10px] text-[#7a7468]">/10</span>
+            <span className="text-[9px] text-[var(--dim)]">/10</span>
           </div>
         </div>
-        <div className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
-          <label className="block text-[9px] uppercase tracking-[0.18em] text-[#7a7468]">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3">
+          <label className="block text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
             Fatalities
           </label>
           <div
-            className={`flex items-center gap-1 pt-2 text-[30px] font-semibold tracking-[-0.04em] ${
-              fatalities > 0 ? "text-[#8b5a40]" : "text-[#4f6871]"
+            className={`flex items-center gap-1 pt-1 text-[24px] font-bold font-mono tabular-nums ${
+              fatalities > 0 ? "text-[#f59e0b]" : "text-[var(--cool)]"
             }`}
           >
             {fatalities}
@@ -74,54 +74,52 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
         </div>
       </div>
 
-      <div className="mt-6 rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
-        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+      <div className="mt-4 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3">
+        <div className="flex items-center justify-between text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
           <span>Immediate read</span>
-          <span className={fatalities > 0 ? "text-[#8b5a40]" : "text-[#4f6871]"}>
+          <span className={fatalities > 0 ? "text-[#f59e0b]" : "text-[var(--cool)]"}>
             {attentionLevel}
           </span>
         </div>
-        <div className="mt-4 space-y-4">
+        <div className="mt-3 space-y-3">
           <div>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
               <span>Conflict density</span>
               <span>{fatalities > 0 ? "Elevated" : "Monitored"}</span>
             </div>
-            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
-              <div className="h-full bg-[#8b5a40]" style={{ width: `${conflictDensity}%` }} />
+            <div className="mt-1.5 h-[2px] w-full overflow-hidden rounded-full bg-[var(--bg-surface)]">
+              <div className="h-full bg-[#f59e0b]" style={{ width: `${conflictDensity}%` }} />
             </div>
           </div>
 
           <div>
-            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
               <span>Economic integration</span>
-              <span className="text-[#4f6871]">{economicTone}</span>
+              <span className="text-[var(--cool)]">{economicTone}</span>
             </div>
-            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
-              <div className="h-full bg-[#4f6871]" style={{ width: `${economicIntegration}%` }} />
+            <div className="mt-1.5 h-[2px] w-full overflow-hidden rounded-full bg-[var(--bg-surface)]">
+              <div className="h-full bg-[var(--cool)]" style={{ width: `${economicIntegration}%` }} />
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-6 border-t border-[#d6cebf] pt-5">
-        <div className="eyebrow">What to watch next</div>
-        <div className="mt-3 space-y-3">
-          {guidance.map((item) => (
-            <div
-              key={item}
-              className="rounded-[18px] border border-[#d6cebf] bg-white/60 p-3 text-[12px] leading-5 text-[#4f4a42]"
-            >
-              {item}
-            </div>
-          ))}
-        </div>
+      <div className="mt-4 space-y-2">
+        <div className="eyebrow">What to watch</div>
+        {guidance.map((item) => (
+          <div
+            key={item}
+            className="rounded-lg border border-[var(--line)] bg-[var(--bg)] p-2 text-[10px] leading-4 text-[var(--muted)]"
+          >
+            {item}
+          </div>
+        ))}
 
-        <div className="mt-4 flex items-center gap-2 rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] px-4 py-3">
-          <Globe size={12} className="text-[#5f5b52]" />
-          <span className="text-[10px] uppercase tracking-[0.16em] text-[#6d675d]">
+        <div className="mt-2 flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--bg)] px-3 py-2">
+          <Globe size={10} className="text-[var(--cool)]" />
+          <span className="text-[9px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
             {province.eventDate
-              ? `Event date: ${province.eventDate}`
+              ? `Event: ${province.eventDate}`
               : `Sector: ${province.iso ?? province.name}`}
           </span>
         </div>

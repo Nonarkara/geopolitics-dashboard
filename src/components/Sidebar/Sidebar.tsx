@@ -41,110 +41,112 @@ export default function Sidebar() {
       }
     };
     load();
+    const interval = setInterval(load, 2 * 60 * 1000); // Refresh every 2 min
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <aside className="flex h-screen w-[336px] flex-col bg-[#eae3d8] text-[#171512] select-none">
-      <div className="border-b border-[#d6cebf] p-8">
+    <aside className="flex h-full w-full flex-col text-[var(--ink)] select-none">
+      <div className="border-b border-[var(--line)] p-6">
         <div className="flex items-center justify-between">
           <div>
-            <div className="eyebrow">Overview</div>
-            <h1 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
-              Thailand Border Monitor
+            <div className="eyebrow">Command</div>
+            <h1 className="pt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+              Thailand Border
             </h1>
           </div>
-          <div className="h-2.5 w-2.5 rounded-full bg-[#171512]" />
+          <div className="live-badge">LIVE</div>
         </div>
-        <p className="pt-4 text-[14px] leading-6 text-[#4a453d]">
-          A quieter, map-led monitoring surface. Start with terrain and imagery,
-          then use incidents, markets, and briefings to understand pressure
-          around the border.
+        <p className="pt-3 text-[12px] leading-5 text-[var(--muted)]">
+          Map-led monitoring surface. Streets, terrain, and analytic overlays
+          first, then packages, incidents, markets, and briefings.
         </p>
       </div>
 
-      <div className="flex-1 space-y-10 overflow-y-auto px-8 py-8">
-        <section className="space-y-5">
+      <div className="flex-1 space-y-6 overflow-y-auto px-6 py-6">
+        <section className="space-y-4">
           <div className="space-y-2">
-            <div className="eyebrow">Current watchpoints</div>
-            <div className="h-px w-full bg-[#d6cebf]" />
+            <div className="eyebrow">Watchpoints</div>
+            <div className="h-px w-full bg-[var(--bg-raised)]" />
           </div>
           <ConvergenceAlerts />
         </section>
 
-        <section className="space-y-5">
+        <section className="space-y-4">
           <div className="space-y-2">
-            <div className="eyebrow">How to read the map</div>
-            <div className="h-px w-full bg-[#d6cebf]" />
+            <div className="eyebrow">Data pipeline</div>
+            <div className="h-px w-full bg-[var(--bg-raised)]" />
           </div>
 
-          <div className="grid gap-3">
+          <div className="grid gap-1.5">
             {[
-              {
-                title: "Start with imagery",
-                detail: "Use VIIRS or MODIS first so terrain, settlements, and weather context are legible.",
-              },
-              {
-                title: "Add one layer at a time",
-                detail: "Turn on incidents, thermal anomalies, rainfall, or movement only when that question matters.",
-              },
-              {
-                title: "Cross-check with context",
-                detail: "Use the briefing and market cards to decide whether a signal is isolated or system-wide.",
-              },
-            ].map((item) => (
+              { name: "ACLED Conflict", status: "live", interval: "2 min", source: "acleddata.com" },
+              { name: "NASA FIRMS", status: "live", interval: "2 min", source: "firms.modaps.eosdis.nasa.gov" },
+              { name: "OpenSky Flights", status: "live", interval: "30s", source: "opensky-network.org" },
+              { name: "Open-Meteo AQI", status: "live", interval: "5 min", source: "open-meteo.com" },
+              { name: "RSS / Google News", status: "live", interval: "5 min", source: "rss2json.com" },
+              { name: "Binance / FX", status: "live", interval: "90s", source: "binance.com" },
+            ].map((feed) => (
               <div
-                key={item.title}
-                className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
+                key={feed.name}
+                className="flex items-center justify-between rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1.5"
               >
-                <div className="text-[13px] font-medium text-[#171512]">
-                  {item.title}
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-block h-1.5 w-1.5 rounded-full ${
+                      feed.status === "live" ? "bg-[#22c55e] animate-pulse" : "bg-[#ef4444]"
+                    }`}
+                  />
+                  <span className="text-[10px] font-medium text-[var(--ink)]">
+                    {feed.name}
+                  </span>
                 </div>
-                <p className="pt-2 text-[12px] leading-5 text-[#5b554b]">
-                  {item.detail}
-                </p>
+                <span className="text-[8px] font-mono tracking-[0.1em] text-[var(--dim)]">
+                  {feed.interval}
+                </span>
               </div>
             ))}
           </div>
         </section>
 
-        <section className="space-y-5">
+        <section className="space-y-4">
           <div className="space-y-2">
             <div className="eyebrow">Recent incidents</div>
-            <div className="h-px w-full bg-[#d6cebf]" />
+            <div className="h-px w-full bg-[var(--bg-raised)]" />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-4">
             {incidents.slice(0, 4).map((incident, idx) => (
               <article
                 key={incident.id}
-                className="border-b border-[#dbd3c5] pb-5 last:border-b-0"
+                className="border-b border-[var(--line)] pb-4 last:border-b-0"
               >
-                <div className="flex items-start gap-4">
-                  <span className="pt-1 text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                <div className="flex items-start gap-3">
+                  <span className="pt-0.5 text-[10px] font-mono tabular-nums text-[var(--dim)]">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <span
-                        className={`text-[10px] uppercase tracking-[0.16em] ${
+                        className={`text-[9px] font-semibold uppercase tracking-[0.16em] ${
                           incident.severity === "high"
-                            ? "text-[#8b5a40]"
-                            : "text-[#4f6871]"
+                            ? "text-[#f59e0b]"
+                            : "text-[var(--cool)]"
                         }`}
                       >
                         {incident.type}
                       </span>
-                      <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                      <span className="text-[9px] font-mono tabular-nums text-[var(--dim)]">
                         {incident.time}
                       </span>
                     </div>
-                    <p className="pt-3 text-[13px] leading-6 text-[#4a453d]">
-                      {incident.notes.length > 110
-                        ? `${incident.notes.substring(0, 110)}...`
+                    <p className="pt-2 text-[12px] leading-5 text-[var(--muted)]">
+                      {incident.notes.length > 100
+                        ? `${incident.notes.substring(0, 100)}...`
                         : incident.notes}
                     </p>
-                    <div className="pt-3 flex items-center gap-2 text-[11px] text-[#6c655a]">
-                      <MapPin size={12} />
+                    <div className="pt-2 flex items-center gap-2 text-[10px] text-[var(--dim)]">
+                      <MapPin size={10} />
                       <span>{incident.location}</span>
                     </div>
                   </div>
@@ -155,18 +157,16 @@ export default function Sidebar() {
         </section>
       </div>
 
-      <div className="border-t border-[#d6cebf] p-8">
-        <div className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+      <div className="border-t border-[var(--line)] p-6">
+        <div className="rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3">
           <div className="flex items-start gap-3">
-            <Info size={16} className="mt-0.5 text-[#4f6871]" />
+            <Info size={14} className="mt-0.5 text-[var(--cool)]" />
             <div>
-              <div className="text-[12px] font-medium text-[#171512]">
-                Why this layout works
+              <div className="text-[11px] font-medium text-[var(--ink)]">
+                Data from NASA, RSS/search feeds, reference APIs, and market sources
               </div>
-              <p className="pt-2 text-[12px] leading-5 text-[#5b554b]">
-                The map stays primary, controls are grouped by task, and the
-                right-hand panels explain what the signal means instead of
-                competing for attention.
+              <p className="pt-1 text-[11px] leading-4 text-[var(--dim)]">
+                Contact: Dr. Non Arkara
               </p>
             </div>
           </div>

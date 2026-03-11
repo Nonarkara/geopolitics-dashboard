@@ -1,3 +1,10 @@
+import type {
+  Feature,
+  FeatureCollection,
+  MultiPolygon,
+  Polygon,
+} from "geojson";
+
 export type Coordinates = [number, number];
 
 export interface ProvinceSelection {
@@ -35,6 +42,18 @@ export interface FireEvent {
   acq_date: string;
 }
 
+export interface FlightData {
+  icao24: string;
+  callsign: string;
+  longitude: number;
+  latitude: number;
+  altitude: number;
+  velocity: number;
+  heading: number;
+  origin_country: string;
+  on_ground: boolean;
+}
+
 export interface RefugeeMovement {
   source: Coordinates;
   target: Coordinates;
@@ -47,6 +66,15 @@ export interface RainfallPoint {
   lng: number;
   value: number;
   label: string;
+}
+
+export interface AirQualityPoint {
+  lat: number;
+  lng: number;
+  label: string;
+  aqi: number;
+  pm25: number;
+  category: string;
 }
 
 export interface RegionBorderProperties {
@@ -63,6 +91,24 @@ export interface RegionBorderCollection {
   type: "FeatureCollection";
   features: RegionBorderFeature[];
 }
+
+export interface ConflictZoneProperties {
+  id: string;
+  name: string;
+  status: string;
+  priority: number;
+  summary: string;
+}
+
+export type ConflictZoneFeature = Feature<
+  Polygon | MultiPolygon,
+  ConflictZoneProperties
+>;
+
+export type ConflictZoneCollection = FeatureCollection<
+  Polygon | MultiPolygon,
+  ConflictZoneProperties
+>;
 
 export interface EconomicIndicator {
   label: string;
@@ -137,6 +183,8 @@ export interface ApiSourceEntry {
   url: string;
   kind: string;
   target: string;
+  health?: PackageStatus;
+  checkedAt?: string;
 }
 
 export interface ApiSourceResponse {
@@ -154,4 +202,158 @@ export interface CopernicusPreviewResponse {
   updatedAt: string;
   focusDate: string;
   imagerySources: CopernicusPreviewLayer[];
+}
+
+export type PackageStatus = "live" | "stale" | "offline";
+
+export interface SourceHealth {
+  id: string;
+  label: string;
+  url: string;
+  status: PackageStatus;
+  checkedAt: string;
+  responseTimeMs: number | null;
+  message: string | null;
+}
+
+export interface IntelligenceItem {
+  id: string;
+  packageId: string;
+  title: string;
+  summary: string;
+  source: string;
+  sourceUrl: string;
+  publishedAt: string;
+  url: string;
+  tags: string[];
+  score: number;
+  severity: NewsSeverity;
+  kind: "news" | "incident" | "market" | "weather" | "movement" | "thermal";
+}
+
+export interface IntelligencePackageStats {
+  total: number;
+  elevated: number;
+  dominantTags: string[];
+  incidents: number;
+  markets: number;
+  weather: number;
+}
+
+export interface IntelligencePackage {
+  id: string;
+  title: string;
+  headline: string;
+  summary: string;
+  description: string;
+  priorities: string[];
+  dominantTags: string[];
+  sourceLabels: string[];
+  updatedAt: string;
+  status: PackageStatus;
+  items: IntelligenceItem[];
+  stats: IntelligencePackageStats;
+}
+
+export interface IntelligencePackageResponse {
+  generatedAt: string;
+  mode: PackageStatus;
+  packages: IntelligencePackage[];
+  sources: SourceHealth[];
+}
+
+export type ConvergencePosture = "priority" | "watch" | "monitor";
+export type ConvergenceFamily =
+  | "incident"
+  | "news"
+  | "market"
+  | "weather"
+  | "thermal"
+  | "movement";
+
+export interface ConvergenceEvidence {
+  id: string;
+  family: ConvergenceFamily;
+  title: string;
+  source: string;
+  observedAt: string;
+  score: number;
+  reason: string;
+  url: string;
+}
+
+export interface ConvergenceAlert {
+  id: string;
+  title: string;
+  summary: string;
+  score: number;
+  posture: ConvergencePosture;
+  windowHours: number;
+  families: ConvergenceFamily[];
+  evidence: ConvergenceEvidence[];
+  dataGaps: string[];
+  updatedAt: string;
+}
+
+export interface ConvergenceCorridor {
+  id: string;
+  label: string;
+  center: Coordinates;
+  radiusKm: number;
+  aliases: string[];
+}
+
+export interface ConvergenceSourceCoverage {
+  live: number;
+  stale: number;
+  offline: number;
+  total: number;
+  labels: string[];
+}
+
+export interface CorridorConvergenceResponse {
+  generatedAt: string;
+  corridor: ConvergenceCorridor;
+  posture: ConvergencePosture;
+  score: number;
+  summary: string;
+  alerts: ConvergenceAlert[];
+  sourceCoverage: ConvergenceSourceCoverage;
+  dataGaps: string[];
+}
+
+export type MapOverlayKind = "raster" | "vector";
+export type MapOverlayFamily =
+  | "imagery"
+  | "vegetation"
+  | "terrain"
+  | "weather"
+  | "air"
+  | "lights"
+  | "thermal"
+  | "operational";
+export type MapOverlayRole = "base-option" | "analytic" | "operational";
+
+export interface MapOverlay {
+  id: string;
+  label: string;
+  shortLabel: string;
+  description: string;
+  source: string;
+  kind: MapOverlayKind;
+  family: MapOverlayFamily;
+  role: MapOverlayRole;
+  defaultOpacity: number;
+  updatedAt: string;
+  enabledByDefault: boolean;
+  maxZoom?: number;
+  tileTemplate?: string;
+  timeMode?: "dated" | "default";
+}
+
+export interface MapOverlayCatalogResponse {
+  updatedAt: string;
+  defaultBasemap: "detailed-streets";
+  defaultImageryOverlayId: string;
+  overlays: MapOverlay[];
 }

@@ -3,6 +3,7 @@ import type {
   CopernicusPreviewResponse,
   EconomicIndicator,
 } from "../types/dashboard";
+import { buildMapOverlayCatalog } from "./map-overlays";
 
 const DEFAULT_REFERENCE_DASHBOARD_URL =
   "https://dr-non-operating-systems.onrender.com/api/dashboard";
@@ -268,26 +269,18 @@ export async function fetchReferenceApiCatalog(): Promise<ApiSourceResponse> {
 }
 
 export function buildCopernicusPreview(focusDate: string): CopernicusPreviewResponse {
+  const catalog = buildMapOverlayCatalog(focusDate);
+
   return {
-    updatedAt: new Date().toISOString(),
+    updatedAt: catalog.updatedAt,
     focusDate,
-    imagerySources: [
-      {
-        id: "viirsTrueColor",
-        label: "VIIRS True Color",
-        description: "Broad daily true-color composite for first-pass regional scanning.",
-      },
-      {
-        id: "modisTerra",
-        label: "MODIS Terra",
-        description: "Daytime surface composite for clouds, river systems, and terrain contrast.",
-      },
-      {
-        id: "modisAqua",
-        label: "MODIS Aqua",
-        description: "Companion true-color pass for second-look atmospheric verification.",
-      },
-    ],
+    imagerySources: catalog.overlays
+      .filter((overlay) => overlay.role === "base-option")
+      .map((overlay) => ({
+        id: overlay.id,
+        label: overlay.label,
+        description: overlay.description,
+      })),
   };
 }
 

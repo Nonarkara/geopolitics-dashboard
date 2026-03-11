@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import {
-  fallbackCopernicusPreview,
-  fallbackSources,
-} from "../../lib/mock-data";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
+import { fallbackSources } from "../../lib/mock-data";
+import { buildMapOverlayCatalog } from "../../lib/map-overlays";
 import type {
   ApiSourceResponse,
-  CopernicusPreviewResponse,
+  MapOverlayCatalogResponse,
 } from "../../types/dashboard";
 
 function isApiSourceResponse(value: unknown): value is ApiSourceResponse {
@@ -19,99 +18,143 @@ function isApiSourceResponse(value: unknown): value is ApiSourceResponse {
   );
 }
 
-function isCopernicusPreviewResponse(
+function isMapOverlayCatalogResponse(
   value: unknown,
-): value is CopernicusPreviewResponse {
+): value is MapOverlayCatalogResponse {
   return (
     typeof value === "object" &&
     value !== null &&
-    "imagerySources" in value &&
-    Array.isArray(value.imagerySources)
+    "overlays" in value &&
+    Array.isArray(value.overlays)
   );
 }
 
 export default function SourceStack() {
   const [sources, setSources] = useState<ApiSourceResponse>(fallbackSources);
-  const [preview, setPreview] = useState<CopernicusPreviewResponse>(
-    fallbackCopernicusPreview,
+  const [catalog, setCatalog] = useState<MapOverlayCatalogResponse>(
+    buildMapOverlayCatalog(),
   );
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const [sourcesResponse, previewResponse] = await Promise.all([
-          fetch("/api/sources"),
-          fetch("/api/copernicus/preview"),
-        ]);
-        const [sourcesPayload, previewPayload]: [unknown, unknown] =
-          await Promise.all([sourcesResponse.json(), previewResponse.json()]);
+  const load = useCallback(async () => {
+    try {
+      const [sourcesResponse, overlayResponse] = await Promise.all([
+        fetch("/api/sources"),
+        fetch("/api/map/overlays"),
+      ]);
+      const [sourcesPayload, overlayPayload]: [unknown, unknown] =
+        await Promise.all([sourcesResponse.json(), overlayResponse.json()]);
 
-        if (isApiSourceResponse(sourcesPayload)) {
-          setSources(sourcesPayload);
-        }
-
-        if (isCopernicusPreviewResponse(previewPayload)) {
-          setPreview(previewPayload);
-        }
-      } catch {
-        setSources(fallbackSources);
-        setPreview(fallbackCopernicusPreview);
+      if (isApiSourceResponse(sourcesPayload)) {
+        setSources(sourcesPayload);
       }
-    };
 
-    load();
+      if (isMapOverlayCatalogResponse(overlayPayload)) {
+        setCatalog(overlayPayload);
+      }
+    } catch {
+      setSources(fallbackSources);
+      setCatalog(buildMapOverlayCatalog());
+    }
   }, []);
 
+  useEffect(() => {
+    const initialLoad = setTimeout(() => {
+      void load();
+    }, 0);
+    const interval = setInterval(() => {
+      void load();
+    }, 3 * 60 * 1000);
+    return () => {
+      clearTimeout(initialLoad);
+      clearInterval(interval);
+    };
+  }, [load]);
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    load().then(() => setTimeout(() => setRefreshing(false), 600));
+  };
+
   return (
-    <section className="grid h-full grid-rows-[1fr_auto] bg-[#efe7dc]">
-      <div className="p-6">
-        <div className="border-b border-[#d6cebf] pb-4">
-          <div className="eyebrow">Sources</div>
-          <div className="pt-2 text-[22px] font-semibold tracking-[-0.03em] text-[#171512]">
-            Data behind the screen
+    <section className="flex h-full flex-col bg-[var(--bg-surface)] overflow-y-auto">
+      <div className="flex-1 p-4">
+        <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
+          <div>
+            <div className="eyebrow">Sources</div>
+            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+              Data feeds
+            </div>
           </div>
+          <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh sources">
+            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+          </button>
         </div>
-        <div className="space-y-3 pt-4">
-          {sources.sources.slice(0, 6).map((source) => (
+        <div className="space-y-2 pt-3">
+          {sources.sources.slice(0, 4).map((source) => (
             <div
               key={source.id}
-              className="grid grid-cols-[88px_1fr] gap-4 rounded-[18px] border border-[#ddd5c7] bg-white/65 p-3 text-[12px]"
+              className="grid grid-cols-[70px_1fr] gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg)] p-2 text-[10px]"
             >
-              <div className="font-medium uppercase tracking-[0.16em] text-[#787267]">
+              <div className="font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
                 {source.target}
               </div>
               <div className="min-w-0">
-                <div className="font-medium text-[#181818]">{source.label}</div>
-                <div className="truncate pt-1 text-[#5c584f]">{source.url}</div>
+                <div className="flex items-center gap-2">
+                  <div className="font-medium text-[var(--ink)]">{source.label}</div>
+                  {source.health ? (
+                    <span
+                      className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.14em] ${
+                        source.health === "live"
+                          ? "bg-[rgba(34,197,94,0.15)] text-[#22c55e]"
+                          : source.health === "stale"
+                            ? "bg-[rgba(245,158,11,0.15)] text-[#f59e0b]"
+                            : "bg-[rgba(239,68,68,0.15)] text-[#ef4444]"
+                      }`}
+                    >
+                      {source.health}
+                    </span>
+                  ) : null}
+                </div>
+                <div className="truncate pt-0.5 text-[var(--dim)]">{source.url}</div>
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      <div className="border-t border-[#d6cebf] px-6 py-4">
+      <div className="border-t border-[var(--line)] p-4">
         <div className="eyebrow">
-          Imagery layers / {preview.focusDate}
+          Overlays / {new Date(catalog.updatedAt).toLocaleDateString("en-US", {
+            month: "short",
+            day: "2-digit",
+          })}
         </div>
-        <div className="grid gap-3 pt-3">
-          {preview.imagerySources.map((source) => (
+        <div className="grid gap-2 pt-2">
+          {catalog.overlays
+            .filter((overlay) => overlay.kind === "raster")
+            .slice(0, 5)
+            .map((source) => (
             <div
               key={source.id}
-              className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-3"
+              className="rounded-lg border border-[var(--line)] bg-[var(--bg)] p-2"
             >
-              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#121212]">
-                {source.label}
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--cool)]">
+                  {source.label}
+                </div>
+                <span className="text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+                  {source.shortLabel}
+                </span>
               </div>
-              <p className="pt-2 text-[12px] leading-5 text-[#555046]">
+              <p className="pt-1 text-[10px] leading-4 text-[var(--dim)]">
                 {source.description}
               </p>
+              <div className="pt-1 text-[9px] uppercase tracking-[0.14em] text-[var(--dim)]">
+                {source.source}
+              </div>
             </div>
           ))}
-        </div>
-
-        <div className="mt-4 rounded-[18px] border border-[#d6cebf] bg-white/60 p-3 text-[12px] leading-5 text-[#555046]">
-          Combining ground incidents, market movement, and daily imagery makes
-          the dashboard harder to misread from a single signal alone.
         </div>
       </div>
     </section>

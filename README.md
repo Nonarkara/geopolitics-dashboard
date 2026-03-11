@@ -31,6 +31,8 @@ Key variables:
 - `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: public Mapbox token for basemaps
 - `FIRMS_KEY`: NASA FIRMS key for live fire ingestion
 - `REFERENCE_DASHBOARD_URL`: optional external reference feed for incidents, market cards, and trend adapters
+- `OPENAI_API_KEY`: optional AI summary key for package headline/priority synthesis
+- `OPENAI_MODEL`: optional Responses API model override for intelligence summaries
 
 ## Setup
 
@@ -64,7 +66,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The UI can still render with fallback data if the database is not populated yet, and it can also pull incidents, market cards, and trend inputs from the external reference dashboard.
+The UI can still render with fallback data if the database is not populated yet, and it can also pull incidents, package sources, and market cards from the external reference dashboard.
 
 ## Ingestion
 
@@ -99,5 +101,5 @@ To deploy with the Blueprint flow, push the repo to GitHub, GitLab, or Bitbucket
 ## Data Flow
 
 1. Python scripts fetch external data and write normalized rows to Postgres.
-2. Next.js API routes read from Postgres and shape data for the UI.
-3. React components fetch those routes and render map overlays, charts, and dashboard panels.
+2. Next.js API routes combine Postgres data, RSS/search feeds, and reference APIs into cached intelligence packages.
+3. React components fetch those routes and render map overlays, charts, package panels, and live signal cards.
