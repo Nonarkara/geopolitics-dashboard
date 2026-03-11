@@ -1,42 +1,73 @@
 export default function ConvergenceAlerts() {
-    const hotspots = [
-        { id: '01', location: 'MAE_SOT_SECTOR', risk: 'CRITICAL', factors: ['TACTICAL', 'THERMAL', 'PLUVIAL'], level: 92 },
-        { id: '02', location: 'TAK_BORDER_ZONE', risk: 'ELEVATED', factors: ['INFANTRY', 'LOGISTICS'], level: 65 }
-    ];
+  const hotspots = [
+    {
+      id: "01",
+      location: "Mae Sot corridor",
+      risk: "Priority",
+      factors: ["Incident clustering", "Trade pressure", "Thermal activity"],
+      level: 92,
+    },
+    {
+      id: "02",
+      location: "Tak border zone",
+      risk: "Watch",
+      factors: ["Transport flow", "Rainfall variation"],
+      level: 65,
+    },
+  ];
 
-    return (
-        <div className="space-y-8">
-            {hotspots.map((spot, idx) => (
-                <div key={idx} className="space-y-4 border-b border-[#d7d0c3] pb-6 last:border-b-0 last:pb-0">
-                    <div className="flex justify-between items-baseline">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#7a7468]">Alert {spot.id}</span>
-                            <span className={`text-[10px] font-medium uppercase tracking-[0.2em] ${spot.risk === 'CRITICAL' ? 'text-[#8d3e23]' : 'text-[#4f6a73]'}`}>
-                                {spot.risk}
-                            </span>
-                        </div>
-                        <span className="text-[12px] font-semibold text-[#121212] tabular-nums">{spot.level}%</span>
-                    </div>
+  return (
+    <div className="space-y-6">
+      {hotspots.map((spot) => (
+        <div
+          key={spot.id}
+          className="rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Area {spot.id}
+              </span>
+              <span
+                className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.16em] ${
+                  spot.risk === "Priority"
+                    ? "bg-[#ead8ce] text-[#8b5a40]"
+                    : "bg-[#dce7ea] text-[#4f6871]"
+                }`}
+              >
+                {spot.risk}
+              </span>
+            </div>
+            <span className="text-[12px] font-semibold tabular-nums text-[#171512]">
+              {spot.level}%
+            </span>
+          </div>
 
-                    <div className="space-y-4">
-                        <h4 className="text-[15px] font-semibold tracking-[-0.02em] text-[#121212]">{spot.location.replaceAll('_', ' ')}</h4>
-                        <div className="flex flex-wrap gap-2">
-                            {spot.factors.map((f, i) => (
-                                <span key={i} className="bg-[#dbd3c6] px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] text-[#4b473f]">
-                                    {f}
-                                </span>
-                            ))}
-                        </div>
-                    </div>
+          <h4 className="pt-4 text-[16px] font-semibold tracking-[-0.02em] text-[#171512]">
+            {spot.location}
+          </h4>
 
-                    <div className="relative h-[2px] w-full bg-[#d7d0c3]">
-                        <div
-                            className={`absolute top-0 left-0 h-full transition-all duration-500 ${spot.risk === 'CRITICAL' ? 'bg-[#8d3e23]' : 'bg-[#4f6a73]'}`}
-                            style={{ width: `${spot.level}%` }}
-                        ></div>
-                    </div>
-                </div>
+          <div className="pt-3 flex flex-wrap gap-2">
+            {spot.factors.map((factor) => (
+              <span
+                key={factor}
+                className="rounded-full bg-[#ece3d8] px-2.5 py-1 text-[10px] text-[#5b554b]"
+              >
+                {factor}
+              </span>
             ))}
+          </div>
+
+          <div className="relative mt-4 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full ${
+                spot.risk === "Priority" ? "bg-[#8b5a40]" : "bg-[#4f6871]"
+              }`}
+              style={{ width: `${spot.level}%` }}
+            />
+          </div>
         </div>
-    );
+      ))}
+    </div>
+  );
 }

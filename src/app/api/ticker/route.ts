@@ -1,29 +1,29 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage } from "../../../lib/errors";
-import { fallbackEconomicIndicators, fallbackTicker } from "../../../lib/mock-data";
 import {
-  buildReferenceTicker,
-  fetchReferenceEconomicIndicators,
-  fetchReferenceReports,
-} from "../../../lib/reference-data";
+  fallbackEconomicIndicators,
+  fallbackIncidents,
+  fallbackTicker,
+} from "../../../lib/mock-data";
+import {
+  buildThailandTicker,
+  loadThailandEconomics,
+  loadThailandIncidents,
+} from "../../../lib/thailand-monitor";
 
 export async function GET() {
   try {
-    const [reports, indicators] = await Promise.all([
-      fetchReferenceReports(),
-      fetchReferenceEconomicIndicators(),
+    const [incidents, indicators] = await Promise.all([
+      loadThailandIncidents(),
+      loadThailandEconomics(),
     ]);
 
-    return NextResponse.json(buildReferenceTicker(reports, indicators));
-  } catch (error: unknown) {
-    console.error("Reference ticker error:", getErrorMessage(error));
+    return NextResponse.json(buildThailandTicker(incidents, indicators));
+  } catch {
     try {
-      const reports = await fetchReferenceReports();
       return NextResponse.json(
-        buildReferenceTicker(reports, fallbackEconomicIndicators),
+        buildThailandTicker(fallbackIncidents, fallbackEconomicIndicators),
       );
-    } catch (fallbackError: unknown) {
-      console.error("Fallback ticker error:", getErrorMessage(fallbackError));
+    } catch {
       return NextResponse.json(fallbackTicker, { status: 200 });
     }
   }

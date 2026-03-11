@@ -15,14 +15,14 @@ function isNewsResponse(value: unknown): value is NewsResponse {
 
 function severityClass(severity: string) {
   if (severity === "alert") {
-    return "bg-[#121212] text-[#ece6db]";
+    return "bg-[#171512] text-[#f7f2ea]";
   }
 
   if (severity === "watch") {
-    return "bg-[#bfa36e] text-[#121212]";
+    return "bg-[#ead8ce] text-[#8b5a40]";
   }
 
-  return "bg-[#d9d2c4] text-[#3f3b34]";
+  return "bg-[#dce7ea] text-[#4f6871]";
 }
 
 export default function NewsDesk() {
@@ -46,23 +46,33 @@ export default function NewsDesk() {
   }, []);
 
   return (
-    <section className="flex h-full flex-col border-b border-[#cfc7b7] bg-[#f4efe7] p-6">
-      <div className="border-b border-[#cfc7b7] pb-4">
-        <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
-          News Desk
+    <section className="flex h-full flex-col bg-[#f7f2ea] p-6">
+      <div className="border-b border-[#d6cebf] pb-4">
+        <div className="eyebrow">
+          Live feed
         </div>
-        <div className="pt-2 text-[24px] font-semibold tracking-[-0.03em] text-[#121212]">
-          Field and market headlines
+        <div className="pt-2 text-[24px] font-semibold tracking-[-0.03em] text-[#171512]">
+          What changed across the system
         </div>
       </div>
 
       <div className="space-y-5 overflow-y-auto pt-5">
         {news.news.slice(0, 5).map((item) => (
-          <article key={item.id} className="border-b border-[#ddd5c7] pb-5 last:border-b-0">
+          <article
+            key={item.id}
+            className="rounded-[20px] border border-[#ddd5c7] bg-white/65 p-4"
+          >
             <div className="flex items-center justify-between gap-4">
-              <span className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] ${severityClass(item.severity)}`}>
-                {item.tag}
-              </span>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-2 py-1 text-[9px] font-medium uppercase tracking-[0.18em] ${severityClass(item.severity)}`}
+                >
+                  {item.tag}
+                </span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                  {item.source}
+                </span>
+              </div>
               <span className="text-[10px] uppercase tracking-[0.18em] text-[#7a7468]">
                 {new Date(item.publishedAt).toLocaleDateString("en-US", {
                   month: "short",
@@ -76,9 +86,6 @@ export default function NewsDesk() {
             <p className="pt-2 text-[13px] leading-6 text-[#4e4a42]">
               {item.summary}
             </p>
-            <div className="pt-3 text-[10px] uppercase tracking-[0.18em] text-[#7a7468]">
-              {item.source}
-            </div>
           </article>
         ))}
       </div>

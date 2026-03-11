@@ -45,17 +45,17 @@ export default function BriefingPanel() {
   }, []);
 
   return (
-    <section className="flex h-full flex-col border-b border-[#cfc7b7] bg-[#ece6db] p-6">
-      <div className="flex items-start justify-between gap-4 border-b border-[#cfc7b7] pb-4">
+    <section className="flex h-full flex-col bg-[#eee6da] p-6">
+      <div className="flex items-start justify-between gap-4 border-b border-[#d6cebf] pb-4">
         <div>
-          <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
-            Latest Briefing
+          <div className="eyebrow">
+            Regional briefing
           </div>
-          <h2 className="pt-2 text-[26px] font-semibold tracking-[-0.03em] text-[#121212]">
+          <h2 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
             {briefing.title}
           </h2>
         </div>
-        <div className="text-right text-[10px] uppercase tracking-[0.18em] text-[#787267]">
+        <div className="text-right text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
           {formatTimestamp(briefing.updatedAt)}
         </div>
       </div>
@@ -64,35 +64,49 @@ export default function BriefingPanel() {
         {briefing.summary}
       </p>
 
+      <div className="mt-5 rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+        <div className="eyebrow">Why it matters</div>
+        <p className="pt-2 text-[13px] leading-6 text-[#4f4a42]">
+          {briefing.outlook}
+        </p>
+      </div>
+
       <div className="grid gap-5 pt-6 xl:grid-cols-2">
         <div>
-          <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
-            Priorities
+          <div className="eyebrow">
+            What to watch today
           </div>
           <div className="pt-3 space-y-3">
-            {briefing.priorities.map((item) => (
-              <div key={item} className="border-l-2 border-[#121212] pl-3 text-[13px] leading-6 text-[#20201d]">
+            {briefing.priorities.map((item, index) => (
+              <div
+                key={item}
+                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
+              >
+                <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                  Priority {index + 1}
+                </div>
+                <div className="pt-2 text-[13px] leading-6 text-[#20201d]">
                 {item}
+                </div>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
+          <div className="eyebrow">
             Market Signals
           </div>
           <div className="pt-3 space-y-3">
             {briefing.marketSignals.map((item) => (
-              <div key={item} className="border-l-2 border-[#8d8372] pl-3 text-[13px] leading-6 text-[#444039]">
+              <div
+                key={item}
+                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4 text-[13px] leading-6 text-[#444039]"
+              >
                 {item}
               </div>
             ))}
           </div>
         </div>
-      </div>
-
-      <div className="mt-auto border-t border-[#cfc7b7] pt-4 text-[12px] uppercase tracking-[0.16em] text-[#5d594f]">
-        Outlook: {briefing.outlook}
       </div>
     </section>
   );

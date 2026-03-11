@@ -63,21 +63,19 @@ export default function SourceStack() {
   }, []);
 
   return (
-    <section className="grid h-full grid-rows-[1fr_auto] bg-[#ece6db]">
+    <section className="grid h-full grid-rows-[1fr_auto] bg-[#efe7dc]">
       <div className="p-6">
-        <div className="border-b border-[#cfc7b7] pb-4">
-          <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
-            API Structure
-          </div>
-          <div className="pt-2 text-[22px] font-semibold tracking-[-0.03em] text-[#121212]">
-            Reference stack
+        <div className="border-b border-[#d6cebf] pb-4">
+          <div className="eyebrow">Sources</div>
+          <div className="pt-2 text-[22px] font-semibold tracking-[-0.03em] text-[#171512]">
+            Data behind the screen
           </div>
         </div>
         <div className="space-y-3 pt-4">
           {sources.sources.slice(0, 6).map((source) => (
             <div
               key={source.id}
-              className="grid grid-cols-[92px_1fr] gap-4 border-b border-[#ddd5c7] pb-3 text-[12px] last:border-b-0"
+              className="grid grid-cols-[88px_1fr] gap-4 rounded-[18px] border border-[#ddd5c7] bg-white/65 p-3 text-[12px]"
             >
               <div className="font-medium uppercase tracking-[0.16em] text-[#787267]">
                 {source.target}
@@ -91,13 +89,16 @@ export default function SourceStack() {
         </div>
       </div>
 
-      <div className="border-t border-[#cfc7b7] px-6 py-4">
-        <div className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
-          Imagery Preview / {preview.focusDate}
+      <div className="border-t border-[#d6cebf] px-6 py-4">
+        <div className="eyebrow">
+          Imagery layers / {preview.focusDate}
         </div>
-        <div className="grid gap-3 pt-3 md:grid-cols-3">
+        <div className="grid gap-3 pt-3">
           {preview.imagerySources.map((source) => (
-            <div key={source.id} className="border border-[#cfc7b7] bg-[#f4efe7] p-3">
+            <div
+              key={source.id}
+              className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-3"
+            >
               <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#121212]">
                 {source.label}
               </div>
@@ -106,6 +107,11 @@ export default function SourceStack() {
               </p>
             </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-[18px] border border-[#d6cebf] bg-white/60 p-3 text-[12px] leading-5 text-[#555046]">
+          Combining ground incidents, market movement, and daily imagery makes
+          the dashboard harder to misread from a single signal alone.
         </div>
       </div>
     </section>

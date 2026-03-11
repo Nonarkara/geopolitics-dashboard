@@ -1,10 +1,6 @@
 import { NextResponse } from "next/server";
 import { query } from "../../../lib/db";
 import { getErrorMessage } from "../../../lib/errors";
-import {
-  buildReferenceConflictTrends,
-  fetchReferenceReports,
-} from "../../../lib/reference-data";
 import type { ConflictTrendsResponse } from "../../../types/dashboard";
 
 interface ProvincialTrendRow {
@@ -31,17 +27,6 @@ const fallbackData: ConflictTrendsResponse = {
 };
 
 export async function GET() {
-  try {
-    const referenceReports = await fetchReferenceReports();
-    const referenceTrends = buildReferenceConflictTrends(referenceReports);
-
-    if (referenceTrends) {
-      return NextResponse.json(referenceTrends);
-    }
-  } catch (error: unknown) {
-    console.error("Reference conflict trends error:", getErrorMessage(error));
-  }
-
   try {
     const [provincialRes, fatalityRes] = await Promise.all([
       query<ProvincialTrendRow>(`

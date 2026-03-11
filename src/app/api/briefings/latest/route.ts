@@ -1,32 +1,29 @@
 import { NextResponse } from "next/server";
-import { getErrorMessage } from "../../../../lib/errors";
 import {
   fallbackBriefing,
   fallbackEconomicIndicators,
+  fallbackIncidents,
 } from "../../../../lib/mock-data";
 import {
-  buildReferenceBriefing,
-  fetchReferenceEconomicIndicators,
-  fetchReferenceReports,
-} from "../../../../lib/reference-data";
+  buildThailandBriefing,
+  loadThailandEconomics,
+  loadThailandIncidents,
+} from "../../../../lib/thailand-monitor";
 
 export async function GET() {
   try {
-    const [reports, indicators] = await Promise.all([
-      fetchReferenceReports(),
-      fetchReferenceEconomicIndicators(),
+    const [incidents, indicators] = await Promise.all([
+      loadThailandIncidents(),
+      loadThailandEconomics(),
     ]);
 
-    return NextResponse.json(buildReferenceBriefing(reports, indicators));
-  } catch (error: unknown) {
-    console.error("Reference briefing error:", getErrorMessage(error));
+    return NextResponse.json(buildThailandBriefing(incidents, indicators));
+  } catch {
     try {
-      const reports = await fetchReferenceReports();
       return NextResponse.json(
-        buildReferenceBriefing(reports, fallbackEconomicIndicators),
+        buildThailandBriefing(fallbackIncidents, fallbackEconomicIndicators),
       );
-    } catch (fallbackError: unknown) {
-      console.error("Fallback briefing error:", getErrorMessage(fallbackError));
+    } catch {
       return NextResponse.json(fallbackBriefing, { status: 200 });
     }
   }

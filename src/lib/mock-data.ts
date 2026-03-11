@@ -24,6 +24,42 @@ export const fallbackIncidents: IncidentFeature[] = [
       eventDate: "2026-03-10T17:00:00.000Z",
     },
   },
+  {
+    id: "THA124",
+    geometry: { coordinates: [101.828, 6.425] },
+    properties: {
+      title: "Armed clash",
+      type: "Armed clash",
+      fatalities: 1,
+      notes: "Security forces reported a short-duration exchange near a secondary route in Narathiwat.",
+      location: "Narathiwat",
+      eventDate: "2026-03-09T09:20:00.000Z",
+    },
+  },
+  {
+    id: "THA125",
+    geometry: { coordinates: [101.2502, 6.868] },
+    properties: {
+      title: "Checkpoint alert",
+      type: "Strategic development",
+      fatalities: 0,
+      notes: "Checkpoint posture increased along the Pattani corridor after cross-border monitoring alerts.",
+      location: "Pattani",
+      eventDate: "2026-03-08T14:10:00.000Z",
+    },
+  },
+  {
+    id: "THA126",
+    geometry: { coordinates: [97.9685, 19.3011] },
+    properties: {
+      title: "Cross-border movement watch",
+      type: "Population movement",
+      fatalities: 0,
+      notes: "Monitoring teams reported temporary movement pressure along the Mae Hong Son frontier.",
+      location: "Mae Hong Son",
+      eventDate: "2026-03-07T08:40:00.000Z",
+    },
+  },
 ];
 
 export const fallbackFires: FireEvent[] = [
@@ -100,7 +136,7 @@ export const fallbackNews: NewsResponse = {
       title: "Mae Sot corridor remains the primary watchpoint",
       summary:
         "Field reporting continues to cluster around logistics and crossing-point activity along the western border.",
-      source: "Fallback briefing",
+      source: "Thailand monitor",
       tag: "Field signal",
       publishedAt: "2026-03-11T09:00:00.000Z",
       severity: "alert",
@@ -110,7 +146,7 @@ export const fallbackNews: NewsResponse = {
       title: "Currency spread remains the main market pressure",
       summary:
         "THB/MMK and fuel-linked trade inputs continue to set the operating tempo for border commerce.",
-      source: "Fallback briefing",
+      source: "Market radar",
       tag: "Markets",
       publishedAt: "2026-03-11T09:00:00.000Z",
       severity: "watch",
@@ -120,7 +156,7 @@ export const fallbackNews: NewsResponse = {
       title: "Satellite review cycle remains active",
       summary:
         "True-color imagery, rainfall products, and thermal anomaly layers stay on standby for daily checks.",
-      source: "Fallback briefing",
+      source: "Orbital overlay",
       tag: "Imagery",
       publishedAt: "2026-03-11T09:00:00.000Z",
       severity: "stable",
@@ -134,7 +170,7 @@ export const fallbackTicker: TickerResponse = {
     {
       id: "ticker-01",
       label: "Field reports",
-      value: "12 active",
+      value: "4 active",
       delta: "+2 today",
       tone: "up",
     },
@@ -165,7 +201,7 @@ export const fallbackTicker: TickerResponse = {
 export const fallbackBriefing: BriefingPayload = {
   title: "Border operations briefing",
   summary:
-    "Western and southern corridors remain the highest-sensitivity sectors, with market volatility and logistics pressure still acting as the primary early-warning signals.",
+    "Western and southern Thai corridors remain the highest-sensitivity sectors, with market volatility and logistics pressure still acting as the primary early-warning signals.",
   updatedAt: "2026-03-11T09:00:00.000Z",
   priorities: [
     "Keep Mae Sot and Tak crossings under daily incident review.",
@@ -185,31 +221,45 @@ export const fallbackSources: ApiSourceResponse = {
   sources: [
     {
       id: "source-01",
-      label: "Reports",
-      url: "https://city-reporter-bot.onrender.com/api/reports",
+      label: "Regional briefing",
+      url: "https://middle-east-monitor.onrender.com/api/briefings/iran",
       kind: "internal",
-      target: "city-reporter-bot",
+      target: "Middle East Monitor",
     },
     {
       id: "source-02",
-      label: "News",
-      url: "https://city-reporter-bot.onrender.com/api/news",
+      label: "Markets snapshot",
+      url: "https://middle-east-monitor.onrender.com/api/markets",
       kind: "internal",
-      target: "city-reporter-bot",
+      target: "Middle East Monitor",
     },
     {
       id: "source-03",
-      label: "FX rates",
-      url: "https://open.er-api.com/v6/latest/USD",
-      kind: "external",
-      target: "tech-monitor",
+      label: "Ticker feed",
+      url: "https://middle-east-monitor.onrender.com/api/ticker",
+      kind: "internal",
+      target: "Middle East Monitor",
     },
     {
       id: "source-04",
+      label: "FX rates",
+      url: "https://open.er-api.com/v6/latest/USD",
+      kind: "external",
+      target: "Tech Monitor",
+    },
+    {
+      id: "source-05",
       label: "Binance ticker",
       url: "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT",
       kind: "external",
-      target: "tech-monitor",
+      target: "Tech Monitor",
+    },
+    {
+      id: "source-06",
+      label: "NASA GIBS true color",
+      url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/",
+      kind: "external",
+      target: "NASA GIBS",
     },
   ],
 };

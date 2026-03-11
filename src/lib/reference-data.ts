@@ -1,22 +1,11 @@
 import type {
   ApiSourceResponse,
-  BriefingPayload,
-  ConflictTrendsResponse,
   CopernicusPreviewResponse,
   EconomicIndicator,
-  IncidentFeature,
-  NewsResponse,
-  SignalTone,
-  TickerItem,
-  TickerResponse,
 } from "../types/dashboard";
 
 const DEFAULT_REFERENCE_DASHBOARD_URL =
   "https://dr-non-operating-systems.onrender.com/api/dashboard";
-const DEFAULT_CITY_REPORTER_REPORTS_URL =
-  "https://city-reporter-bot.onrender.com/api/reports";
-const DEFAULT_CITY_REPORTER_NEWS_URL =
-  "https://city-reporter-bot.onrender.com/api/news";
 const DEFAULT_FX_RATES_URL = "https://open.er-api.com/v6/latest/USD";
 const DEFAULT_BINANCE_TICKER_URL =
   "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT";
@@ -51,31 +40,6 @@ interface ReferenceDashboardPayload {
   generatedAt: string;
   summary: ReferenceSummary;
   targets: ReferenceTarget[];
-}
-
-interface CityReporterReport {
-  report_id: string;
-  ticket_number: string;
-  timestamp: string;
-  problem_type: string;
-  description: string;
-  location_text: string;
-  latitude: string;
-  longitude: string;
-  ai_summary: string;
-  urgency: string;
-  status: string;
-}
-
-interface CityReporterNewsEntry {
-  icon: string;
-  title: string;
-  summary: string;
-}
-
-interface CityReporterNewsPayload {
-  news: CityReporterNewsEntry[];
-  generatedAt: string;
 }
 
 interface FxRatesResponse {
@@ -151,49 +115,12 @@ function isReferenceDashboardPayload(
   );
 }
 
-function isCityReporterReport(value: unknown): value is CityReporterReport {
-  return (
-    isRecord(value) &&
-    typeof value.report_id === "string" &&
-    typeof value.ticket_number === "string" &&
-    typeof value.timestamp === "string" &&
-    typeof value.problem_type === "string" &&
-    typeof value.description === "string" &&
-    typeof value.location_text === "string" &&
-    typeof value.latitude === "string" &&
-    typeof value.longitude === "string" &&
-    typeof value.ai_summary === "string" &&
-    typeof value.urgency === "string" &&
-    typeof value.status === "string"
-  );
-}
-
 function isBinanceTickerResponse(value: unknown): value is BinanceTickerResponse {
   return (
     isRecord(value) &&
     typeof value.symbol === "string" &&
     typeof value.lastPrice === "string" &&
     typeof value.priceChangePercent === "string"
-  );
-}
-
-function isCityReporterNewsEntry(value: unknown): value is CityReporterNewsEntry {
-  return (
-    isRecord(value) &&
-    typeof value.icon === "string" &&
-    typeof value.title === "string" &&
-    typeof value.summary === "string"
-  );
-}
-
-function isCityReporterNewsPayload(
-  value: unknown,
-): value is CityReporterNewsPayload {
-  return (
-    isRecord(value) &&
-    Array.isArray(value.news) &&
-    value.news.every(isCityReporterNewsEntry) &&
-    typeof value.generatedAt === "string"
   );
 }
 
@@ -214,115 +141,6 @@ function findTarget(
   return dashboard.targets.find((target) => target.id === targetId) ?? null;
 }
 
-function parseCoordinate(value: string): number | null {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
-function isRegionalCoordinate(lat: number, lng: number) {
-  return lat >= 0 && lat <= 25 && lng >= 90 && lng <= 110;
-}
-
-function getUrgencyScore(urgency: string) {
-  const normalized = urgency.trim().toLowerCase();
-
-  if (
-    normalized.includes("สูง") ||
-    normalized.includes("high") ||
-    normalized.includes("critical")
-  ) {
-    return 2;
-  }
-
-  if (normalized.includes("ต่ำ") || normalized.includes("low")) {
-    return 0;
-  }
-
-  return 1;
-}
-
-function normalizeCategory(value: string) {
-  return value.trim() || "Unclassified";
-}
-
-function slugify(value: string) {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
-
-function toDate(value: string) {
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function startOfUtcWeek(value: Date) {
-  const date = new Date(Date.UTC(
-    value.getUTCFullYear(),
-    value.getUTCMonth(),
-    value.getUTCDate(),
-  ));
-  const day = date.getUTCDay();
-  const diff = (day + 6) % 7;
-  date.setUTCDate(date.getUTCDate() - diff);
-  return date;
-}
-
-function formatWeekLabel(value: Date) {
-  return value.toLocaleDateString("en-US", {
-    month: "short",
-    day: "2-digit",
-    timeZone: "UTC",
-  });
-}
-
-function formatIndicatorValue(
-  value: number | string,
-  unit?: string | null,
-) {
-  const text =
-    typeof value === "number"
-      ? Number.isInteger(value)
-        ? value.toString()
-        : value.toFixed(2)
-      : value;
-
-  return unit ? `${text}${unit}` : text;
-}
-
-function getIndicatorTone(change: number | string): SignalTone {
-  if (typeof change === "number") {
-    if (change > 0) {
-      return "up";
-    }
-
-    if (change < 0) {
-      return "down";
-    }
-  }
-
-  return "neutral";
-}
-
-function getNewsSeverity(
-  icon: string,
-  title: string,
-  summary: string,
-): "alert" | "watch" | "stable" {
-  const combined = `${title} ${summary}`.toLowerCase();
-
-  if (icon.includes("⚠") || combined.includes("critical") || combined.includes("alert")) {
-    return "alert";
-  }
-
-  if (icon.includes("📈") || combined.includes("watch") || combined.includes("pressure")) {
-    return "watch";
-  }
-
-  return "stable";
-}
-
 export async function fetchReferenceDashboard() {
   const dashboardUrl =
     process.env.REFERENCE_DASHBOARD_URL ?? DEFAULT_REFERENCE_DASHBOARD_URL;
@@ -333,211 +151,6 @@ export async function fetchReferenceDashboard() {
   }
 
   return payload;
-}
-
-export async function fetchReferenceReports() {
-  const dashboard = await fetchReferenceDashboard();
-  const reportsUrl =
-    findTargetApiUrl(dashboard, "city-reporter-bot", "Reports") ??
-    DEFAULT_CITY_REPORTER_REPORTS_URL;
-  const payload = await fetchJson<unknown>(reportsUrl);
-
-  if (!Array.isArray(payload)) {
-    throw new Error("Reference reports payload was not an array");
-  }
-
-  return payload.filter(isCityReporterReport);
-}
-
-export async function fetchReferenceNewsFeed() {
-  const dashboard = await fetchReferenceDashboard();
-  const newsUrl =
-    findTargetApiUrl(dashboard, "city-reporter-bot", "News") ??
-    DEFAULT_CITY_REPORTER_NEWS_URL;
-  const payload = await fetchJson<unknown>(newsUrl);
-
-  if (!isCityReporterNewsPayload(payload)) {
-    throw new Error("Reference news payload was not recognized");
-  }
-
-  return payload;
-}
-
-export function buildReferenceIncidentFeatures(reports: CityReporterReport[]) {
-  return reports
-    .map((report): IncidentFeature | null => {
-      if (!report.report_id || report.report_id === "TEST_CONNECTION") {
-        return null;
-      }
-
-      const lat = parseCoordinate(report.latitude);
-      const lng = parseCoordinate(report.longitude);
-
-      if (lat === null || lng === null || !isRegionalCoordinate(lat, lng)) {
-        return null;
-      }
-
-      const urgencyScore = getUrgencyScore(report.urgency);
-      const notes =
-        report.ai_summary.trim() ||
-        report.description.trim() ||
-        "No reference narrative available.";
-
-      return {
-        id: report.report_id,
-        geometry: { coordinates: [lng, lat] },
-        properties: {
-          title: normalizeCategory(report.problem_type),
-          type: normalizeCategory(report.problem_type),
-          fatalities: urgencyScore,
-          notes,
-          location: report.location_text.trim() || "Reference field report",
-          eventDate: report.timestamp,
-        },
-      };
-    })
-    .filter((feature): feature is IncidentFeature => feature !== null)
-    .sort((a, b) => b.properties.eventDate.localeCompare(a.properties.eventDate));
-}
-
-export function buildReferenceConflictTrends(
-  reports: CityReporterReport[],
-): ConflictTrendsResponse | null {
-  const datedReports = reports
-    .map((report) => {
-      const timestamp = toDate(report.timestamp);
-      return timestamp ? { report, timestamp } : null;
-    })
-    .filter(
-      (
-        item,
-      ): item is {
-        report: CityReporterReport;
-        timestamp: Date;
-      } => item !== null,
-    );
-
-  if (datedReports.length === 0) {
-    return null;
-  }
-
-  const latestTimestamp = datedReports.reduce(
-    (latest, current) =>
-      current.timestamp > latest ? current.timestamp : latest,
-    datedReports[0].timestamp,
-  );
-  const currentWindowStart = new Date(latestTimestamp);
-  currentWindowStart.setUTCDate(currentWindowStart.getUTCDate() - 30);
-  const previousWindowStart = new Date(latestTimestamp);
-  previousWindowStart.setUTCDate(previousWindowStart.getUTCDate() - 60);
-
-  const countsByCategory = new Map<
-    string,
-    { current: number; previous: number }
-  >();
-
-  for (const { report, timestamp } of datedReports) {
-    const label = normalizeCategory(report.problem_type);
-    const bucket = countsByCategory.get(label) ?? { current: 0, previous: 0 };
-
-    if (timestamp >= currentWindowStart) {
-      bucket.current += 1;
-    } else if (timestamp >= previousWindowStart) {
-      bucket.previous += 1;
-    }
-
-    countsByCategory.set(label, bucket);
-  }
-
-  const topCategories = [...countsByCategory.entries()]
-    .sort(
-      (a, b) =>
-        b[1].current +
-        b[1].previous -
-        (a[1].current + a[1].previous),
-    )
-    .slice(0, 6);
-
-  const latestWeek = startOfUtcWeek(latestTimestamp);
-  const weeklyTotals = new Map<string, number>();
-
-  for (let index = 5; index >= 0; index -= 1) {
-    const weekStart = new Date(latestWeek);
-    weekStart.setUTCDate(weekStart.getUTCDate() - index * 7);
-    weeklyTotals.set(weekStart.toISOString(), 0);
-  }
-
-  for (const { report, timestamp } of datedReports) {
-    const weekStart = startOfUtcWeek(timestamp).toISOString();
-
-    if (!weeklyTotals.has(weekStart)) {
-      continue;
-    }
-
-    weeklyTotals.set(
-      weekStart,
-      (weeklyTotals.get(weekStart) ?? 0) + getUrgencyScore(report.urgency) + 1,
-    );
-  }
-
-  return {
-    provincialData: {
-      labels: topCategories.map(([label]) => label),
-      current: topCategories.map(([, counts]) => counts.current),
-      yoy: topCategories.map(([, counts]) => counts.previous),
-    },
-    fatalities: {
-      labels: [...weeklyTotals.keys()].map((week) =>
-        formatWeekLabel(new Date(week)),
-      ),
-      data: [...weeklyTotals.values()],
-    },
-  };
-}
-
-export function buildReferenceNewsResponse(
-  newsPayload: CityReporterNewsPayload,
-  reports: CityReporterReport[],
-): NewsResponse {
-  const latestReportAt = reports[0]?.timestamp ?? newsPayload.generatedAt;
-
-  return {
-    generatedAt: newsPayload.generatedAt,
-    news: newsPayload.news.slice(0, 6).map((item, index) => ({
-      id: `${slugify(item.title) || `news-${index + 1}`}-${index + 1}`,
-      title: item.title,
-      summary: item.summary,
-      source: "city-reporter-bot",
-      tag: index === 0 ? "Lead" : "Monitor",
-      publishedAt: index === 0 ? latestReportAt : newsPayload.generatedAt,
-      severity: getNewsSeverity(item.icon, item.title, item.summary),
-    })),
-  };
-}
-
-export function buildNewsFromReports(reports: CityReporterReport[]): NewsResponse {
-  const generatedAt = reports[0]?.timestamp ?? new Date().toISOString();
-
-  return {
-    generatedAt,
-    news: reports.slice(0, 6).map((report) => ({
-      id: report.report_id,
-      title: normalizeCategory(report.problem_type),
-      summary:
-        report.ai_summary.trim() ||
-        report.description.trim() ||
-        "No briefing summary available.",
-      source: "city-reporter-bot",
-      tag: report.location_text.trim() || "Field report",
-      publishedAt: report.timestamp,
-      severity:
-        getUrgencyScore(report.urgency) > 1
-          ? "alert"
-          : getUrgencyScore(report.urgency) === 1
-            ? "watch"
-            : "stable",
-    })),
-  };
 }
 
 export async function fetchReferenceEconomicIndicators() {
@@ -627,102 +240,10 @@ export async function fetchReferenceEconomicIndicators() {
   ] satisfies EconomicIndicator[];
 }
 
-export function buildReferenceTicker(
-  reports: CityReporterReport[],
-  indicators: EconomicIndicator[],
-): TickerResponse {
-  const incidents = buildReferenceIncidentFeatures(reports);
-  const latestIncident = incidents[0];
-
-  const items: TickerItem[] = [
-    {
-      id: "reports",
-      label: "Field reports",
-      value: `${incidents.length}`,
-      delta: latestIncident
-        ? latestIncident.properties.location
-        : "standby",
-      tone: incidents.length > 8 ? "up" : "neutral",
-    },
-    {
-      id: "focus-sector",
-      label: "Primary sector",
-      value: latestIncident?.properties.type ?? "No active cluster",
-      delta: latestIncident?.properties.eventDate
-        ? new Date(latestIncident.properties.eventDate).toLocaleDateString("en-US", {
-            month: "short",
-            day: "2-digit",
-          })
-        : "live",
-      tone:
-        latestIncident && latestIncident.properties.fatalities > 0
-          ? "up"
-          : "neutral",
-    },
-    ...indicators.slice(0, 2).map((indicator, index) => ({
-      id: `market-${index + 1}`,
-      label: indicator.label,
-      value: formatIndicatorValue(indicator.value, indicator.unit),
-      delta:
-        typeof indicator.change === "number"
-          ? `${indicator.change > 0 ? "+" : ""}${indicator.change}`
-          : String(indicator.change),
-      tone: getIndicatorTone(indicator.change),
-    })),
-  ];
-
-  return {
-    items,
-    generatedAt: reports[0]?.timestamp ?? new Date().toISOString(),
-  };
-}
-
-export function buildReferenceBriefing(
-  reports: CityReporterReport[],
-  indicators: EconomicIndicator[],
-): BriefingPayload {
-  const incidents = buildReferenceIncidentFeatures(reports);
-  const latestIncident = incidents[0];
-  const topLocations = Array.from(
-    new Set(
-      incidents
-        .map((incident) => incident.properties.location)
-        .filter((location) => location && location !== "Reference field report"),
-    ),
-  ).slice(0, 3);
-  const leadMarkets = indicators.slice(0, 2);
-
-  return {
-    title: "Thailand frontier briefing",
-    summary: latestIncident
-      ? `${incidents.length} field-linked signals are in the current watch set, led by ${latestIncident.properties.type.toLowerCase()} activity around ${latestIncident.properties.location}.`
-      : "No live incident briefing is available, so the dashboard is holding fallback watch conditions.",
-    updatedAt: latestIncident?.properties.eventDate ?? new Date().toISOString(),
-    priorities: [
-      topLocations.length > 0
-        ? `Keep ${topLocations.join(", ")} in the daily review loop.`
-        : "Keep western and southern corridors in the daily review loop.",
-      leadMarkets[0]
-        ? `Use ${leadMarkets[0].label} as the lead market stress signal.`
-        : "Use cross-border currency spread as the lead market stress signal.",
-      "Refresh orbital imagery, rainfall, and thermal layers before each new operating cycle.",
-    ],
-    marketSignals: leadMarkets.map(
-      (indicator) =>
-        `${indicator.label} sits at ${formatIndicatorValue(indicator.value, indicator.unit)} (${indicator.change}).`,
-    ),
-    outlook:
-      incidents.length > 10
-        ? "The current picture supports a heightened watch posture with field and market signals reinforcing each other."
-        : "The current picture supports a measured watch posture, with escalation risk concentrated in a few recurring sectors.",
-  };
-}
-
 export async function fetchReferenceApiCatalog(): Promise<ApiSourceResponse> {
   const dashboard = await fetchReferenceDashboard();
   const sources = [
     "middle-east-monitor",
-    "city-reporter-bot",
     "tech-monitor",
   ].flatMap((targetId) => {
     const target = findTarget(dashboard, targetId);

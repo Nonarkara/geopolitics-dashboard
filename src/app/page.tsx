@@ -7,7 +7,6 @@ import NewsDesk from "../components/Intelligence/NewsDesk";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import SourceStack from "../components/Intelligence/SourceStack";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
-import TimelineSlider from "../components/Analytics/TimelineSlider";
 import BorderMap from "../components/Map/BorderMap";
 import Sidebar from "../components/Sidebar/Sidebar";
 import type { ProvinceSelection } from "../types/dashboard";
@@ -17,37 +16,57 @@ export default function Dashboard() {
     useState<ProvinceSelection | null>(null);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#d8d0c3] text-[#121212] selection:bg-[#bfa36e]/50">
-      <div className="grid h-full xl:grid-cols-[320px_minmax(0,1fr)_360px]">
-        <div className="hidden border-r border-[#cfc7b7] bg-[#e7e0d4] xl:block">
+    <main className="relative h-screen w-screen overflow-hidden bg-[#f3eee5] text-[#171512]">
+      <div className="flex h-full">
+        <div className="hidden border-r border-[#d6cebf] bg-[#eae3d8] xl:block">
           <Sidebar />
         </div>
 
-        <div className="grid min-w-0 grid-rows-[72px_104px_minmax(0,1fr)_280px] bg-[#f4efe7]">
-          <div className="border-b border-[#cfc7b7] bg-[#ece6db]">
-            <SignalTicker />
-          </div>
+        <div className="relative min-w-0 flex-1 bg-[#d8d0c4]">
+          <BorderMap onProvinceSelect={setSelectedProvince} />
 
-          <div className="border-b border-[#cfc7b7] bg-[#f4efe7]">
-            <EconomicMonitor />
-          </div>
+          <div className="pointer-events-none absolute inset-0">
+            <div className="pointer-events-auto absolute left-4 top-4 z-40 max-w-[340px] xl:hidden">
+              <div className="dashboard-panel-strong rounded-[26px] p-5">
+                <div className="eyebrow">Thailand border monitor</div>
+                <h1 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
+                  Satellite detail first, context second.
+                </h1>
+                <p className="pt-3 text-[14px] leading-6 text-[#4a453d]">
+                  Read the map as the primary surface, then use the briefing,
+                  live feed, and market panels to understand why the pattern
+                  matters.
+                </p>
+              </div>
+            </div>
 
-          <div className="relative min-h-0 border-b border-[#cfc7b7] bg-[#0d0d0d]">
-            <BorderMap onProvinceSelect={setSelectedProvince} />
-            <div className="absolute bottom-8 left-1/2 z-50 w-full max-w-[640px] -translate-x-1/2 px-6">
-              <TimelineSlider />
+            <div className="pointer-events-auto absolute left-4 right-4 top-4 z-40 xl:left-4 xl:right-[404px]">
+              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+                <SignalTicker />
+              </div>
+            </div>
+
+            <div className="pointer-events-auto absolute bottom-4 left-4 right-4 z-40 hidden xl:grid xl:right-[404px] xl:grid-cols-[292px_minmax(0,1fr)] xl:gap-4">
+              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+                <EconomicMonitor />
+              </div>
+              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+                <ConflictTrends />
+              </div>
+            </div>
+
+            <div className="pointer-events-auto absolute bottom-4 right-4 top-24 z-40 hidden w-[376px] xl:grid xl:grid-rows-[312px_minmax(0,1fr)_244px] gap-4">
+              <div className="dashboard-panel-strong overflow-hidden rounded-[24px]">
+                <BriefingPanel />
+              </div>
+              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+                <NewsDesk />
+              </div>
+              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+                <SourceStack />
+              </div>
             </div>
           </div>
-
-          <div className="min-h-0 bg-[#f4efe7]">
-            <ConflictTrends />
-          </div>
-        </div>
-
-        <div className="hidden border-l border-[#cfc7b7] bg-[#ece6db] xl:grid xl:grid-rows-[320px_minmax(0,1fr)_300px]">
-          <BriefingPanel />
-          <NewsDesk />
-          <SourceStack />
         </div>
       </div>
 

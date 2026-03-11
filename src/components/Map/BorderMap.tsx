@@ -6,12 +6,12 @@ import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
 import {
   CloudRain,
-  Compass,
-  Eye,
-  EyeOff,
   Flame,
   Globe,
   Layers,
+  Map as MapIcon,
+  MoonStar,
+  Satellite,
   Users,
 } from "lucide-react";
 import {
@@ -37,15 +37,15 @@ import type {
   RegionBorderFeature,
 } from "../../types/dashboard";
 
-const Map = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
+const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
 const INITIAL_VIEW_STATE: MapViewState = {
-  longitude: 100.5,
-  latitude: 14.5,
-  zoom: 5.5,
-  pitch: 30,
-  bearing: 0,
+  longitude: 100.85,
+  latitude: 14.2,
+  zoom: 6.15,
+  pitch: 26,
+  bearing: -4,
 };
 
 const EMPTY_BORDERS: RegionBorderCollection = {
@@ -126,13 +126,17 @@ function getTooltipText(object: unknown): string | null {
   return null;
 }
 
+function formatCompactCount(value: number) {
+  return new Intl.NumberFormat("en-US", { notation: "compact" }).format(value);
+}
+
 export default function BorderMap({
   onProvinceSelect,
 }: {
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
-  const [showHeatmap, setShowHeatmap] = useState(true);
+  const [showHeatmap, setShowHeatmap] = useState(false);
   const [showNightlights, setShowNightlights] = useState(false);
   const [showFires, setShowFires] = useState(false);
   const [showRefugees, setShowRefugees] = useState(false);
@@ -142,7 +146,7 @@ export default function BorderMap({
     useState<SatelliteOverlayId>("viirsTrueColor");
   const [satelliteOpacity, setSatelliteOpacity] = useState(72);
   const [showJaxa, setShowJaxa] = useState(false);
-  const [isDetailedMap, setIsDetailedMap] = useState(false);
+  const [isDetailedMap, setIsDetailedMap] = useState(true);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
@@ -161,6 +165,10 @@ export default function BorderMap({
     SATELLITE_OVERLAY_OPTIONS.find((option) => option.id === satelliteOverlay) ??
     SATELLITE_OVERLAY_OPTIONS[0];
   const useSatelliteBasemap = isDetailedMap || showSatelliteOverlay;
+  const signalCount = incidents.length;
+  const hotspotCount = fires.length;
+  const selectedFocus =
+    signalCount > 0 ? incidents[0]?.properties.location ?? "Thailand" : "Thailand";
 
   const satelliteLayer =
     !showSatelliteOverlay
@@ -230,7 +238,7 @@ export default function BorderMap({
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden flex flex-col">
+    <div className="relative flex h-full w-full flex-col overflow-hidden">
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: nextViewState }) =>
@@ -241,185 +249,293 @@ export default function BorderMap({
         onClick={handleMapClick}
         getTooltip={({ object }: PickingInfo<unknown>) => getTooltipText(object)}
       >
-        <Map
+        <MapboxMap
           mapboxAccessToken={MAPBOX_TOKEN}
           mapStyle={
             useSatelliteBasemap && MAPBOX_TOKEN
               ? "mapbox://styles/mapbox/satellite-streets-v12"
               : MAPBOX_TOKEN
-                ? "mapbox://styles/mapbox/dark-v11"
-                : "https://tiles.openfreemap.org/styles/dark"
+              ? "mapbox://styles/mapbox/dark-v11"
+              : "https://tiles.openfreemap.org/styles/dark"
           }
           attributionControl={false}
         />
       </DeckGL>
 
-      <div className="absolute top-10 right-10 z-50 grid grid-cols-2 gap-2">
-        <button
-          onClick={() => setShowSatelliteOverlay(!showSatelliteOverlay)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showSatelliteOverlay ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Satellite Image Overlay"
-        >
-          <Globe size={18} />
-        </button>
-        <button
-          onClick={() => setIsDetailedMap(!isDetailedMap)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${isDetailedMap ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Satellite Basemap"
-        >
-          <Compass size={18} />
-        </button>
-        <button
-          onClick={() => setShowJaxa(!showJaxa)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showJaxa ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle JAXA GSMaP Precipitation"
-        >
-          <CloudRain size={18} />
-        </button>
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showHeatmap ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Tactical Heatmap"
-        >
-          <Layers size={18} />
-        </button>
-        <button
-          onClick={() => setShowNightlights(!showNightlights)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showNightlights ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle VIIRS Nightlights"
-        >
-          {showNightlights ? <Eye size={18} /> : <EyeOff size={18} />}
-        </button>
-        <button
-          onClick={() => setShowFires(!showFires)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showFires ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="NASA FIRMS Thermal Anomalies"
-        >
-          <Flame size={18} />
-        </button>
-        <button
-          onClick={() => setShowRefugees(!showRefugees)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showRefugees ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Refugee Movements"
-        >
-          <Users size={18} />
-        </button>
-        <button
-          onClick={() => setShowRainfall(!showRainfall)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showRainfall ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Rainfall Anomalies"
-        >
-          <CloudRain size={18} />
-        </button>
-      </div>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgba(24,21,17,0.12)] via-transparent to-[rgba(24,21,17,0.08)]" />
 
-      <div className="absolute top-10 right-28 z-40 w-72 bg-black/85 border border-white/5 backdrop-blur-xl p-4 space-y-4 pointer-events-auto">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#e5e5e5]">
-              ORBITAL_OVERLAY
+      <div className="pointer-events-auto absolute left-4 top-24 z-40 hidden w-[316px] xl:block">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="eyebrow">Map focus</div>
+          <h2 className="pt-2 text-[24px] font-semibold tracking-[-0.04em] text-[#171512]">
+            Thailand in detailed satellite context
+          </h2>
+          <p className="pt-3 text-[14px] leading-6 text-[#4d483f]">
+            Keep the map readable first: start with the terrain and imagery,
+            then add incidents, rainfall, fires, and movement only when you
+            need that layer.
+          </p>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Signals
+              </div>
+              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
+                {signalCount}
+              </div>
             </div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#666] mt-1">
-              {activeSatelliteOverlay.label} / {safeDate}
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Fires
+              </div>
+              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
+                {hotspotCount}
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Focus
+              </div>
+              <div className="truncate pt-2 text-[15px] font-semibold tracking-[-0.03em] text-[#171512]">
+                {selectedFocus}
+              </div>
             </div>
           </div>
-          <div
-            className={`h-2.5 w-2.5 rounded-full ${showSatelliteOverlay ? "bg-[#00d5ff]" : "bg-[#444]"}`}
-          />
         </div>
+      </div>
 
-        <div className="grid grid-cols-3 gap-2">
-          {SATELLITE_OVERLAY_OPTIONS.map((option) => (
+      <div className="pointer-events-auto absolute right-4 top-24 z-40 w-[304px] xl:right-[404px]">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="eyebrow">Imagery</div>
+              <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+                {activeSatelliteOverlay.label}
+              </h3>
+              <p className="pt-2 text-[13px] leading-5 text-[#565046]">
+                Updated from the last stable day: {safeDate}
+              </p>
+            </div>
+            <div className="rounded-full border border-[#d6cebf] bg-white/60 p-2 text-[#4f6871]">
+              <Satellite size={16} />
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {SATELLITE_OVERLAY_OPTIONS.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                aria-pressed={satelliteOverlay === option.id}
+                onClick={() => setSatelliteOverlay(option.id)}
+                className={`rounded-full border px-3 py-2 text-[11px] font-medium transition-colors ${
+                  satelliteOverlay === option.id
+                    ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
+                    : "border-[#d6cebf] bg-white/70 text-[#4d483f] hover:bg-white"
+                }`}
+              >
+                {option.shortLabel}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-2">
             <button
-              key={option.id}
-              onClick={() => setSatelliteOverlay(option.id)}
-              className={`px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] transition-all ${
-                satelliteOverlay === option.id
-                  ? "bg-[#00d5ff] text-black"
-                  : "bg-[#141414] text-[#7a7a7a] hover:bg-[#1d1d1d] hover:text-[#e5e5e5]"
+              type="button"
+              aria-pressed={showSatelliteOverlay}
+              onClick={() => setShowSatelliteOverlay(!showSatelliteOverlay)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                showSatelliteOverlay
+                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
               }`}
             >
-              {option.shortLabel}
+              <span>
+                <span className="block text-[13px] font-medium">Satellite overlay</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Adds true-color imagery on top of the base map.
+                </span>
+              </span>
+              <Globe size={16} />
             </button>
-          ))}
-        </div>
 
-        <div className={showSatelliteOverlay ? "opacity-100" : "opacity-45"}>
-          <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.18em] text-[#7a7a7a]">
-            <span>Overlay Opacity</span>
-            <span className="text-[#e5e5e5]">{satelliteOpacity}%</span>
+            <button
+              type="button"
+              aria-pressed={isDetailedMap}
+              onClick={() => setIsDetailedMap(!isDetailedMap)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                isDetailedMap
+                  ? "border-[#8b5a40] bg-[#8b5a40] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+              }`}
+            >
+              <span>
+                <span className="block text-[13px] font-medium">Detailed basemap</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Keeps roads, settlements, and terrain legible.
+                </span>
+              </span>
+              <MapIcon size={16} />
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={showNightlights}
+              onClick={() => setShowNightlights(!showNightlights)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                showNightlights
+                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+              }`}
+            >
+              <span>
+                <span className="block text-[13px] font-medium">Night lights</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Useful for comparing settlement intensity after dark.
+                </span>
+              </span>
+              <MoonStar size={16} />
+            </button>
           </div>
-          <input
-            type="range"
-            min="20"
-            max="100"
-            step="5"
-            value={satelliteOpacity}
-            disabled={!showSatelliteOverlay}
-            onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
-            className="mt-3 w-full accent-[#00d5ff] disabled:cursor-not-allowed"
-          />
+
+          <div className={showSatelliteOverlay ? "mt-5 opacity-100" : "mt-5 opacity-45"}>
+            <div className="flex items-center justify-between text-[11px] font-medium text-[#736c61]">
+              <span>Overlay opacity</span>
+              <span className="text-[#171512]">{satelliteOpacity}%</span>
+            </div>
+            <input
+              type="range"
+              min="20"
+              max="100"
+              step="5"
+              value={satelliteOpacity}
+              disabled={!showSatelliteOverlay}
+              onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
+              className="mt-3 w-full accent-[#4f6871] disabled:cursor-not-allowed"
+            />
+          </div>
         </div>
       </div>
 
-      <div className="absolute bottom-12 left-10 z-50 flex flex-col gap-10 pointer-events-none">
-        <div className="flex gap-[1px] bg-[#1a1a1a] pointer-events-auto">
-          <button
-            onClick={() => setViewState({ ...INITIAL_VIEW_STATE, zoom: 5.5 })}
-            className="bg-[#0a0a0a] px-6 py-4 text-[10px] font-black text-[#7a7a7a] uppercase tracking-[0.2em] hover:text-[#e5e5e5] transition-all"
-          >
-            NATIONAL
-          </button>
-          <button
-            onClick={() =>
-              setViewState({
-                longitude: 98.7,
-                latitude: 16.5,
-                zoom: 8,
-                pitch: 30,
-                bearing: 0,
-              })
-            }
-            className="bg-[#0a0a0a] px-6 py-4 text-[10px] font-black text-[#7a7a7a] uppercase tracking-[0.2em] hover:text-[#00d5ff] transition-all"
-          >
-            NORTH_WEST
-          </button>
-          <button
-            onClick={() =>
-              setViewState({
-                longitude: 101.5,
-                latitude: 6.5,
-                zoom: 9,
-                pitch: 30,
-                bearing: 0,
-              })
-            }
-            className="bg-[#0a0a0a] px-6 py-4 text-[10px] font-black text-[#7a7a7a] uppercase tracking-[0.2em] hover:text-[#ff4d00] transition-all"
-          >
-            SOUTH_SECTOR
-          </button>
-        </div>
+      <div className="pointer-events-auto absolute bottom-4 left-4 z-40 w-[332px] xl:bottom-[182px]">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="eyebrow">Use the map</div>
+          <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+            Start broad, then add a layer
+          </h3>
 
-        <div className="bg-[#0a0a0a] p-10 space-y-6 pointer-events-auto min-w-[300px]">
-          <div className="flex items-center gap-4">
-            <div className="w-1.5 h-1.5 rounded-full bg-[#ff4d00]"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#e5e5e5]">
-              SIGNAL_LEGEND
-            </span>
+          <div className="mt-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
+              Focus presets
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setViewState({ ...INITIAL_VIEW_STATE })}
+                className="rounded-full border border-[#171512] bg-[#171512] px-4 py-2 text-[11px] font-medium text-[#f7f2ea]"
+              >
+                Thailand
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setViewState({
+                    longitude: 98.7,
+                    latitude: 16.5,
+                    zoom: 8.4,
+                    pitch: 28,
+                    bearing: 0,
+                  })
+                }
+                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
+              >
+                West border
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setViewState({
+                    longitude: 101.5,
+                    latitude: 6.5,
+                    zoom: 9.2,
+                    pitch: 28,
+                    bearing: 0,
+                  })
+                }
+                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
+              >
+                Deep south
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between text-[10px] font-bold text-[#444] uppercase tracking-wider">
-              <span>TACTICAL_FORCE</span>
-              <div className="w-4 h-[2px] bg-[#ff4d00]"></div>
+          <div className="mt-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
+              Working layers
             </div>
-            <div className="flex items-center justify-between text-[10px] font-bold text-[#444] uppercase tracking-wider">
-              <span>THERMAL_FLUX</span>
-              <div className="w-4 h-[2px] bg-[#00d5ff]"></div>
-            </div>
-            <div className="flex items-center justify-between text-[10px] font-bold text-[#444] uppercase tracking-wider">
-              <span>GEOGRAPHIC_MASK</span>
-              <div className="w-4 h-[2px] bg-[#1a1a1a]"></div>
+            <div className="mt-3 grid gap-2">
+              {[
+                {
+                  active: showHeatmap,
+                  label: "Incident heatmap",
+                  description: "Turn on density only when you need clustering.",
+                  icon: Layers,
+                  onClick: () => setShowHeatmap(!showHeatmap),
+                },
+                {
+                  active: showFires,
+                  label: "Thermal anomalies",
+                  description: `${formatCompactCount(hotspotCount)} recent heat signals available.`,
+                  icon: Flame,
+                  onClick: () => setShowFires(!showFires),
+                },
+                {
+                  active: showRainfall,
+                  label: "Rainfall anomalies",
+                  description: "Compare incident areas against recent rain shifts.",
+                  icon: CloudRain,
+                  onClick: () => setShowRainfall(!showRainfall),
+                },
+                {
+                  active: showJaxa,
+                  label: "JAXA precipitation",
+                  description: "Use when you need the broader rain field.",
+                  icon: CloudRain,
+                  onClick: () => setShowJaxa(!showJaxa),
+                },
+                {
+                  active: showRefugees,
+                  label: "Population movement",
+                  description: `${formatCompactCount(refugees.length)} movement traces available.`,
+                  icon: Users,
+                  onClick: () => setShowRefugees(!showRefugees),
+                },
+              ].map((control) => {
+                const Icon = control.icon;
+
+                return (
+                  <button
+                    key={control.label}
+                    type="button"
+                    aria-pressed={control.active}
+                    onClick={control.onClick}
+                    className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                      control.active
+                        ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
+                        : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+                    }`}
+                  >
+                    <span>
+                      <span className="block text-[13px] font-medium">{control.label}</span>
+                      <span className="block pt-1 text-[11px] opacity-80">
+                        {control.description}
+                      </span>
+                    </span>
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
