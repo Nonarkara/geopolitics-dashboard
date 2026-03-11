@@ -14,7 +14,7 @@ import {
     Filler
 } from 'chart.js';
 import { Line, Bar } from 'react-chartjs-2';
-import type { ConflictTrendsResponse } from '@/types/dashboard';
+import type { ConflictTrendsResponse } from "../../types/dashboard";
 
 ChartJS.register(
     CategoryScale,

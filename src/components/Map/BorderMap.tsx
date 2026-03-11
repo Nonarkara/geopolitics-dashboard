@@ -26,7 +26,7 @@ import {
   createRefugeeLayer,
   createRegionalBorderLayer,
   createSentinelLayer,
-} from "@/services/map-engine";
+} from "../../services/map-engine";
 import type {
   FireEvent,
   IncidentFeature,
@@ -35,7 +35,7 @@ import type {
   RefugeeMovement,
   RegionBorderCollection,
   RegionBorderFeature,
-} from "@/types/dashboard";
+} from "../../types/dashboard";
 
 const Map = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";

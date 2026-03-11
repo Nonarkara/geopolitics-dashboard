@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
-import { fallbackEconomicIndicators } from "@/lib/mock-data";
-import { fetchReferenceEconomicIndicators } from "@/lib/reference-data";
-import type { EconomicIndicator } from "@/types/dashboard";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
+import { fallbackEconomicIndicators } from "../../../lib/mock-data";
+import { fetchReferenceEconomicIndicators } from "../../../lib/reference-data";
+import type { EconomicIndicator } from "../../../types/dashboard";
 
 interface MarketIndicatorRow {
   label: string;

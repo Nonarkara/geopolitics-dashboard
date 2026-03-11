@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
 import {
   buildReferenceConflictTrends,
   fetchReferenceReports,
-} from "@/lib/reference-data";
-import type { ConflictTrendsResponse } from "@/types/dashboard";
+} from "../../../lib/reference-data";
+import type { ConflictTrendsResponse } from "../../../types/dashboard";
 
 interface ProvincialTrendRow {
   label: string;

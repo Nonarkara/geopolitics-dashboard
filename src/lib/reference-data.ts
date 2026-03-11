@@ -2,7 +2,7 @@ import type {
   ConflictTrendsResponse,
   EconomicIndicator,
   IncidentFeature,
-} from "@/types/dashboard";
+} from "../types/dashboard";
 
 const DEFAULT_REFERENCE_DASHBOARD_URL =
   "https://dr-non-operating-systems.onrender.com/api/dashboard";

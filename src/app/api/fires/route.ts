@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
-import { fallbackFires } from "@/lib/mock-data";
-import type { FireEvent } from "@/types/dashboard";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
+import { fallbackFires } from "../../../lib/mock-data";
+import type { FireEvent } from "../../../types/dashboard";
 
 interface FireEventRow {
   latitude: number;

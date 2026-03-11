@@ -1,12 +1,12 @@
 "use client";
 import { useState } from "react";
-import ConflictTrends from "@/components/Analytics/ConflictTrends";
-import EconomicMonitor from "@/components/Analytics/EconomicMonitor";
-import ProvinceDashboard from "@/components/Analytics/ProvinceDashboard";
-import TimelineSlider from "@/components/Analytics/TimelineSlider";
-import BorderMap from "@/components/Map/BorderMap";
-import Sidebar from "@/components/Sidebar/Sidebar";
-import type { ProvinceSelection } from "@/types/dashboard";
+import ConflictTrends from "../components/Analytics/ConflictTrends";
+import EconomicMonitor from "../components/Analytics/EconomicMonitor";
+import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
+import TimelineSlider from "../components/Analytics/TimelineSlider";
+import BorderMap from "../components/Map/BorderMap";
+import Sidebar from "../components/Sidebar/Sidebar";
+import type { ProvinceSelection } from "../types/dashboard";
 
 export default function Dashboard() {
   const [selectedProvince, setSelectedProvince] =

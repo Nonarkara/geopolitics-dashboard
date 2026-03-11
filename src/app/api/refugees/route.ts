@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
-import { fallbackRefugees } from "@/lib/mock-data";
-import type { RefugeeMovement } from "@/types/dashboard";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
+import { fallbackRefugees } from "../../../lib/mock-data";
+import type { RefugeeMovement } from "../../../types/dashboard";
 
 interface RefugeeMovementRow {
   origin_country: string;

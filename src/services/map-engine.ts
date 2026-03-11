@@ -12,7 +12,7 @@ import type {
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
-} from "@/types/dashboard";
+} from "../types/dashboard";
 
 interface TileBounds {
   bbox: {

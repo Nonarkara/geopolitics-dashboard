@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
-import { fallbackIncidents } from "@/lib/mock-data";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
+import { fallbackIncidents } from "../../../lib/mock-data";
 import {
   buildReferenceIncidentFeatures,
   fetchReferenceReports,
-} from "@/lib/reference-data";
-import type { IncidentFeature } from "@/types/dashboard";
+} from "../../../lib/reference-data";
+import type { IncidentFeature } from "../../../types/dashboard";
 
 interface IncidentRow {
   id: string;

@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { fallbackEconomicIndicators } from '@/lib/mock-data';
-import type { EconomicIndicator } from '@/types/dashboard';
+import { fallbackEconomicIndicators } from "../../lib/mock-data";
+import type { EconomicIndicator } from "../../types/dashboard";
 
 const isEconomicIndicatorArray = (value: unknown): value is EconomicIndicator[] =>
     Array.isArray(value);

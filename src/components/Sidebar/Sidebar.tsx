@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ArrowUpRight, MapPin } from 'lucide-react';
 import ConvergenceAlerts from './ConvergenceAlerts';
-import type { IncidentFeature } from '@/types/dashboard';
+import type { IncidentFeature } from "../../types/dashboard";
 
 interface Incident {
     id: number | string;

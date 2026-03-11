@@ -4,7 +4,7 @@ import type {
   IncidentFeature,
   RainfallPoint,
   RefugeeMovement,
-} from "@/types/dashboard";
+} from "../types/dashboard";
 
 export const fallbackIncidents: IncidentFeature[] = [
   {

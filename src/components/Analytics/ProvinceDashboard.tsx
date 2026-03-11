@@ -1,5 +1,5 @@
 import { BarChart3, Globe, TrendingUp, X } from 'lucide-react';
-import type { ProvinceSelection } from '@/types/dashboard';
+import type { ProvinceSelection } from "../../types/dashboard";
 
 interface ProvinceDashboardProps {
     province: ProvinceSelection | null;

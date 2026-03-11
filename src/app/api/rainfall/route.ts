@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { query } from "@/lib/db";
-import { getErrorMessage } from "@/lib/errors";
-import { fallbackRainfall } from "@/lib/mock-data";
-import type { RainfallPoint } from "@/types/dashboard";
+import { query } from "../../../lib/db";
+import { getErrorMessage } from "../../../lib/errors";
+import { fallbackRainfall } from "../../../lib/mock-data";
+import type { RainfallPoint } from "../../../types/dashboard";
 
 interface RainfallRow {
   location: string;
