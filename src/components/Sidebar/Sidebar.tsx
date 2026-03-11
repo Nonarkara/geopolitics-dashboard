@@ -44,88 +44,86 @@ export default function Sidebar() {
     }, []);
 
     return (
-        <aside className="w-[360px] h-screen bg-[#0a0a0a] flex flex-col z-50 select-none">
-            {/* Functional Header */}
-            <div className="p-10 space-y-6">
+        <aside className="flex h-screen w-[320px] flex-col bg-[#e7e0d4] text-[#121212] select-none">
+            <div className="border-b border-[#cfc7b7] p-8 space-y-5">
                 <div className="flex items-center justify-between">
                     <div className="space-y-1">
-                        <h1 className="text-[14px] font-bold tracking-tight text-[#e5e5e5]">SENTINEL_X</h1>
-                        <p className="text-[10px] text-[#7a7a7a] font-medium tracking-wide uppercase">Strategic Intelligence Module</p>
+                        <h1 className="text-[24px] font-semibold tracking-[-0.04em] text-[#121212]">Sentinel X</h1>
+                        <p className="text-[10px] font-medium tracking-[0.2em] uppercase text-[#787267]">Strategic intelligence module</p>
                     </div>
-                    <div className="w-2 h-2 rounded-full bg-[#ff4d00]" title="Operational Status: Active"></div>
+                    <div className="h-2 w-2 rounded-full bg-[#121212]" title="Operational Status: Active"></div>
                 </div>
 
-                <div className="h-[2px] w-12 bg-[#ff4d00]"></div>
+                <div className="text-[12px] leading-6 text-[#444039]">
+                    A quieter operating frame for the border dashboard: field reports, imagery layers, and market signals arranged as one system.
+                </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-10 space-y-16">
-                {/* Section: Convergence */}
-                <section className="space-y-8">
+            <div className="flex-1 overflow-y-auto px-8 py-8 space-y-12">
+                <section className="space-y-6">
                     <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-[#e5e5e5] uppercase tracking-[0.2em]">01_CONVERGENCE</h3>
-                        <div className="h-[1px] w-full bg-[#1da1f2]/20"></div>
+                        <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">01 Convergence</h3>
+                        <div className="h-px w-full bg-[#cfc7b7]"></div>
                     </div>
                     <ConvergenceAlerts />
                 </section>
 
-                {/* Section: Satellite Suite */}
-                <section className="space-y-8">
+                <section className="space-y-6">
                     <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-[#e5e5e5] uppercase tracking-[0.2em]">02_SATELLITE_SUITE</h3>
-                        <div className="h-[1px] w-full bg-[#1da1f2]/20"></div>
+                        <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">02 Satellite Suite</h3>
+                        <div className="h-px w-full bg-[#cfc7b7]"></div>
                     </div>
 
                     <div className="grid grid-cols-1 gap-4">
-                        <div className="flex items-center justify-between p-4 bg-[#0a0a0a] group hover:bg-[#111] transition-colors border-l-2 border-[#ff4d00]">
+                        <div className="flex items-center justify-between border-l-2 border-[#121212] bg-[#f4efe7] p-4">
                             <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-[#e5e5e5] uppercase tracking-wider">COPERNICUS_SENTINEL</span>
-                                <p className="text-[8px] text-[#555] font-medium uppercase">Level 2A / 10M Multitemporal</p>
+                                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#121212]">True Color Composite</span>
+                                <p className="text-[9px] text-[#6d675d] font-medium uppercase tracking-[0.12em]">VIIRS / MODIS daily review</p>
                             </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#ff4d00]"></div>
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#121212]"></div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-[#0a0a0a] group hover:bg-[#111] transition-colors border-l-2 border-[#00d5ff]">
+                        <div className="flex items-center justify-between border-l-2 border-[#8d8372] bg-[#f4efe7] p-4">
                             <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-[#e5e5e5] uppercase tracking-wider">JAXA_GSMAP_PRECIP</span>
-                                <p className="text-[8px] text-[#555] font-medium uppercase">Near Real-Time Global Mapping</p>
+                                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#121212]">Rainfall Overlay</span>
+                                <p className="text-[9px] text-[#6d675d] font-medium uppercase tracking-[0.12em]">IMERG / JAXA precipitation</p>
                             </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#00d5ff]"></div>
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#8d8372]"></div>
                         </div>
 
-                        <div className="flex items-center justify-between p-4 bg-[#0a0a0a] group hover:bg-[#111] transition-colors border-l-2 border-[#1a1a1a]">
+                        <div className="flex items-center justify-between border-l-2 border-[#b8b0a3] bg-[#f4efe7] p-4">
                             <div className="space-y-1">
-                                <span className="text-[10px] font-bold text-[#e5e5e5] uppercase tracking-wider">MAPBOX_HIGH_RES</span>
-                                <p className="text-[8px] text-[#555] font-medium uppercase">Sub-Meter Tactical Layer</p>
+                                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#121212]">Satellite Basemap</span>
+                                <p className="text-[9px] text-[#6d675d] font-medium uppercase tracking-[0.12em]">Mapbox detailed context</p>
                             </div>
-                            <div className="w-1.5 h-1.5 rounded-full bg-[#1a1a1a]"></div>
+                            <div className="h-1.5 w-1.5 rounded-full bg-[#b8b0a3]"></div>
                         </div>
                     </div>
                 </section>
 
-                {/* Section: Tactical Feed */}
-                <section className="space-y-8">
+                <section className="space-y-6">
                     <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-[#e5e5e5] uppercase tracking-[0.2em]">03_TACTICAL_LOG</h3>
-                        <div className="h-[1px] w-full bg-[#1da1f2]/20"></div>
+                        <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">03 Tactical Log</h3>
+                        <div className="h-px w-full bg-[#cfc7b7]"></div>
                     </div>
 
-                    <div className="space-y-10">
+                    <div className="space-y-7">
                         {incidents.slice(0, 4).map((incident, idx) => (
-                            <div key={incident.id} className="group space-y-4">
+                            <div key={incident.id} className="space-y-4 border-b border-[#d7d0c3] pb-5 last:border-b-0">
                                 <div className="flex items-start gap-4">
-                                    <span className="text-[10px] font-mono text-[#7a7a7a] tabular-nums">0{idx + 1}</span>
+                                    <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-[#7a7468]">0{idx + 1}</span>
                                     <div className="space-y-4 flex-1">
                                         <div className="flex justify-between items-baseline">
-                                            <span className={`text-[9px] font-bold uppercase tracking-widest ${incident.severity === 'high' ? 'text-[#ff4d00]' : 'text-[#00d5ff]'}`}>
+                                            <span className={`text-[10px] font-medium uppercase tracking-[0.18em] ${incident.severity === 'high' ? 'text-[#8d3e23]' : 'text-[#4f6a73]'}`}>
                                                 {incident.type}
                                             </span>
-                                            <span className="text-[9px] font-mono text-[#444]">{incident.time}</span>
+                                            <span className="text-[10px] uppercase tracking-[0.16em] text-[#7a7468]">{incident.time}</span>
                                         </div>
-                                        <p className="text-[12px] leading-[1.6] text-[#999] group-hover:text-[#e5e5e5] transition-colors">
+                                        <p className="text-[13px] leading-[1.7] text-[#4f4a42]">
                                             {incident.notes.length > 90 ? `${incident.notes.substring(0, 90)}...` : incident.notes}
                                         </p>
-                                        <div className="flex items-center gap-3 text-[9px] font-medium text-[#555] uppercase tracking-wider">
-                                            <MapPin size={10} className="text-[#00d5ff]" />
+                                        <div className="flex items-center gap-3 text-[10px] font-medium uppercase tracking-[0.16em] text-[#7a7468]">
+                                            <MapPin size={10} className="text-[#121212]" />
                                             <span>{incident.location}</span>
                                         </div>
                                     </div>
@@ -135,23 +133,21 @@ export default function Sidebar() {
                     </div>
                 </section>
 
-                {/* Section: Strategic Summary */}
-                <section className="space-y-6 pb-20">
+                <section className="space-y-4 pb-8">
                     <div className="space-y-2">
-                        <h3 className="text-[10px] font-black text-[#e5e5e5] uppercase tracking-[0.2em]">03_SUMMARY</h3>
-                        <div className="h-[1px] w-full bg-[#1da1f2]/20"></div>
+                        <h3 className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">04 Summary</h3>
+                        <div className="h-px w-full bg-[#cfc7b7]"></div>
                     </div>
-                    <p className="text-[12px] leading-[1.8] text-[#7a7a7a] font-light">
+                    <p className="text-[13px] leading-[1.8] text-[#4f4a42]">
                         Cross-border commercial stability acts as a primary buffer against escalatory tactical shift. South-East transition zones remains under high fidelity observation.
                     </p>
                 </section>
             </div>
 
-            {/* Functional Footer Action */}
-            <div className="p-10 bg-[#0c0c0c]">
-                <button className="w-full h-12 bg-[#1a1a1a] hover:bg-[#222] text-[#e5e5e5] text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center justify-between px-6 group active:scale-[0.98]">
-                    DATA_EXPORT
-                    <ArrowUpRight size={14} className="text-[#00d5ff] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <div className="border-t border-[#cfc7b7] p-8">
+                <button className="group flex h-12 w-full items-center justify-between border border-[#121212] px-4 text-[10px] font-medium uppercase tracking-[0.2em] text-[#121212] transition-all hover:bg-[#121212] hover:text-[#ece6db]">
+                    Data Export
+                    <ArrowUpRight size={14} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
                 </button>
             </div>
         </aside>

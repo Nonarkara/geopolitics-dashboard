@@ -12,20 +12,20 @@ import {
   Flame,
   Globe,
   Layers,
-  Target,
   Users,
 } from "lucide-react";
 import {
-  createCopernicusLayer,
   createFireLayer,
   createHeatmapLayer,
   createIncidentLayer,
   createJaxaRainLayer,
+  createModisAquaLayer,
+  createModisTerraLayer,
   createNightlightLayer,
   createRainfallLayer,
   createRefugeeLayer,
   createRegionalBorderLayer,
-  createSentinelLayer,
+  createViirsTrueColorLayer,
 } from "../../services/map-engine";
 import type {
   FireEvent,
@@ -52,6 +52,18 @@ const EMPTY_BORDERS: RegionBorderCollection = {
   type: "FeatureCollection",
   features: [],
 };
+
+type SatelliteOverlayId = "modisTerra" | "modisAqua" | "viirsTrueColor";
+
+const SATELLITE_OVERLAY_OPTIONS: Array<{
+  id: SatelliteOverlayId;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: "viirsTrueColor", label: "VIIRS True Color", shortLabel: "VIIRS" },
+  { id: "modisTerra", label: "MODIS Terra", shortLabel: "TERRA" },
+  { id: "modisAqua", label: "MODIS Aqua", shortLabel: "AQUA" },
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -125,8 +137,10 @@ export default function BorderMap({
   const [showFires, setShowFires] = useState(false);
   const [showRefugees, setShowRefugees] = useState(false);
   const [showRainfall, setShowRainfall] = useState(false);
-  const [showSentinel, setShowSentinel] = useState(true);
-  const [showCopernicus, setShowCopernicus] = useState(false);
+  const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
+  const [satelliteOverlay, setSatelliteOverlay] =
+    useState<SatelliteOverlayId>("viirsTrueColor");
+  const [satelliteOpacity, setSatelliteOpacity] = useState(72);
   const [showJaxa, setShowJaxa] = useState(false);
   const [isDetailedMap, setIsDetailedMap] = useState(false);
 
@@ -143,6 +157,19 @@ export default function BorderMap({
   };
 
   const safeDate = getSafeDate();
+  const activeSatelliteOverlay =
+    SATELLITE_OVERLAY_OPTIONS.find((option) => option.id === satelliteOverlay) ??
+    SATELLITE_OVERLAY_OPTIONS[0];
+  const useSatelliteBasemap = isDetailedMap || showSatelliteOverlay;
+
+  const satelliteLayer =
+    !showSatelliteOverlay
+      ? null
+      : satelliteOverlay === "modisTerra"
+        ? createModisTerraLayer(safeDate, satelliteOpacity / 100)
+        : satelliteOverlay === "modisAqua"
+          ? createModisAquaLayer(safeDate, satelliteOpacity / 100)
+          : createViirsTrueColorLayer(safeDate, satelliteOpacity / 100);
 
   useEffect(() => {
     const loadData = async () => {
@@ -171,8 +198,7 @@ export default function BorderMap({
   }, []);
 
   const layers = [
-    showSentinel && createSentinelLayer(safeDate),
-    showCopernicus && createCopernicusLayer(safeDate),
+    satelliteLayer,
     showJaxa && createJaxaRainLayer(safeDate),
     showNightlights && createNightlightLayer(safeDate),
     borders && createRegionalBorderLayer(borders),
@@ -218,8 +244,8 @@ export default function BorderMap({
         <Map
           mapboxAccessToken={MAPBOX_TOKEN}
           mapStyle={
-            isDetailedMap
-              ? "mapbox://styles/mapbox/satellite-v9"
+            useSatelliteBasemap && MAPBOX_TOKEN
+              ? "mapbox://styles/mapbox/satellite-streets-v12"
               : MAPBOX_TOKEN
                 ? "mapbox://styles/mapbox/dark-v11"
                 : "https://tiles.openfreemap.org/styles/dark"
@@ -230,25 +256,18 @@ export default function BorderMap({
 
       <div className="absolute top-10 right-10 z-50 grid grid-cols-2 gap-2">
         <button
-          onClick={() => setShowSentinel(!showSentinel)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showSentinel ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Sentinel-2 Overlay"
+          onClick={() => setShowSatelliteOverlay(!showSatelliteOverlay)}
+          className={`w-12 h-12 flex items-center justify-center transition-all ${showSatelliteOverlay ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
+          title="Toggle Satellite Image Overlay"
         >
-          <Target size={18} />
+          <Globe size={18} />
         </button>
         <button
           onClick={() => setIsDetailedMap(!isDetailedMap)}
           className={`w-12 h-12 flex items-center justify-center transition-all ${isDetailedMap ? "bg-[#ff4d00] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Detailed High-Res Satellite"
+          title="Toggle Satellite Basemap"
         >
           <Compass size={18} />
-        </button>
-        <button
-          onClick={() => setShowCopernicus(!showCopernicus)}
-          className={`w-12 h-12 flex items-center justify-center transition-all ${showCopernicus ? "bg-[#00d5ff] text-white" : "bg-[#1a1a1a] text-[#7a7a7a] hover:bg-[#222]"}`}
-          title="Toggle Copernicus Sentinel-2"
-        >
-          <Globe size={18} />
         </button>
         <button
           onClick={() => setShowJaxa(!showJaxa)}
@@ -292,6 +311,55 @@ export default function BorderMap({
         >
           <CloudRain size={18} />
         </button>
+      </div>
+
+      <div className="absolute top-10 right-28 z-40 w-72 bg-black/85 border border-white/5 backdrop-blur-xl p-4 space-y-4 pointer-events-auto">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="text-[10px] font-black uppercase tracking-[0.25em] text-[#e5e5e5]">
+              ORBITAL_OVERLAY
+            </div>
+            <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-[#666] mt-1">
+              {activeSatelliteOverlay.label} / {safeDate}
+            </div>
+          </div>
+          <div
+            className={`h-2.5 w-2.5 rounded-full ${showSatelliteOverlay ? "bg-[#00d5ff]" : "bg-[#444]"}`}
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-2">
+          {SATELLITE_OVERLAY_OPTIONS.map((option) => (
+            <button
+              key={option.id}
+              onClick={() => setSatelliteOverlay(option.id)}
+              className={`px-3 py-2 text-[9px] font-black uppercase tracking-[0.18em] transition-all ${
+                satelliteOverlay === option.id
+                  ? "bg-[#00d5ff] text-black"
+                  : "bg-[#141414] text-[#7a7a7a] hover:bg-[#1d1d1d] hover:text-[#e5e5e5]"
+              }`}
+            >
+              {option.shortLabel}
+            </button>
+          ))}
+        </div>
+
+        <div className={showSatelliteOverlay ? "opacity-100" : "opacity-45"}>
+          <div className="flex items-center justify-between text-[9px] font-black uppercase tracking-[0.18em] text-[#7a7a7a]">
+            <span>Overlay Opacity</span>
+            <span className="text-[#e5e5e5]">{satelliteOpacity}%</span>
+          </div>
+          <input
+            type="range"
+            min="20"
+            max="100"
+            step="5"
+            value={satelliteOpacity}
+            disabled={!showSatelliteOverlay}
+            onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
+            className="mt-3 w-full accent-[#00d5ff] disabled:cursor-not-allowed"
+          />
+        </div>
       </div>
 
       <div className="absolute bottom-12 left-10 z-50 flex flex-col gap-10 pointer-events-none">

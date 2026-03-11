@@ -13,7 +13,7 @@ export default function EconomicMonitor() {
     React.useEffect(() => {
         const fetchEconomics = async () => {
             try {
-                const res = await fetch('/api/economics');
+                const res = await fetch('/api/markets');
                 const payload: unknown = await res.json();
 
                 if (isEconomicIndicatorArray(payload)) {
@@ -40,35 +40,37 @@ export default function EconomicMonitor() {
     }, []);
 
     if (indicators.length === 0) return (
-        <div className="h-24 w-full bg-[#0c0c0c] flex items-center px-12 gap-6 animate-pulse">
-            <div className="w-1 h-1 rounded-full bg-[#ff4d00]"></div>
-            <span className="text-[9px] font-black text-[#444] uppercase tracking-[0.3em]">SYNCHRONIZING_MARKET_PROTOCOLS</span>
+        <div className="flex h-full items-center px-6">
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
+                Synchronizing market signals
+            </span>
         </div>
     );
 
     return (
-        <div className="grid grid-cols-4 h-full bg-[#0a0a0a] border-none select-none">
+        <div className="grid h-full grid-cols-2 bg-[#f4efe7] select-none lg:grid-cols-4">
             {indicators.slice(0, 4).map((item, idx) => (
-                <div key={idx} className="group relative p-10 flex flex-col justify-between hover:bg-[#111] transition-all cursor-crosshair border-r border-[#1a1a1a] last:border-r-0">
-                    <div className="flex justify-between items-start">
-                        <span className="text-[10px] font-mono text-[#444] tabular-nums">0{idx + 1}</span>
-                        <div className={`text-[10px] font-bold ${item.up ? 'text-[#00d5ff]' : 'text-[#ff4d00]'}`}>
-                            {item.up ? '↑' : '↓'} {item.change}
+                <div key={idx} className="group flex flex-col justify-between border-r border-[#cfc7b7] px-6 py-5 last:border-r-0">
+                    <div className="flex items-start justify-between">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[#787267]">
+                            {String(idx + 1).padStart(2, '0')}
+                        </span>
+                        <div className={`text-[10px] font-medium uppercase tracking-[0.16em] ${item.up ? 'text-[#8d3e23]' : 'text-[#2f5666]'}`}>
+                            {item.up ? 'Up' : 'Down'} {item.change}
                         </div>
                     </div>
 
-                    <div className="space-y-2 mt-4">
-                        <div className="text-[20px] font-bold text-[#e5e5e5] tracking-tighter uppercase leading-none">
+                    <div className="space-y-2 pt-6">
+                        <label className="block text-[10px] font-medium uppercase tracking-[0.18em] text-[#787267]">
+                            {item.label}
+                        </label>
+                        <div className="text-[24px] font-semibold leading-none tracking-[-0.04em] text-[#151515]">
                             {item.value}
                         </div>
-                        <label className="text-[10px] font-black text-[#555] uppercase tracking-[0.1em] block">
-                            {item.label.replace(/\s+/g, '_')}
-                        </label>
                     </div>
 
-                    {/* Functional Status Indicator */}
-                    <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <div className={`w-1 h-1 rounded-full ${item.up ? 'bg-[#00d5ff]' : 'bg-[#ff4d00]'}`}></div>
+                    <div className="pt-4 text-[11px] uppercase tracking-[0.16em] text-[#5f5b52]">
+                        {item.category ?? item.source ?? 'Reference'}
                     </div>
                 </div>
             ))}

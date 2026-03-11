@@ -38,9 +38,10 @@ export default function ConflictTrends() {
     }, []);
 
     if (!data) return (
-        <div className="h-full w-full bg-[#0c0c0c] flex items-center justify-center gap-6 select-none animate-pulse">
-            <div className="w-1 h-1 rounded-full bg-[#00d5ff]"></div>
-            <span className="text-[9px] font-black text-[#444] uppercase tracking-[0.3em]">PROCESSING_CONFLICT_FREQUENCY_DELTA</span>
+        <div className="flex h-full w-full items-center justify-center gap-6 bg-[#f4efe7] select-none">
+            <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-[#787267]">
+                Processing conflict frequency delta
+            </span>
         </div>
     );
 
@@ -50,16 +51,16 @@ export default function ConflictTrends() {
             {
                 label: 'CYCLE_ACTIVE',
                 data: data.provincialData.current,
-                backgroundColor: '#00d5ff',
-                borderColor: '#00d5ff',
+                backgroundColor: '#1f1f1d',
+                borderColor: '#1f1f1d',
                 borderWidth: 0,
                 barThickness: 12,
             },
             {
                 label: 'BASELINE_YOY',
                 data: data.provincialData.yoy,
-                backgroundColor: '#1a1a1a',
-                borderColor: '#1a1a1a',
+                backgroundColor: '#b9afa0',
+                borderColor: '#b9afa0',
                 borderWidth: 0,
                 barThickness: 12,
             },
@@ -73,7 +74,7 @@ export default function ConflictTrends() {
                 fill: false,
                 label: 'LETHALITY_INDEX',
                 data: data.fatalities.data,
-                borderColor: '#ff4d00',
+                borderColor: '#8d3e23',
                 tension: 0,
                 pointRadius: 0,
                 borderWidth: 2,
@@ -87,7 +88,7 @@ export default function ConflictTrends() {
         plugins: {
             legend: { display: false },
             tooltip: {
-                backgroundColor: '#000',
+                backgroundColor: '#1f1f1d',
                 titleFont: { size: 10, weight: 700 },
                 bodyFont: { size: 10 },
                 padding: 12,
@@ -97,23 +98,23 @@ export default function ConflictTrends() {
         },
         scales: {
             y: {
-                grid: { color: '#1a1a1a', drawBorder: false },
-                ticks: { color: '#444', font: { size: 8, family: 'monospace' } },
+                grid: { color: '#d8d0c3', drawBorder: false },
+                ticks: { color: '#6a6458', font: { size: 8, family: 'monospace' } },
             },
             x: {
                 grid: { display: false },
-                ticks: { color: '#444', font: { size: 8, family: 'monospace' } },
+                ticks: { color: '#6a6458', font: { size: 8, family: 'monospace' } },
             },
         },
     };
 
     return (
-        <div className="grid grid-cols-2 h-full bg-[#0a0a0a] border-none select-none">
-            <div className="p-10 flex flex-col border-r border-[#1a1a1a]">
+        <div className="grid h-full grid-cols-1 bg-[#f4efe7] select-none lg:grid-cols-2">
+            <div className="flex flex-col border-b border-[#cfc7b7] p-8 lg:border-b-0 lg:border-r">
                 <div className="flex justify-between items-start mb-10">
                     <div className="space-y-1">
-                        <h4 className="text-[10px] font-black text-[#555] uppercase tracking-[0.2em]">01_SPATIAL_FREQUENCY</h4>
-                        <div className="text-[14px] font-bold text-[#e5e5e5] tracking-tight">Incidents by Sector</div>
+                        <h4 className="text-[10px] font-medium text-[#787267] uppercase tracking-[0.2em]">01 Spatial Frequency</h4>
+                        <div className="text-[18px] font-semibold text-[#121212] tracking-[-0.03em]">Incidents by sector</div>
                     </div>
                 </div>
                 <div className="flex-1">
@@ -121,11 +122,11 @@ export default function ConflictTrends() {
                 </div>
             </div>
 
-            <div className="p-10 flex flex-col">
+            <div className="flex flex-col p-8">
                 <div className="flex justify-between items-start mb-10">
                     <div className="space-y-1">
-                        <h4 className="text-[10px] font-black text-[#555] uppercase tracking-[0.2em]">02_LETHALITY_METRICS</h4>
-                        <div className="text-[14px] font-bold text-[#e5e5e5] tracking-tight">Fatality Analysis</div>
+                        <h4 className="text-[10px] font-medium text-[#787267] uppercase tracking-[0.2em]">02 Lethality Metrics</h4>
+                        <div className="text-[18px] font-semibold text-[#121212] tracking-[-0.03em]">Fatality analysis</div>
                     </div>
                 </div>
                 <div className="flex-1">

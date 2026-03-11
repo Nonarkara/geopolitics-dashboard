@@ -1,13 +1,22 @@
 import type {
+  ApiSourceResponse,
+  BriefingPayload,
   ConflictTrendsResponse,
+  CopernicusPreviewResponse,
   EconomicIndicator,
   IncidentFeature,
+  NewsResponse,
+  SignalTone,
+  TickerItem,
+  TickerResponse,
 } from "../types/dashboard";
 
 const DEFAULT_REFERENCE_DASHBOARD_URL =
   "https://dr-non-operating-systems.onrender.com/api/dashboard";
 const DEFAULT_CITY_REPORTER_REPORTS_URL =
   "https://city-reporter-bot.onrender.com/api/reports";
+const DEFAULT_CITY_REPORTER_NEWS_URL =
+  "https://city-reporter-bot.onrender.com/api/news";
 const DEFAULT_FX_RATES_URL = "https://open.er-api.com/v6/latest/USD";
 const DEFAULT_BINANCE_TICKER_URL =
   "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT";
@@ -28,6 +37,7 @@ interface ReferenceSummary {
 interface ReferenceApi {
   label: string;
   url: string;
+  kind?: string;
 }
 
 interface ReferenceTarget {
@@ -55,6 +65,17 @@ interface CityReporterReport {
   ai_summary: string;
   urgency: string;
   status: string;
+}
+
+interface CityReporterNewsEntry {
+  icon: string;
+  title: string;
+  summary: string;
+}
+
+interface CityReporterNewsPayload {
+  news: CityReporterNewsEntry[];
+  generatedAt: string;
 }
 
 interface FxRatesResponse {
@@ -97,7 +118,8 @@ function isReferenceApi(value: unknown): value is ReferenceApi {
   return (
     isRecord(value) &&
     typeof value.label === "string" &&
-    typeof value.url === "string"
+    typeof value.url === "string" &&
+    (typeof value.kind === "undefined" || typeof value.kind === "string")
   );
 }
 
@@ -155,6 +177,26 @@ function isBinanceTickerResponse(value: unknown): value is BinanceTickerResponse
   );
 }
 
+function isCityReporterNewsEntry(value: unknown): value is CityReporterNewsEntry {
+  return (
+    isRecord(value) &&
+    typeof value.icon === "string" &&
+    typeof value.title === "string" &&
+    typeof value.summary === "string"
+  );
+}
+
+function isCityReporterNewsPayload(
+  value: unknown,
+): value is CityReporterNewsPayload {
+  return (
+    isRecord(value) &&
+    Array.isArray(value.news) &&
+    value.news.every(isCityReporterNewsEntry) &&
+    typeof value.generatedAt === "string"
+  );
+}
+
 function findTargetApiUrl(
   dashboard: ReferenceDashboardPayload,
   targetId: string,
@@ -163,6 +205,13 @@ function findTargetApiUrl(
   return dashboard.targets
     .find((target) => target.id === targetId)
     ?.apis.find((api) => api.label === label)?.url;
+}
+
+function findTarget(
+  dashboard: ReferenceDashboardPayload,
+  targetId: string,
+) {
+  return dashboard.targets.find((target) => target.id === targetId) ?? null;
 }
 
 function parseCoordinate(value: string): number | null {
@@ -196,6 +245,13 @@ function normalizeCategory(value: string) {
   return value.trim() || "Unclassified";
 }
 
+function slugify(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
 function toDate(value: string) {
   const parsed = new Date(value);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
@@ -219,6 +275,52 @@ function formatWeekLabel(value: Date) {
     day: "2-digit",
     timeZone: "UTC",
   });
+}
+
+function formatIndicatorValue(
+  value: number | string,
+  unit?: string | null,
+) {
+  const text =
+    typeof value === "number"
+      ? Number.isInteger(value)
+        ? value.toString()
+        : value.toFixed(2)
+      : value;
+
+  return unit ? `${text}${unit}` : text;
+}
+
+function getIndicatorTone(change: number | string): SignalTone {
+  if (typeof change === "number") {
+    if (change > 0) {
+      return "up";
+    }
+
+    if (change < 0) {
+      return "down";
+    }
+  }
+
+  return "neutral";
+}
+
+function getNewsSeverity(
+  icon: string,
+  title: string,
+  summary: string,
+): "alert" | "watch" | "stable" {
+  const combined = `${title} ${summary}`.toLowerCase();
+
+  if (icon.includes("⚠") || combined.includes("critical") || combined.includes("alert")) {
+    return "alert";
+  }
+
+  if (icon.includes("📈") || combined.includes("watch") || combined.includes("pressure")) {
+    return "watch";
+  }
+
+  return "stable";
 }
 
 export async function fetchReferenceDashboard() {
@@ -245,6 +347,20 @@ export async function fetchReferenceReports() {
   }
 
   return payload.filter(isCityReporterReport);
+}
+
+export async function fetchReferenceNewsFeed() {
+  const dashboard = await fetchReferenceDashboard();
+  const newsUrl =
+    findTargetApiUrl(dashboard, "city-reporter-bot", "News") ??
+    DEFAULT_CITY_REPORTER_NEWS_URL;
+  const payload = await fetchJson<unknown>(newsUrl);
+
+  if (!isCityReporterNewsPayload(payload)) {
+    throw new Error("Reference news payload was not recognized");
+  }
+
+  return payload;
 }
 
 export function buildReferenceIncidentFeatures(reports: CityReporterReport[]) {
@@ -379,6 +495,51 @@ export function buildReferenceConflictTrends(
   };
 }
 
+export function buildReferenceNewsResponse(
+  newsPayload: CityReporterNewsPayload,
+  reports: CityReporterReport[],
+): NewsResponse {
+  const latestReportAt = reports[0]?.timestamp ?? newsPayload.generatedAt;
+
+  return {
+    generatedAt: newsPayload.generatedAt,
+    news: newsPayload.news.slice(0, 6).map((item, index) => ({
+      id: `${slugify(item.title) || `news-${index + 1}`}-${index + 1}`,
+      title: item.title,
+      summary: item.summary,
+      source: "city-reporter-bot",
+      tag: index === 0 ? "Lead" : "Monitor",
+      publishedAt: index === 0 ? latestReportAt : newsPayload.generatedAt,
+      severity: getNewsSeverity(item.icon, item.title, item.summary),
+    })),
+  };
+}
+
+export function buildNewsFromReports(reports: CityReporterReport[]): NewsResponse {
+  const generatedAt = reports[0]?.timestamp ?? new Date().toISOString();
+
+  return {
+    generatedAt,
+    news: reports.slice(0, 6).map((report) => ({
+      id: report.report_id,
+      title: normalizeCategory(report.problem_type),
+      summary:
+        report.ai_summary.trim() ||
+        report.description.trim() ||
+        "No briefing summary available.",
+      source: "city-reporter-bot",
+      tag: report.location_text.trim() || "Field report",
+      publishedAt: report.timestamp,
+      severity:
+        getUrgencyScore(report.urgency) > 1
+          ? "alert"
+          : getUrgencyScore(report.urgency) === 1
+            ? "watch"
+            : "stable",
+    })),
+  };
+}
+
 export async function fetchReferenceEconomicIndicators() {
   const dashboard = await fetchReferenceDashboard();
   const fxUrl =
@@ -464,6 +625,149 @@ export async function fetchReferenceEconomicIndicators() {
       source: "dr-non-operating-systems",
     },
   ] satisfies EconomicIndicator[];
+}
+
+export function buildReferenceTicker(
+  reports: CityReporterReport[],
+  indicators: EconomicIndicator[],
+): TickerResponse {
+  const incidents = buildReferenceIncidentFeatures(reports);
+  const latestIncident = incidents[0];
+
+  const items: TickerItem[] = [
+    {
+      id: "reports",
+      label: "Field reports",
+      value: `${incidents.length}`,
+      delta: latestIncident
+        ? latestIncident.properties.location
+        : "standby",
+      tone: incidents.length > 8 ? "up" : "neutral",
+    },
+    {
+      id: "focus-sector",
+      label: "Primary sector",
+      value: latestIncident?.properties.type ?? "No active cluster",
+      delta: latestIncident?.properties.eventDate
+        ? new Date(latestIncident.properties.eventDate).toLocaleDateString("en-US", {
+            month: "short",
+            day: "2-digit",
+          })
+        : "live",
+      tone:
+        latestIncident && latestIncident.properties.fatalities > 0
+          ? "up"
+          : "neutral",
+    },
+    ...indicators.slice(0, 2).map((indicator, index) => ({
+      id: `market-${index + 1}`,
+      label: indicator.label,
+      value: formatIndicatorValue(indicator.value, indicator.unit),
+      delta:
+        typeof indicator.change === "number"
+          ? `${indicator.change > 0 ? "+" : ""}${indicator.change}`
+          : String(indicator.change),
+      tone: getIndicatorTone(indicator.change),
+    })),
+  ];
+
+  return {
+    items,
+    generatedAt: reports[0]?.timestamp ?? new Date().toISOString(),
+  };
+}
+
+export function buildReferenceBriefing(
+  reports: CityReporterReport[],
+  indicators: EconomicIndicator[],
+): BriefingPayload {
+  const incidents = buildReferenceIncidentFeatures(reports);
+  const latestIncident = incidents[0];
+  const topLocations = Array.from(
+    new Set(
+      incidents
+        .map((incident) => incident.properties.location)
+        .filter((location) => location && location !== "Reference field report"),
+    ),
+  ).slice(0, 3);
+  const leadMarkets = indicators.slice(0, 2);
+
+  return {
+    title: "Thailand frontier briefing",
+    summary: latestIncident
+      ? `${incidents.length} field-linked signals are in the current watch set, led by ${latestIncident.properties.type.toLowerCase()} activity around ${latestIncident.properties.location}.`
+      : "No live incident briefing is available, so the dashboard is holding fallback watch conditions.",
+    updatedAt: latestIncident?.properties.eventDate ?? new Date().toISOString(),
+    priorities: [
+      topLocations.length > 0
+        ? `Keep ${topLocations.join(", ")} in the daily review loop.`
+        : "Keep western and southern corridors in the daily review loop.",
+      leadMarkets[0]
+        ? `Use ${leadMarkets[0].label} as the lead market stress signal.`
+        : "Use cross-border currency spread as the lead market stress signal.",
+      "Refresh orbital imagery, rainfall, and thermal layers before each new operating cycle.",
+    ],
+    marketSignals: leadMarkets.map(
+      (indicator) =>
+        `${indicator.label} sits at ${formatIndicatorValue(indicator.value, indicator.unit)} (${indicator.change}).`,
+    ),
+    outlook:
+      incidents.length > 10
+        ? "The current picture supports a heightened watch posture with field and market signals reinforcing each other."
+        : "The current picture supports a measured watch posture, with escalation risk concentrated in a few recurring sectors.",
+  };
+}
+
+export async function fetchReferenceApiCatalog(): Promise<ApiSourceResponse> {
+  const dashboard = await fetchReferenceDashboard();
+  const sources = [
+    "middle-east-monitor",
+    "city-reporter-bot",
+    "tech-monitor",
+  ].flatMap((targetId) => {
+    const target = findTarget(dashboard, targetId);
+
+    if (!target) {
+      return [];
+    }
+
+    return target.apis.map((api, index) => ({
+      id: `${target.id}-${index + 1}`,
+      label: api.label,
+      url: api.url,
+      kind: api.kind ?? "internal",
+      target: target.label,
+    }));
+  });
+
+  return {
+    generatedAt: dashboard.generatedAt,
+    sources,
+  };
+}
+
+export function buildCopernicusPreview(focusDate: string): CopernicusPreviewResponse {
+  return {
+    updatedAt: new Date().toISOString(),
+    focusDate,
+    imagerySources: [
+      {
+        id: "viirsTrueColor",
+        label: "VIIRS True Color",
+        description: "Broad daily true-color composite for first-pass regional scanning.",
+      },
+      {
+        id: "modisTerra",
+        label: "MODIS Terra",
+        description: "Daytime surface composite for clouds, river systems, and terrain contrast.",
+      },
+      {
+        id: "modisAqua",
+        label: "MODIS Aqua",
+        description: "Companion true-color pass for second-look atmospheric verification.",
+      },
+    ],
+  };
 }
 
 export async function fetchReferenceStatusSummary() {

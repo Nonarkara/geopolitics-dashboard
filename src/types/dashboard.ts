@@ -90,3 +90,68 @@ export interface ConflictTrendsResponse {
   provincialData: ConflictTrendSeries;
   fatalities: FatalityTrendSeries;
 }
+
+export type SignalTone = "up" | "down" | "neutral";
+export type NewsSeverity = "alert" | "watch" | "stable";
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  summary: string;
+  source: string;
+  tag: string;
+  publishedAt: string;
+  severity: NewsSeverity;
+}
+
+export interface NewsResponse {
+  news: NewsItem[];
+  generatedAt: string;
+}
+
+export interface TickerItem {
+  id: string;
+  label: string;
+  value: string;
+  delta: string;
+  tone: SignalTone;
+}
+
+export interface TickerResponse {
+  items: TickerItem[];
+  generatedAt: string;
+}
+
+export interface BriefingPayload {
+  title: string;
+  summary: string;
+  updatedAt: string;
+  priorities: string[];
+  marketSignals: string[];
+  outlook: string;
+}
+
+export interface ApiSourceEntry {
+  id: string;
+  label: string;
+  url: string;
+  kind: string;
+  target: string;
+}
+
+export interface ApiSourceResponse {
+  generatedAt: string;
+  sources: ApiSourceEntry[];
+}
+
+export interface CopernicusPreviewLayer {
+  id: string;
+  label: string;
+  description: string;
+}
+
+export interface CopernicusPreviewResponse {
+  updatedAt: string;
+  focusDate: string;
+  imagerySources: CopernicusPreviewLayer[];
+}

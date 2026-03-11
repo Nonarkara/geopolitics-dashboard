@@ -38,6 +38,44 @@ type TileRenderProps = Record<string, unknown> & {
   data: TileImage;
 };
 
+function createRasterTileLayer({
+  id,
+  data,
+  maxZoom,
+  opacity = 1,
+  onTileError,
+}: {
+  id: string;
+  data: string;
+  maxZoom: number;
+  opacity?: number;
+  onTileError?: (error: unknown) => void;
+}) {
+  return new TileLayer({
+    id,
+    data,
+    minZoom: 0,
+    maxZoom,
+    tileSize: 256,
+    opacity,
+    onTileError,
+    renderSublayers: (props: TileRenderProps) => {
+      const { data: image, ...layerProps } = props;
+      const {
+        bbox: { west, south, east, north },
+      } = props.tile;
+
+      return new BitmapLayer({
+        ...layerProps,
+        data: undefined,
+        image,
+        opacity,
+        bounds: [west, south, east, north],
+      });
+    },
+  });
+}
+
 export const createIncidentLayer = (data: IncidentFeature[]) =>
   new ScatterplotLayer({
     id: "incidents-scatter",
@@ -98,80 +136,55 @@ export const createRainfallLayer = (data: RainfallPoint[]) =>
     ],
   });
 
-export const createSentinelLayer = (date: string) =>
-  new TileLayer({
-    id: "sentinel-2-imagery",
-    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Sentinel-2_CorrectedReflectance_TrueColor/default/${date}/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg`,
-    minZoom: 0,
-    maxZoom: 12,
-    tileSize: 256,
+export const createModisTerraLayer = (date: string, opacity = 0.72) =>
+  createRasterTileLayer({
+    id: "modis-terra-true-color",
+    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+    maxZoom: 9,
+    opacity,
     onTileError: (error: unknown) => {
-      console.warn("Satellite tile load failed - likely date lag issue", error);
-    },
-    renderSublayers: (props: TileRenderProps) => {
-      const { data: image, ...layerProps } = props;
-      const {
-        bbox: { west, south, east, north },
-      } = props.tile;
-
-      return new BitmapLayer({
-        ...layerProps,
-        data: undefined,
-        image,
-        bounds: [west, south, east, north],
-      });
+      console.warn("MODIS Terra tile load failed", error);
     },
   });
 
-export const createCopernicusLayer = (date: string) =>
-  new TileLayer({
-    id: "copernicus-sentinel-2",
-    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Sentinel-2_CorrectedReflectance_TrueColor/default/${date}/GoogleMapsCompatible_Level12/{z}/{y}/{x}.jpg`,
-    minZoom: 0,
-    maxZoom: 12,
-    tileSize: 256,
+export const createModisAquaLayer = (date: string, opacity = 0.72) =>
+  createRasterTileLayer({
+    id: "modis-aqua-true-color",
+    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Aqua_CorrectedReflectance_TrueColor/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+    maxZoom: 9,
+    opacity,
     onTileError: (error: unknown) => {
-      console.warn("Copernicus tile load failed", error);
-    },
-    renderSublayers: (props: TileRenderProps) => {
-      const { data: image, ...layerProps } = props;
-      const {
-        bbox: { west, south, east, north },
-      } = props.tile;
-
-      return new BitmapLayer({
-        ...layerProps,
-        data: undefined,
-        image,
-        bounds: [west, south, east, north],
-      });
+      console.warn("MODIS Aqua tile load failed", error);
     },
   });
+
+export const createViirsTrueColorLayer = (date: string, opacity = 0.72) =>
+  createRasterTileLayer({
+    id: "viirs-true-color",
+    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_CorrectedReflectance_TrueColor/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`,
+    maxZoom: 9,
+    opacity,
+    onTileError: (error: unknown) => {
+      console.warn("VIIRS true color tile load failed", error);
+    },
+  });
+
+export const createSentinelLayer = (date: string, opacity = 0.72) =>
+  createViirsTrueColorLayer(date, opacity);
+
+export const createCopernicusLayer = (date: string, opacity = 0.72) =>
+  createModisTerraLayer(date, opacity);
 
 export const createJaxaRainLayer = (date: string) =>
-  new TileLayer({
+  createRasterTileLayer({
     id: "jaxa-gsmap-rain",
     data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/IMERG_Precipitation_Rate/default/${date}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`,
-    minZoom: 0,
     maxZoom: 6,
-    tileSize: 256,
     opacity: 0.6,
-    renderSublayers: (props: TileRenderProps) => {
-      const { data: image, ...layerProps } = props;
-      const {
-        bbox: { west, south, east, north },
-      } = props.tile;
-
-      return new BitmapLayer({
-        ...layerProps,
-        data: undefined,
-        image,
-        bounds: [west, south, east, north],
-      });
-    },
   });
 
-export const createDetailedSatelliteLayer = () => null;
+export const createDetailedSatelliteLayer = (date: string, opacity = 0.72) =>
+  createModisAquaLayer(date, opacity);
 
 export const createRegionalBorderLayer = (data: RegionBorderCollection) =>
   new GeoJsonLayer({
@@ -187,23 +200,8 @@ export const createRegionalBorderLayer = (data: RegionBorderCollection) =>
   });
 
 export const createNightlightLayer = (date: string) =>
-  new TileLayer({
+  createRasterTileLayer({
     id: "viirs-nightlights",
     data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_AtSensor_M15/default/${date}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.png`,
-    minZoom: 0,
     maxZoom: 9,
-    tileSize: 256,
-    renderSublayers: (props: TileRenderProps) => {
-      const { data: image, ...layerProps } = props;
-      const {
-        bbox: { west, south, east, north },
-      } = props.tile;
-
-      return new BitmapLayer({
-        ...layerProps,
-        data: undefined,
-        image,
-        bounds: [west, south, east, north],
-      });
-    },
   });
