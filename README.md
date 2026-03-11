@@ -30,6 +30,7 @@ Key variables:
 - `DATABASE_URL`: PostgreSQL connection string
 - `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: public Mapbox token for basemaps
 - `FIRMS_KEY`: NASA FIRMS key for live fire ingestion
+- `REFERENCE_DASHBOARD_URL`: optional external reference feed for incidents, market cards, and trend adapters
 
 ## Setup
 
@@ -63,7 +64,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The UI can still render with empty fallback data if the database is not populated yet.
+The UI can still render with fallback data if the database is not populated yet, and it can also pull incidents, market cards, and trend inputs from the external reference dashboard.
 
 ## Ingestion
 

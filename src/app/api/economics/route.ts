@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { fallbackEconomicIndicators } from "@/lib/mock-data";
+import { fetchReferenceEconomicIndicators } from "@/lib/reference-data";
 import type { EconomicIndicator } from "@/types/dashboard";
 
 interface MarketIndicatorRow {
@@ -15,6 +16,16 @@ interface MarketIndicatorRow {
 }
 
 export async function GET() {
+  try {
+    const referenceIndicators = await fetchReferenceEconomicIndicators();
+
+    if (referenceIndicators.length > 0) {
+      return NextResponse.json(referenceIndicators);
+    }
+  } catch (error: unknown) {
+    console.error("Reference economics error:", getErrorMessage(error));
+  }
+
   try {
     const res = await query<MarketIndicatorRow>(`
       WITH ranked_market_data AS (

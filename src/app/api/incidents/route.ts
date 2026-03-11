@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/db";
 import { getErrorMessage } from "@/lib/errors";
 import { fallbackIncidents } from "@/lib/mock-data";
+import {
+  buildReferenceIncidentFeatures,
+  fetchReferenceReports,
+} from "@/lib/reference-data";
 import type { IncidentFeature } from "@/types/dashboard";
 
 interface IncidentRow {
@@ -16,6 +20,17 @@ interface IncidentRow {
 }
 
 export async function GET() {
+  try {
+    const referenceReports = await fetchReferenceReports();
+    const incidents = buildReferenceIncidentFeatures(referenceReports);
+
+    if (incidents.length > 0) {
+      return NextResponse.json(incidents);
+    }
+  } catch (error: unknown) {
+    console.error("Reference incident error:", getErrorMessage(error));
+  }
+
   try {
     const res = await query<IncidentRow>(`
       SELECT
