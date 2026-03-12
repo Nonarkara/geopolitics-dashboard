@@ -75,6 +75,8 @@ export interface AirQualityPoint {
   aqi: number;
   pm25: number;
   category: string;
+  observedAt?: string;
+  source?: string;
 }
 
 export interface RegionBorderProperties {
@@ -119,6 +121,93 @@ export interface EconomicIndicator {
   change: number | string;
   up: boolean;
   province?: string | null;
+}
+
+export interface AseanGdpDatum {
+  countryCode: string;
+  country: string;
+  gdpUsd: number;
+  gdpPerCapitaUsd: number;
+  gdpYear: number;
+  gdpPerCapitaYear: number;
+  source: string;
+}
+
+export interface CountryEconomicIndicatorSnapshot {
+  countryCode: string;
+  country: string;
+  indicatorCode: string;
+  indicatorLabel: string;
+  value: number;
+  unit: string | null;
+  refYear: number;
+  source: string;
+}
+
+export interface AseanProfileMetric {
+  id: string;
+  label: string;
+  value: number | null;
+  unit: string | null;
+  year: number | null;
+  source: string;
+  note?: string;
+  secondaryValue?: number | null;
+  secondaryUnit?: string | null;
+  secondaryYear?: number | null;
+}
+
+export interface AseanProfileNewsItem {
+  id: string;
+  title: string;
+  source: string;
+  publishedAt: string;
+  url: string;
+}
+
+export interface AseanCountryProfileResponse {
+  generatedAt: string;
+  country: {
+    code: string;
+    label: string;
+    aliases: string[];
+  };
+  metrics: AseanProfileMetric[];
+  news: AseanProfileNewsItem[];
+  sources: string[];
+}
+
+export interface MarketRadarResponse {
+  generatedAt: string;
+  data: EconomicIndicator[];
+  signals: EconomicIndicator[];
+  aseanGdp: AseanGdpDatum[];
+  sources: string[];
+}
+
+export interface DatabaseTableSummary {
+  id: string;
+  label: string;
+  description: string;
+  category: string;
+  columns: string[];
+  rowCount: number | null;
+  latestValue: string | null;
+}
+
+export interface DatabaseCatalogResponse {
+  databaseConfigured: boolean;
+  generatedAt: string;
+  totalRows: number;
+  tables: DatabaseTableSummary[];
+}
+
+export interface DatabaseTablePreviewResponse {
+  databaseConfigured: boolean;
+  generatedAt: string;
+  table: DatabaseTableSummary;
+  limit: number;
+  rows: Array<Record<string, unknown>>;
 }
 
 export interface ConflictTrendSeries {

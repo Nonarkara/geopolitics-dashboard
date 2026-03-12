@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Network } from "lucide-react";
+import { BookOpen, Database, Network } from "lucide-react";
 
 /**
  * Southeast Asian timezone clocks with temperature and AQI.
@@ -32,6 +32,7 @@ interface EnvData {
 interface TopBarProps {
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
+  onOpenDataExplorer: () => void;
 }
 
 function formatTime(tz: string) {
@@ -65,6 +66,7 @@ function aqiColor(aqi: number | null): string {
 export default function TopBar({
   onOpenManual,
   onOpenArchitecture,
+  onOpenDataExplorer,
 }: TopBarProps) {
   const [time, setTime] = useState("");
   const [leftTimes, setLeftTimes] = useState<string[]>([]);
@@ -190,6 +192,16 @@ export default function TopBar({
         >
           <Network size={14} className="text-[var(--cool)]" />
           APIs / Architecture
+        </button>
+
+        <button
+          type="button"
+          onClick={onOpenDataExplorer}
+          aria-haspopup="dialog"
+          className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-raised)] px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+        >
+          <Database size={14} className="text-[var(--cool)]" />
+          Data / Export
         </button>
 
         <button

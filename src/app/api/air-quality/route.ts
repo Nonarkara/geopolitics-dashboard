@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import {
+  loadLatestStoredAirQualitySnapshots,
+  persistAirQualitySnapshots,
+} from "../../../lib/history-store";
 import type { AirQualityPoint } from "../../../types/dashboard";
 
 const AIR_QUALITY_LOCATIONS = [
@@ -70,10 +74,11 @@ async function fetchPoint(
     }
 
     const payload = (await response.json()) as {
-      current?: { us_aqi?: number; pm2_5?: number };
+      current?: { time?: string; us_aqi?: number; pm2_5?: number };
     };
     const aqi = payload.current?.us_aqi;
     const pm25 = payload.current?.pm2_5;
+    const observedAt = payload.current?.time;
 
     if (typeof aqi !== "number" || typeof pm25 !== "number") {
       return null;
@@ -86,6 +91,11 @@ async function fetchPoint(
       aqi,
       pm25,
       category: getCategory(aqi),
+      observedAt:
+        typeof observedAt === "string"
+          ? new Date(observedAt).toISOString()
+          : new Date().toISOString(),
+      source: "Open-Meteo Air Quality",
     };
   } catch {
     return null;
@@ -99,12 +109,36 @@ export async function GET() {
         fetchPoint(point.label, point.lat, point.lng),
       ),
     );
-    const merged = results.map(
-      (result, index) => result ?? fallbackAirQuality[index],
+    const livePoints = results.filter(
+      (result): result is AirQualityPoint => result !== null,
     );
 
-    return NextResponse.json(merged);
+    if (livePoints.length > 0) {
+      const merged = results.map(
+        (result, index) => result ?? fallbackAirQuality[index],
+      );
+
+      try {
+        await persistAirQualitySnapshots(livePoints);
+      } catch {
+        // Database history is additive; live response should still succeed.
+      }
+
+      return NextResponse.json(merged);
+    }
+
+    const storedPoints = await loadLatestStoredAirQualitySnapshots();
+    if (storedPoints && storedPoints.length > 0) {
+      return NextResponse.json(storedPoints);
+    }
+
+    return NextResponse.json(fallbackAirQuality);
   } catch {
+    const storedPoints = await loadLatestStoredAirQualitySnapshots();
+    if (storedPoints && storedPoints.length > 0) {
+      return NextResponse.json(storedPoints);
+    }
+
     return NextResponse.json(fallbackAirQuality);
   }
 }

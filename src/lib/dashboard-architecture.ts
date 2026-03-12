@@ -107,7 +107,7 @@ export const dashboardSurfaces: DashboardSurface[] = [
     id: "top-bar",
     title: "Top Bar",
     summary:
-      "Regional clocks plus temperature and AQI snapshots, with entry points for the manual and architecture views.",
+      "Regional clocks plus temperature and AQI snapshots, with entry points for the manual, architecture view, and database explorer.",
   },
   {
     id: "sidebar",
@@ -137,7 +137,7 @@ export const dashboardSurfaces: DashboardSurface[] = [
     id: "modal-layer",
     title: "Operator Overlays",
     summary:
-      "Manual and architecture modals that explain how to use the system and where the data comes from.",
+      "Manual, architecture, and database-explorer modals that explain the system and expose stored data.",
   },
 ];
 
@@ -185,7 +185,7 @@ export const architectureLayers: ArchitectureLayer[] = [
     summary:
       "The app uses Postgres when available and falls back to in-memory or curated static data when it is not.",
     bullets: [
-      "Operational tables include `events`, `fire_events`, `rainfall_data`, `population_movements`, and `market_data`.",
+      "Operational tables include `events`, `fire_events`, `rainfall_data`, `population_movements`, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
       "Intelligence and convergence use memory or hybrid cache paths to avoid hard failures during upstream outages.",
       "Static assets include regional GeoJSON, manual screenshots, and deterministic overlay catalogs.",
     ],
@@ -259,7 +259,7 @@ export const resiliencePatterns = [
 
 export const storageNotes = [
   "Primary operational storage: Postgres via `query()` in `src/lib/db.ts`.",
-  "Primary operational tables: `events`, `fire_events`, `rainfall_data`, `population_movements`, `market_data`.",
+  "Primary operational tables: `events`, `fire_events`, `rainfall_data`, `population_movements`, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
   "Hybrid caches: intelligence cache and corridor convergence snapshots.",
   "Static assets: `public/data/*.geojson`, `public/manual/*`, and generated overlay catalog metadata.",
   "Runtime feature gates: `DATABASE_URL`, `REFERENCE_DASHBOARD_URL`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `OPENAI_API_KEY`.",
@@ -294,6 +294,36 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     fallback: "Returns `fallbackSources` if source inspection fails.",
   },
   {
+    path: "/api/data/catalog",
+    category: "System",
+    purpose:
+      "Returns the curated list of database tables exposed for in-app preview and export.",
+    consumers: ["DatabaseExplorerModal"],
+    upstreams: ["Postgres table summaries"],
+    fallback:
+      "Returns an empty catalog with `databaseConfigured: false` when the database is not available.",
+  },
+  {
+    path: "/api/data/table",
+    category: "System",
+    purpose:
+      "Returns a limited preview of an allowlisted database table for in-app inspection.",
+    consumers: ["DatabaseExplorerModal"],
+    upstreams: ["Postgres table preview queries"],
+    fallback:
+      "Returns an empty preview when the database is not configured and rejects unknown table ids.",
+  },
+  {
+    path: "/api/data/export",
+    category: "System",
+    purpose:
+      "Exports an allowlisted database table as CSV or JSON using the same curated columns shown in the explorer.",
+    consumers: ["DatabaseExplorerModal", "operators exporting snapshots"],
+    upstreams: ["Postgres export queries"],
+    fallback:
+      "Returns `503` when the database is not configured and rejects unknown table ids or formats.",
+  },
+  {
     path: "/api/map/overlays",
     category: "Mapping",
     purpose:
@@ -326,8 +356,9 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     purpose:
       "Provides AQI and PM2.5 station data for air-quality heatmaps and map tooltips.",
     consumers: ["BorderMap"],
-    upstreams: ["Open-Meteo air quality"],
-    fallback: "Returns curated cross-border station values when live calls fail.",
+    upstreams: ["Open-Meteo air quality", "Postgres `air_quality_snapshots`"],
+    fallback:
+      "Returns the latest stored station snapshots when live calls fail, then curated cross-border station values as a final fallback.",
   },
   {
     path: "/api/rainfall",
@@ -398,8 +429,15 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     purpose:
       "Returns the market radar payload used by the economic monitor panel.",
     consumers: ["EconomicMonitor"],
-    upstreams: ["Reference dashboard discovery", "ER API FX rates", "Binance BTC ticker"],
-    fallback: "Returns `fallbackEconomicIndicators` if reference discovery or market fetches fail.",
+    upstreams: [
+      "Reference dashboard discovery",
+      "ER API FX rates",
+      "Binance BTC ticker",
+      "World Bank GDP and GDP per capita",
+      "Postgres `market_data` and `macro_country_snapshots`",
+    ],
+    fallback:
+      "Returns the latest stored market and macro snapshots when live feeds fail, then falls back to packaged market and ASEAN GDP values.",
   },
   {
     path: "/api/economics",
@@ -578,6 +616,18 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     description: "BTC ticker used as a fast-moving risk and volatility reference.",
     surfaces: ["Economic monitor", "intelligence market signals"],
     endpoints: ["https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT"],
+  },
+  {
+    id: "world-bank-wdi",
+    label: "World Bank WDI",
+    category: "Markets",
+    description:
+      "Latest official annual GDP and GDP-per-capita series for ASEAN comparison in the market radar.",
+    surfaces: ["Economic monitor"],
+    endpoints: [
+      "https://api.worldbank.org/v2/country/BRN;KHM;IDN;LAO;MYS;MMR;PHL;SGP;THA;VNM/indicator/NY.GDP.MKTP.CD?source=2&mrnev=1&format=json",
+      "https://api.worldbank.org/v2/country/BRN;KHM;IDN;LAO;MYS;MMR;PHL;SGP;THA;VNM/indicator/NY.GDP.PCAP.CD?source=2&mrnev=1&format=json",
+    ],
   },
   {
     id: "google-trends",

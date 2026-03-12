@@ -461,7 +461,7 @@ export default function BorderMap({
 
       {/* Satellite overlay controls - top right */}
       <div className="pointer-events-auto absolute right-3 top-3 z-40 w-[240px]">
-        <div className="dashboard-panel rounded-lg p-4">
+        <div className="dashboard-panel map-overlay-panel rounded-lg p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="eyebrow">Imagery</div>
@@ -552,14 +552,14 @@ export default function BorderMap({
 
       {/* Working layers - bottom left */}
       <div className="pointer-events-auto absolute bottom-3 left-3 z-40 w-[272px]">
-        <div className="dashboard-panel rounded-lg p-4">
+        <div className="dashboard-panel map-overlay-panel rounded-lg p-4">
           <div className="eyebrow">Working layers</div>
 
           <div className="mt-2 flex flex-wrap gap-1.5">
             <button
               type="button"
               onClick={() => setViewState({ ...INITIAL_VIEW_STATE })}
-              className="rounded-md border border-[var(--cool)] bg-[var(--line-bright)] px-3 py-1 text-[9px] font-bold text-[var(--cool)]"
+              className="map-overlay-preset-primary rounded-md border border-[var(--cool)] px-3 py-1 text-[9px] font-bold text-[var(--cool)]"
             >
               Thailand
             </button>
@@ -574,7 +574,7 @@ export default function BorderMap({
                   bearing: 0,
                 })
               }
-              className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
+              className="map-overlay-preset-secondary rounded-md border border-[var(--line)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
             >
               West border
             </button>
@@ -589,7 +589,7 @@ export default function BorderMap({
                   bearing: 0,
                 })
               }
-              className="rounded-md border border-[var(--line)] bg-[var(--bg)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
+              className="map-overlay-preset-secondary rounded-md border border-[var(--line)] px-3 py-1 text-[9px] font-bold text-[var(--dim)] hover:text-[var(--muted)]"
             >
               Deep south
             </button>

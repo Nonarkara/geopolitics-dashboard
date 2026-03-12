@@ -5,6 +5,7 @@ import EconomicMonitor from "../components/Analytics/EconomicMonitor";
 import TrendingKeywords from "../components/Analytics/TrendingKeywords";
 import BriefingPanel from "../components/Intelligence/BriefingPanel";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
+import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import LiveTVPanel from "../components/Intelligence/LiveTVPanel";
 import NewsDesk from "../components/Intelligence/NewsDesk";
@@ -21,21 +22,34 @@ export default function Dashboard() {
     useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
+  const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
 
   const openManual = () => {
     setIsArchitectureOpen(false);
+    setIsDataExplorerOpen(false);
     setIsManualOpen(true);
   };
 
   const openArchitecture = () => {
     setIsManualOpen(false);
+    setIsDataExplorerOpen(false);
     setIsArchitectureOpen(true);
+  };
+
+  const openDataExplorer = () => {
+    setIsManualOpen(false);
+    setIsArchitectureOpen(false);
+    setIsDataExplorerOpen(true);
   };
 
   return (
     <main className="relative flex h-[100dvh] w-screen flex-col overflow-y-auto overflow-x-hidden bg-[var(--bg)] text-[var(--ink)] xl:overflow-hidden">
       {/* Top clock bar */}
-      <TopBar onOpenManual={openManual} onOpenArchitecture={openArchitecture} />
+      <TopBar
+        onOpenManual={openManual}
+        onOpenArchitecture={openArchitecture}
+        onOpenDataExplorer={openDataExplorer}
+      />
 
       {/* Title bar */}
       <div className="flex h-[44px] items-center justify-center gap-6 border-b border-[var(--line)] bg-[var(--bg-surface)]">
@@ -115,6 +129,10 @@ export default function Dashboard() {
       <DashboardArchitectureModal
         isOpen={isArchitectureOpen}
         onClose={() => setIsArchitectureOpen(false)}
+      />
+      <DatabaseExplorerModal
+        isOpen={isDataExplorerOpen}
+        onClose={() => setIsDataExplorerOpen(false)}
       />
     </main>
   );

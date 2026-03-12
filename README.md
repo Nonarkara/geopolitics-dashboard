@@ -48,6 +48,8 @@ Initialize the database schema:
 ./scripts/setup-db.sh
 ```
 
+If `psql` is not installed locally, run `db/schema.sql` in your managed PostgreSQL/PostGIS console instead.
+
 Install ingestion dependencies if needed:
 
 ```bash
@@ -103,3 +105,10 @@ To deploy with the Blueprint flow, push the repo to GitHub, GitLab, or Bitbucket
 1. Python scripts fetch external data and write normalized rows to Postgres.
 2. Next.js API routes combine Postgres data, RSS/search feeds, and reference APIs into cached intelligence packages.
 3. React components fetch those routes and render map overlays, charts, package panels, and live signal cards.
+
+## Database Notes
+
+- Core longitudinal tables: `events`, `market_data`, `fire_events`, `rainfall_data`, `population_movements`
+- Live snapshot tables: `air_quality_snapshots`, `macro_country_snapshots`
+- `/api/markets` now persists live FX/BTC reference indicators plus ASEAN GDP snapshots when `DATABASE_URL` is configured
+- `/api/air-quality` now persists live AQI/PM2.5 station observations and falls back to the latest stored snapshots before using static defaults

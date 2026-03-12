@@ -1,8 +1,10 @@
 import type {
+  AseanGdpDatum,
   ApiSourceResponse,
   CopernicusPreviewResponse,
   EconomicIndicator,
 } from "../types/dashboard";
+import { ASEAN_COUNTRIES } from "./asean-country-registry";
 import { buildMapOverlayCatalog } from "./map-overlays";
 
 const DEFAULT_REFERENCE_DASHBOARD_URL =
@@ -10,7 +12,15 @@ const DEFAULT_REFERENCE_DASHBOARD_URL =
 const DEFAULT_FX_RATES_URL = "https://open.er-api.com/v6/latest/USD";
 const DEFAULT_BINANCE_TICKER_URL =
   "https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT";
+const DEFAULT_WORLD_BANK_API_URL = "https://api.worldbank.org/v2";
 const REQUEST_TIMEOUT_MS = 12_000;
+const GDP_INDICATOR_ID = "NY.GDP.MKTP.CD";
+const GDP_PER_CAPITA_INDICATOR_ID = "NY.GDP.PCAP.CD";
+
+const ASEAN_WORLD_BANK_COUNTRIES = ASEAN_COUNTRIES.map((country) => ({
+  code: country.code,
+  name: country.label,
+}));
 
 interface ReferenceSummary {
   apiCount: number;
@@ -52,6 +62,27 @@ interface BinanceTickerResponse {
   symbol: string;
   lastPrice: string;
   priceChangePercent: string;
+}
+
+interface WorldBankMetadata {
+  page: number;
+  pages: number;
+  per_page: string;
+  total: number;
+}
+
+interface WorldBankIndicatorRow {
+  indicator: {
+    id: string;
+    value: string;
+  };
+  country: {
+    id: string;
+    value: string;
+  };
+  countryiso3code: string;
+  date: string;
+  value: number | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -122,6 +153,37 @@ function isBinanceTickerResponse(value: unknown): value is BinanceTickerResponse
     typeof value.symbol === "string" &&
     typeof value.lastPrice === "string" &&
     typeof value.priceChangePercent === "string"
+  );
+}
+
+function isWorldBankIndicatorRow(value: unknown): value is WorldBankIndicatorRow {
+  return (
+    isRecord(value) &&
+    isRecord(value.indicator) &&
+    typeof value.indicator.id === "string" &&
+    typeof value.indicator.value === "string" &&
+    isRecord(value.country) &&
+    typeof value.country.id === "string" &&
+    typeof value.country.value === "string" &&
+    typeof value.countryiso3code === "string" &&
+    typeof value.date === "string" &&
+    (typeof value.value === "number" || value.value === null)
+  );
+}
+
+function isWorldBankIndicatorResponse(
+  value: unknown,
+): value is [WorldBankMetadata, WorldBankIndicatorRow[]] {
+  return (
+    Array.isArray(value) &&
+    value.length >= 2 &&
+    isRecord(value[0]) &&
+    typeof value[0].page === "number" &&
+    typeof value[0].pages === "number" &&
+    typeof value[0].per_page === "string" &&
+    typeof value[0].total === "number" &&
+    Array.isArray(value[1]) &&
+    value[1].every(isWorldBankIndicatorRow)
   );
 }
 
@@ -239,6 +301,85 @@ export async function fetchReferenceEconomicIndicators() {
       source: "dr-non-operating-systems",
     },
   ] satisfies EconomicIndicator[];
+}
+
+function buildWorldBankIndicatorUrl(indicatorId: string) {
+  const countries = ASEAN_WORLD_BANK_COUNTRIES.map((country) => country.code).join(";");
+  const params = new URLSearchParams({
+    format: "json",
+    mrnev: "1",
+    per_page: "100",
+    source: "2",
+  });
+
+  return `${DEFAULT_WORLD_BANK_API_URL}/country/${countries}/indicator/${indicatorId}?${params.toString()}`;
+}
+
+function toWorldBankSeries(
+  payload: unknown,
+  indicatorId: string,
+) {
+  if (!isWorldBankIndicatorResponse(payload)) {
+    throw new Error("World Bank payload was not recognized");
+  }
+
+  return payload[1]
+    .filter(
+      (row) =>
+        row.indicator.id === indicatorId &&
+        row.value !== null &&
+        row.countryiso3code &&
+        Number.isFinite(row.value),
+    )
+    .map((row) => ({
+      countryCode: row.countryiso3code,
+      year: Number(row.date),
+      value: row.value as number,
+    }))
+    .filter((row) => Number.isFinite(row.year));
+}
+
+export async function fetchAseanGdpSnapshot(): Promise<AseanGdpDatum[]> {
+  const [gdpPayload, gdpPerCapitaPayload] = await Promise.all([
+    fetchJson<unknown>(buildWorldBankIndicatorUrl(GDP_INDICATOR_ID)),
+    fetchJson<unknown>(buildWorldBankIndicatorUrl(GDP_PER_CAPITA_INDICATOR_ID)),
+  ]);
+
+  const gdpSeries = new Map(
+    toWorldBankSeries(gdpPayload, GDP_INDICATOR_ID).map((row) => [
+      row.countryCode,
+      row,
+    ]),
+  );
+  const gdpPerCapitaSeries = new Map(
+    toWorldBankSeries(gdpPerCapitaPayload, GDP_PER_CAPITA_INDICATOR_ID).map((row) => [
+      row.countryCode,
+      row,
+    ]),
+  );
+
+  const snapshot: Array<AseanGdpDatum | null> = ASEAN_WORLD_BANK_COUNTRIES.map((country) => {
+    const gdp = gdpSeries.get(country.code);
+    const gdpPerCapita = gdpPerCapitaSeries.get(country.code);
+
+    if (!gdp || !gdpPerCapita) {
+      return null;
+    }
+
+    return {
+      countryCode: country.code,
+      country: country.name,
+      gdpUsd: gdp.value,
+      gdpPerCapitaUsd: gdpPerCapita.value,
+      gdpYear: gdp.year,
+      gdpPerCapitaYear: gdpPerCapita.year,
+      source: "World Bank WDI",
+    };
+  });
+
+  return snapshot
+    .filter((row): row is AseanGdpDatum => row !== null)
+    .sort((left, right) => right.gdpUsd - left.gdpUsd);
 }
 
 export async function fetchReferenceApiCatalog(): Promise<ApiSourceResponse> {

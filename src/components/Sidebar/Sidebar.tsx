@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Info, MapPin } from "lucide-react";
+import AseanEconomicsPanel from "./AseanEconomicsPanel";
 import ConvergenceAlerts from "./ConvergenceAlerts";
 import type { IncidentFeature } from "../../types/dashboard";
 
@@ -74,6 +75,14 @@ export default function Sidebar() {
 
         <section className="space-y-4">
           <div className="space-y-2">
+            <div className="eyebrow">ASEAN Economics</div>
+            <div className="h-px w-full bg-[var(--bg-raised)]" />
+          </div>
+          <AseanEconomicsPanel />
+        </section>
+
+        <section className="space-y-4">
+          <div className="space-y-2">
             <div className="eyebrow">Data pipeline</div>
             <div className="h-px w-full bg-[var(--bg-raised)]" />
           </div>
@@ -86,6 +95,7 @@ export default function Sidebar() {
               { name: "Open-Meteo AQI", status: "live", interval: "5 min", source: "open-meteo.com" },
               { name: "RSS / Google News", status: "live", interval: "5 min", source: "rss2json.com" },
               { name: "Binance / FX", status: "live", interval: "90s", source: "binance.com" },
+              { name: "World Bank WDI", status: "live", interval: "daily", source: "worldbank.org" },
             ].map((feed) => (
               <div
                 key={feed.name}

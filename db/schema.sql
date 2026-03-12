@@ -91,6 +91,62 @@ CREATE TABLE IF NOT EXISTS env_proxies (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Air quality snapshots for longitudinal AQI / PM2.5 tracking
+CREATE TABLE IF NOT EXISTS air_quality_snapshots (
+    id SERIAL PRIMARY KEY,
+    location TEXT NOT NULL,
+    latitude FLOAT NOT NULL,
+    longitude FLOAT NOT NULL,
+    aqi INTEGER NOT NULL,
+    pm25 FLOAT NOT NULL,
+    category TEXT NOT NULL,
+    observed_at TIMESTAMPTZ NOT NULL,
+    source TEXT NOT NULL DEFAULT 'Open-Meteo Air Quality',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (source, location, observed_at)
+);
+
+CREATE INDEX IF NOT EXISTS air_quality_location_idx ON air_quality_snapshots(location);
+CREATE INDEX IF NOT EXISTS air_quality_observed_idx ON air_quality_snapshots(observed_at DESC);
+
+-- Country-level macro snapshots for annual GDP comparisons
+CREATE TABLE IF NOT EXISTS macro_country_snapshots (
+    id SERIAL PRIMARY KEY,
+    country_code TEXT NOT NULL,
+    country TEXT NOT NULL,
+    gdp_usd DOUBLE PRECISION NOT NULL,
+    gdp_per_capita_usd DOUBLE PRECISION NOT NULL,
+    gdp_year INTEGER NOT NULL,
+    gdp_per_capita_year INTEGER NOT NULL,
+    source TEXT NOT NULL,
+    captured_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (country_code, gdp_year, gdp_per_capita_year, source)
+);
+
+CREATE INDEX IF NOT EXISTS macro_country_code_idx ON macro_country_snapshots(country_code);
+CREATE INDEX IF NOT EXISTS macro_country_captured_idx ON macro_country_snapshots(captured_at DESC);
+
+-- Country-level indicator history for ASEAN sidebar profiles
+CREATE TABLE IF NOT EXISTS country_economic_indicators (
+    id SERIAL PRIMARY KEY,
+    country_code TEXT NOT NULL,
+    country TEXT NOT NULL,
+    indicator_code TEXT NOT NULL,
+    indicator_label TEXT NOT NULL,
+    value DOUBLE PRECISION NOT NULL,
+    unit TEXT,
+    ref_year INTEGER NOT NULL,
+    source TEXT NOT NULL,
+    captured_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (country_code, indicator_code, ref_year, source)
+);
+
+CREATE INDEX IF NOT EXISTS country_economic_code_idx ON country_economic_indicators(country_code);
+CREATE INDEX IF NOT EXISTS country_economic_indicator_idx ON country_economic_indicators(indicator_code);
+CREATE INDEX IF NOT EXISTS country_economic_captured_idx ON country_economic_indicators(captured_at DESC);
+
 -- Normalized intelligence items cache
 CREATE TABLE IF NOT EXISTS intelligence_items_cache (
     id SERIAL PRIMARY KEY,
