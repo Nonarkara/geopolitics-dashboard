@@ -9,7 +9,8 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:ui": "playwright test"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^9.2.11",
@@ -46,5 +47,8 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
   }
 }

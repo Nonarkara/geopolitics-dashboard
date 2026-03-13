@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { formatDashboardVersion } from "../lib/dashboard-version";
 
 export const metadata: Metadata = {
-  title: "Thailand Geopolitics | Phuket Dashboard",
+  title: `Thailand Geopolitics ${formatDashboardVersion()} | Phuket Dashboard`,
   description: "Advanced monitoring platform for regional stability and economic development.",
 };
 

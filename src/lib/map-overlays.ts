@@ -306,6 +306,17 @@ export function buildMapOverlayCatalog(
       defaultOpacity: 0.85,
       enabledByDefault: true,
     }),
+    vectorOverlay({
+      id: "publicCameras",
+      label: "Public Cameras",
+      shortLabel: "CAMS",
+      description: "Curated public Phuket camera feeds for beach, town, and nightlife conditions.",
+      source: "Public webcam providers",
+      family: "operational",
+      role: "operational",
+      defaultOpacity: 1,
+      enabledByDefault: true,
+    }),
   ];
 
   return {

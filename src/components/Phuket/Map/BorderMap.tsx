@@ -1,10 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { WebMercatorViewport } from "@deck.gl/core";
 import type { MapViewState, PickingInfo } from "@deck.gl/core";
 import dynamic from "next/dynamic";
-const DeckGL = dynamic(() => (import("@deck.gl/react") as any).then((m: any) => m.default || m.DeckGL), { ssr: false }) as any;
+const DeckGL = dynamic(
+  () => import("@deck.gl/react").then((module) => module.default),
+  { ssr: false },
+);
 import {
+  Camera,
   CloudRain,
   Flame,
   Globe,
@@ -35,6 +40,7 @@ import { luma } from "@luma.gl/core";
 import { webgl2Adapter } from "@luma.gl/webgl";
 import { getUsableMapboxToken } from "../../../lib/mapbox";
 import { buildMapOverlayCatalog } from "../../../lib/map-overlays";
+import PublicCameraCard from "../Intelligence/PublicCameraCard";
 import type {
   AirQualityPoint,
   ConflictZoneCollection,
@@ -43,6 +49,8 @@ import type {
   IncidentFeature,
   ProvinceSelection,
   FlightData,
+  PublicCamera,
+  PublicCameraResponse,
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
@@ -124,6 +132,69 @@ function isAirQualityPoint(value: unknown): value is AirQualityPoint {
   );
 }
 
+function isPublicCameraResponse(value: unknown): value is PublicCameraResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "cameras" in value &&
+    Array.isArray(value.cameras)
+  );
+}
+
+function projectCameraMarkers(
+  cameras: PublicCamera[],
+  viewState: MapViewState,
+  width: number,
+  height: number,
+) {
+  const viewport = new WebMercatorViewport({
+    width,
+    height,
+    longitude: viewState.longitude,
+    latitude: viewState.latitude,
+    zoom: viewState.zoom,
+    pitch: viewState.pitch,
+    bearing: viewState.bearing,
+  });
+
+  return cameras
+    .map((camera) => {
+      const [x, y] = viewport.project([camera.lng, camera.lat]);
+
+      return {
+        camera,
+        x,
+        y,
+      };
+    })
+    .filter(
+      (marker) =>
+        Number.isFinite(marker.x) &&
+        Number.isFinite(marker.y) &&
+        marker.x >= -24 &&
+        marker.x <= width + 24 &&
+        marker.y >= -24 &&
+        marker.y <= height + 24,
+    );
+}
+
+function getCameraMarkerOffset(cameraId: string) {
+  switch (cameraId) {
+    case "patong-coast":
+      return { x: -20, y: -16 };
+    case "bangla-road":
+      return { x: 18, y: 16 };
+    case "kata-beach":
+      return { x: 0, y: 0 };
+    case "karon-panorama":
+      return { x: -12, y: 12 };
+    case "phuket-old-town":
+      return { x: 10, y: -10 };
+    default:
+      return { x: 0, y: 0 };
+  }
+}
+
 async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   try {
     const res = await fetch(url);
@@ -174,8 +245,9 @@ export default function BorderMap({
 }: {
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
-  const [mounted, setMounted] = useState(false);
+  const mapSurfaceRef = useRef<HTMLDivElement>(null);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [mapSurfaceSize, setMapSurfaceSize] = useState({ width: 0, height: 0 });
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
@@ -188,9 +260,11 @@ export default function BorderMap({
   const [rainfall, setRainfall] = useState<RainfallPoint[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityPoint[]>([]);
   const [flights, setFlights] = useState<FlightData[]>([]);
+  const [cameras, setCameras] = useState<PublicCamera[]>([]);
   const [borders, setBorders] = useState<RegionBorderCollection | null>(null);
   const [conflictZones, setConflictZones] =
     useState<ConflictZoneCollection>(EMPTY_CONFLICT_ZONES);
+  const [selectedCamera, setSelectedCamera] = useState<PublicCamera | null>(null);
 
   const getSafeDate = () => {
     // NASA GIBS only serves imagery up to the current real-world date.
@@ -224,9 +298,6 @@ export default function BorderMap({
   const hotspotCount = fires.length;
   const rainCount = rainfall.length;
   const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
-  const totalActiveLayers = Object.entries(enabledOverlays).filter(
-    ([, active]) => active,
-  ).length;
   const mapStyle = isDetailedMap
     ? "mapbox://styles/mapbox/satellite-streets-v12"
     : "mapbox://styles/mapbox/light-v11";
@@ -252,7 +323,29 @@ export default function BorderMap({
     .filter(Boolean);
 
   useEffect(() => {
-    setMounted(true);
+    const element = mapSurfaceRef.current;
+    if (!element) {
+      return;
+    }
+
+    const observer = new ResizeObserver((entries) => {
+      const entry = entries[0];
+      if (!entry) {
+        return;
+      }
+
+      setMapSurfaceSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      });
+    });
+
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
     const loadData = async () => {
       const [
         incidentData,
@@ -263,6 +356,7 @@ export default function BorderMap({
         borderData,
         conflictZoneData,
         flightData,
+        cameraData,
       ] = await Promise.all([
         fetchJson<IncidentFeature[]>("/api/incidents", []),
         fetchJson<FireEvent[]>("/api/fires", []),
@@ -272,6 +366,10 @@ export default function BorderMap({
         fetchJson<RegionBorderCollection>("/data/region_borders.geojson", EMPTY_BORDERS),
         fetchJson<ConflictZoneCollection>("/data/conflict_zones.geojson", EMPTY_CONFLICT_ZONES),
         fetchJson<FlightData[]>("/api/flights", []),
+        fetchJson<PublicCameraResponse>("/api/public-cameras", {
+          generatedAt: "",
+          cameras: [],
+        }),
       ]);
 
       setIncidents(Array.isArray(incidentData) ? incidentData : []);
@@ -280,6 +378,9 @@ export default function BorderMap({
       setRainfall(Array.isArray(rainfallData) ? rainfallData : []);
       setAirQuality(Array.isArray(airQualityData) ? airQualityData : []);
       setFlights(Array.isArray(flightData) ? flightData : []);
+      setCameras(
+        isPublicCameraResponse(cameraData) ? cameraData.cameras : [],
+      );
       setBorders(borderData);
       setConflictZones(conflictZoneData);
     };
@@ -379,6 +480,7 @@ export default function BorderMap({
       id: "satellite-overlay",
       active: showSatelliteOverlay,
       label: "NASA overlay",
+      shortLabel: "NASA",
       icon: Globe,
       onClick: () => setShowSatelliteOverlay((value) => !value),
     },
@@ -386,6 +488,7 @@ export default function BorderMap({
       id: "aerial-base",
       active: showAerialBasemap,
       label: "ESRI aerial",
+      shortLabel: "AERIAL",
       icon: Satellite,
       onClick: () => setShowAerialBasemap((value) => !value),
     },
@@ -393,6 +496,7 @@ export default function BorderMap({
       id: "roads-base",
       active: showStreets,
       label: "OSM roads",
+      shortLabel: "ROADS",
       icon: MapPinned,
       onClick: () => setShowStreets((value) => !value),
     },
@@ -400,6 +504,7 @@ export default function BorderMap({
       id: "detail-base",
       active: isDetailedMap,
       label: "Detailed map",
+      shortLabel: "DETAIL",
       icon: MapIcon,
       onClick: () => setIsDetailedMap((value) => !value),
     },
@@ -407,6 +512,7 @@ export default function BorderMap({
       id: "night-lights",
       active: enabledOverlays.nightLights,
       label: "Night lights",
+      shortLabel: "LIGHTS",
       icon: MoonStar,
       onClick: () => toggleOverlay("nightLights"),
     },
@@ -416,6 +522,7 @@ export default function BorderMap({
       id: overlay.id,
       active: enabledOverlays[overlay.id],
       label: overlay.label,
+      shortLabel: overlay.shortLabel,
       detail:
         overlay.id === "thermalHotspots"
           ? `${formatCompactCount(hotspotCount)} hotspots`
@@ -440,6 +547,7 @@ export default function BorderMap({
       id: overlay.id,
       active: enabledOverlays[overlay.id],
       label: overlay.label,
+      shortLabel: overlay.shortLabel,
       detail:
         overlay.id === "conflictZones"
           ? `${formatCompactCount(conflictZones.features.length)} zones`
@@ -451,9 +559,13 @@ export default function BorderMap({
                 ? "Province index"
                 : overlay.id === "flightPaths"
                   ? `${formatCompactCount(flights.length)} aircraft`
+                  : overlay.id === "publicCameras"
+                    ? `${formatCompactCount(cameras.length)} cameras`
                   : overlay.shortLabel,
       icon:
-        overlay.id === "populationMovement"
+        overlay.id === "publicCameras"
+          ? Camera
+          : overlay.id === "populationMovement"
           ? Users
           : overlay.id === "conflictZones"
             ? MapPinned
@@ -468,7 +580,21 @@ export default function BorderMap({
     })),
   ];
 
+  const projectedCameraMarkers =
+    enabledOverlays.publicCameras && mapSurfaceSize.width > 0 && mapSurfaceSize.height > 0
+      ? projectCameraMarkers(
+          cameras,
+          viewState,
+          mapSurfaceSize.width,
+          mapSurfaceSize.height,
+        )
+      : [];
+
   const toggleOverlay = (overlayId: string) => {
+    if (overlayId === "publicCameras" && enabledOverlays.publicCameras) {
+      setSelectedCamera(null);
+    }
+
     setEnabledOverlays((current) => ({
       ...current,
       [overlayId]: !current[overlayId],
@@ -476,6 +602,8 @@ export default function BorderMap({
   };
 
   const handleMapClick = ({ object }: PickingInfo<unknown>) => {
+    setSelectedCamera(null);
+
     if (isIncidentFeature(object)) {
       onProvinceSelect?.({
         name: object.properties.location || "Local Sector",
@@ -554,14 +682,12 @@ export default function BorderMap({
   // Prepend basemap layers so they sit below all other layers
   const allLayers = [aerialLayer, streetsLayer, ...layers].filter(Boolean);
 
-  if (!mounted) {
-    return (
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-[var(--bg-raised)] animate-pulse" />
-    );
-  }
-
   return (
-    <div className="relative flex h-full w-full flex-col overflow-hidden">
+    <div
+      ref={mapSurfaceRef}
+      data-testid="phuket-map-surface"
+      className="relative flex h-full w-full flex-col overflow-hidden"
+    >
       {!hasMapboxBaseMap && (
         <div
           className={`absolute inset-0 ${fallbackBackgroundClass}`}
@@ -572,9 +698,12 @@ export default function BorderMap({
       <DeckGL
         id="phuket-deck"
         viewState={viewState}
-        onViewStateChange={({ viewState: nextViewState }: { viewState: any }) => {
-          const next = nextViewState as MapViewState;
-          setViewState(next);
+        onViewStateChange={({
+          viewState: nextViewState,
+        }: {
+          viewState: MapViewState;
+        }) => {
+          setViewState(nextViewState);
         }}
         controller={true}
         layers={allLayers}
@@ -592,6 +721,51 @@ export default function BorderMap({
           <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
         )}
       </DeckGL>
+
+      {enabledOverlays.publicCameras ? (
+        <div className="pointer-events-none absolute inset-0 z-20">
+          {projectedCameraMarkers.map(({ camera, x, y }) => (
+            (() => {
+              const offset = getCameraMarkerOffset(camera.id);
+
+              return (
+                <button
+                  key={camera.id}
+                  type="button"
+                  data-testid={`camera-marker-${camera.id}`}
+                  aria-label={`View camera marker for ${camera.label}`}
+                  title={camera.label}
+                  onClick={() => setSelectedCamera(camera)}
+                  className={`pointer-events-auto absolute -translate-x-1/2 -translate-y-1/2 rounded-full border shadow-[0_10px_24px_rgba(15,23,42,0.28)] transition-colors ${
+                    selectedCamera?.id === camera.id
+                      ? "border-[var(--cool)] bg-[var(--cool)] text-white"
+                      : "border-[var(--line-bright)] bg-[rgba(248,246,240,0.92)] text-[var(--ink)] hover:border-[var(--cool)] hover:text-[var(--cool)]"
+                  }`}
+                  style={{
+                    left: `${x + offset.x}px`,
+                    top: `${y + offset.y}px`,
+                    width: "34px",
+                    height: "34px",
+                  }}
+                >
+                  <span className="flex items-center justify-center">
+                    <Camera size={14} />
+                  </span>
+                </button>
+              );
+            })()
+          ))}
+        </div>
+      ) : null}
+
+      {selectedCamera && enabledOverlays.publicCameras ? (
+        <div
+          data-testid="camera-detail-card"
+          className="pointer-events-auto absolute bottom-[72px] right-4 z-30 w-[280px] max-w-[calc(100%-2rem)]"
+        >
+          <PublicCameraCard camera={selectedCamera} variant="map-detail" />
+        </div>
+      ) : null}
 
       <div className="pointer-events-auto absolute inset-x-0 top-0 z-40 border-b border-[var(--line)] bg-[rgba(248,246,240,0.85)] backdrop-blur-md">
         <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-1.5 xl:px-4">
@@ -614,6 +788,12 @@ export default function BorderMap({
                   key={option.id}
                   type="button"
                   aria-pressed={satelliteOverlay === option.id}
+                  aria-label={`Select imagery overlay ${option.label}`}
+                  data-testid={`imagery-${option.id}`}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    setSatelliteOverlay(option.id);
+                  }}
                   onClick={() => setSatelliteOverlay(option.id)}
                   className={`px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
                     satelliteOverlay === option.id
@@ -632,6 +812,8 @@ export default function BorderMap({
                   key={control.id}
                   type="button"
                   aria-pressed={control.active}
+                  aria-label={`Toggle ${control.label}`}
+                  data-testid={`map-mode-${control.id}`}
                   onClick={control.onClick}
                   className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[9px] font-bold uppercase tracking-wider transition-colors ${
                     control.active
@@ -640,7 +822,7 @@ export default function BorderMap({
                   }`}
                 >
                   <Icon size={11} />
-                  {control.label.split(" ")[0]}
+                  {control.shortLabel}
                 </button>
               );
             })}
@@ -673,6 +855,8 @@ export default function BorderMap({
               step="10"
               value={satelliteOpacity}
               disabled={!showSatelliteOverlay}
+              aria-label="Adjust NASA overlay opacity"
+              data-testid="satellite-opacity-slider"
               onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
               className="w-full h-1 bg-[var(--line)] rounded-full appearance-none accent-[var(--cool)] cursor-pointer"
             />
@@ -690,17 +874,20 @@ export default function BorderMap({
                   key={control.id}
                   type="button"
                   aria-pressed={control.active}
+                  aria-label={`Toggle ${control.label}`}
+                  data-testid={`map-layer-${control.id}`}
                   onClick={control.onClick}
                   className={`border whitespace-nowrap px-2 py-1 transition-colors ${
                     control.active
                       ? "border-[var(--ink)] bg-[var(--ink)] text-white"
                       : "border-[var(--line)] text-[var(--ink)] hover:border-[var(--line-bright)]"
                   }`}
+                  title={`${control.label} · ${control.detail}`}
                 >
                   <div className="flex items-center gap-1.5">
                     <Icon size={10} className="shrink-0" />
                     <span className="text-[9px] font-bold uppercase tracking-wider">
-                      {control.label.split(" ")[0]}
+                      {control.shortLabel}
                     </span>
                   </div>
                 </button>

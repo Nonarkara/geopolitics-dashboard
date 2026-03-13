@@ -281,6 +281,40 @@ export interface ApiSourceResponse {
   sources: ApiSourceEntry[];
 }
 
+export interface DashboardStatusPayload {
+  status: string;
+  version: string;
+  signal_strength: number;
+  services: Record<string, string>;
+}
+
+export type PublicCameraCategory =
+  | "beach"
+  | "traffic"
+  | "town"
+  | "nightlife"
+  | "harbor";
+
+export interface PublicCamera {
+  id: string;
+  label: string;
+  category: PublicCameraCategory;
+  lat: number;
+  lng: number;
+  provider: string;
+  sourcePageUrl: string;
+  embedUrl?: string;
+  snapshotUrl?: string;
+  status: PackageStatus;
+  refreshSeconds: number;
+  lastCheckedAt: string;
+}
+
+export interface PublicCameraResponse {
+  generatedAt: string;
+  cameras: PublicCamera[];
+}
+
 export interface CopernicusPreviewLayer {
   id: string;
   label: string;

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { BookOpen, Database, Network } from "lucide-react";
+import DashboardVersionBadge from "../../Common/DashboardVersionBadge";
 
 const TOP_MARKETS = [
   {
@@ -162,8 +162,11 @@ export default function TopBar({
         <div className="flex items-center gap-4">
           <div className="flex-col hidden sm:flex">
             <div className="eyebrow leading-none">Phuket Op Center</div>
-            <div className="text-[14px] font-bold tracking-tight text-[var(--ink)]">
-              COASTAL COMMAND
+            <div className="flex items-center gap-2">
+              <div className="text-[14px] font-bold tracking-tight text-[var(--ink)]">
+                COASTAL COMMAND
+              </div>
+              <DashboardVersionBadge className="border-[var(--line)] text-[var(--cool)]" />
             </div>
           </div>
           <div className="h-8 w-[1px] bg-[var(--line)] hidden sm:block" />
@@ -175,6 +178,12 @@ export default function TopBar({
               HKT / LIVE
             </span>
           </div>
+          {phuketEnv ? (
+            <div className="hidden items-center gap-3 rounded-full border border-[var(--line)] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.14em] lg:flex">
+              <span>{phuketEnv.temperature ?? "--"}C</span>
+              <span className={aqiColor(phuketEnv.aqi)}>AQI {phuketEnv.aqi ?? "--"}</span>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex items-center gap-6">

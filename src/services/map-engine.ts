@@ -1,4 +1,5 @@
 import { HeatmapLayer } from "@deck.gl/aggregation-layers";
+import type { PickingInfo } from "@deck.gl/core";
 import { TileLayer } from "@deck.gl/geo-layers";
 import {
   ArcLayer,
@@ -210,7 +211,7 @@ export const createIncidentLayer = (
     pickable: true,
     autoHighlight: true,
     highlightColor: [255, 255, 255, 100],
-    onClick: (info: any) => {
+    onClick: (info: PickingInfo<IncidentFeature>) => {
       const object = info?.object as IncidentFeature;
       if (object?.properties && onSelect) {
         onSelect({

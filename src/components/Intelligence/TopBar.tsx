@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { BookOpen, Clock, Shield, Database } from "lucide-react";
 import GlobalPulse from "./GlobalPulse";
+import DashboardVersionBadge from "../Common/DashboardVersionBadge";
 
 export default function TopBar({
   onOpenManual,
@@ -30,7 +31,10 @@ export default function TopBar({
       <div className="flex items-center gap-6 h-full pl-6 border-r border-black">
          <Shield size={20} className="text-[var(--accent)]" strokeWidth={3} />
          <div className="hidden xl:block">
-            <div className="text-[12px] font-black tracking-tighter leading-none mb-0.5">THAILAND BORDER</div>
+            <div className="flex items-center gap-2">
+              <div className="text-[12px] font-black tracking-tighter leading-none mb-0.5">THAILAND BORDER</div>
+              <DashboardVersionBadge className="border-black text-black" />
+            </div>
             <div className="text-[8px] font-bold opacity-30 uppercase tracking-[0.2em]">Strategic Command</div>
          </div>
       </div>

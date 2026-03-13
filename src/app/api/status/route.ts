@@ -1,4 +1,5 @@
 import { hasUsableMapboxToken } from "../../../lib/mapbox";
+import { DASHBOARD_VERSION } from "../../../lib/dashboard-version";
 
 export async function GET() {
   const hasMapboxToken = hasUsableMapboxToken(
@@ -8,7 +9,7 @@ export async function GET() {
 
   return Response.json({
     status: "operational",
-    version: "4.3.0",
+    version: DASHBOARD_VERSION,
     signal_strength: 0.98,
     services: {
       database: process.env.DATABASE_URL ? "configured" : "fallback",
