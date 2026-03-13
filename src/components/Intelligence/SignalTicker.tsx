@@ -36,7 +36,7 @@ export default function SignalTicker() {
 
   return (
     <section className="flex h-[48px] items-center divide-x divide-[var(--line)] bg-[var(--bg-raised)] overflow-x-auto no-scrollbar">
-      {ticker.items.map((item) => {
+      {ticker?.items?.map((item) => {
         const toneClass =
           item.tone === "up"
             ? "text-[var(--success)]"

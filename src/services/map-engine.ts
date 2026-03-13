@@ -21,6 +21,34 @@ import type {
   RegionBorderCollection,
 } from "../types/dashboard";
 
+/**
+ * NASA GIBS Layer Factory
+ * Support for 1,000+ layers via WMTS
+ */
+export const createGIBSLayer = ({
+  id,
+  layer,
+  date,
+  opacity = 1,
+  maxZoom = 9,
+  format = "jpg",
+}: {
+  id: string;
+  layer: string;
+  date: string;
+  opacity?: number;
+  maxZoom?: number;
+  format?: "jpg" | "png";
+}) => {
+  const level = maxZoom >= 9 ? "Level9" : `Level${maxZoom}`;
+  return createRasterTileLayer({
+    id,
+    data: `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/${layer}/default/${date}/GoogleMapsCompatible_${level}/{z}/{y}/{x}.${format}`,
+    maxZoom,
+    opacity,
+  });
+};
+
 interface ProvinceLabel {
   name: string;
   coordinates: [number, number];

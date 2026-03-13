@@ -66,7 +66,7 @@ export default function SourceStack() {
     <section className="flex flex-col gap-6">
       <div className="space-y-3">
         <div className="eyebrow opacity-60">Data Connectivity</div>
-        {sources.sources.slice(0, 3).map((source) => (
+        {sources?.sources?.slice(0, 3).map((source) => (
           <div
             key={source.id}
             className="flex items-center justify-between gap-4 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3"
@@ -84,7 +84,7 @@ export default function SourceStack() {
 
       <div className="space-y-3 pt-2">
         <div className="eyebrow opacity-60">Satellite Layers</div>
-        {preview.imagerySources.slice(0, 2).map((source) => (
+        {preview?.imagerySources?.slice(0, 2).map((source) => (
           <div
             key={source.id}
             className="rounded-lg border border-[var(--line)] bg-[var(--bg)] p-3"

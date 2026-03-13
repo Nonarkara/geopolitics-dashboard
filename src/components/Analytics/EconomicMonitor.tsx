@@ -60,7 +60,7 @@ export default function EconomicMonitor() {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3 flex-1 overflow-y-auto no-scrollbar">
-        {indicators.slice(0, 4).map((item) => (
+        {indicators?.slice(0, 4).map((item) => (
           <article
             key={item.label}
             className="flex flex-col justify-between rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] p-3"

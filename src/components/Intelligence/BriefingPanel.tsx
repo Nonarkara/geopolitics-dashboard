@@ -48,28 +48,28 @@ export default function BriefingPanel() {
     <section className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-3">
         <h2 className="text-[18px] font-bold tracking-[-0.03em] text-[var(--ink)]">
-          {briefing.title}
+          {briefing?.title || "Operational Briefing"}
         </h2>
         <div className="text-right text-[9px] font-mono tabular-nums text-[var(--dim)]">
-          {formatTimestamp(briefing.updatedAt)}
+          {briefing?.updatedAt ? formatTimestamp(briefing.updatedAt) : "Syncing..."}
         </div>
       </div>
 
       <p className="text-[13px] leading-relaxed text-[var(--muted)]">
-        {briefing.summary}
+        {briefing?.summary}
       </p>
 
       <div className="rounded-xl border border-[var(--line)] bg-[var(--bg)] p-4">
         <div className="eyebrow mb-1 opacity-60">Strategic Outlook</div>
         <p className="text-[12px] leading-relaxed text-[var(--muted)]">
-          {briefing.outlook}
+          {briefing?.outlook}
         </p>
       </div>
 
       <div className="grid gap-4">
         <div className="space-y-3">
           <div className="eyebrow opacity-60">Operational Priorities</div>
-          {briefing.priorities.map((item, index) => (
+          {briefing?.priorities?.map((item, index) => (
             <div
               key={item}
               className="flex items-start gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3"

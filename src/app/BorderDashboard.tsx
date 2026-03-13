@@ -9,6 +9,7 @@ import NewsDesk from "../components/Intelligence/NewsDesk";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import SourceStack from "../components/Intelligence/SourceStack";
 import LiveTVPanel from "../components/Intelligence/LiveTVPanel";
+import FinePrint from "../components/Intelligence/FinePrint";
 import EconomicMonitor from "../components/Analytics/EconomicMonitor";
 import ConflictTrends from "../components/Analytics/ConflictTrends";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
@@ -138,6 +139,9 @@ export default function BorderDashboard() {
           </div>
           <SignalTicker />
         </div>
+
+        {/* ROW 5: STRATEGIC FINE PRINT (FUNDER) */}
+        <FinePrint />
       </div>
 
       {/* MODALS */}
