@@ -24,6 +24,7 @@ import {
   createRainfallLayer,
   createRefugeeLayer,
   createRegionalBorderLayer,
+  createRasterOverlayLayer,
   createViirsTrueColorLayer,
 } from "../../services/map-engine";
 import type {
@@ -73,8 +74,31 @@ export default function BorderMap({
     load();
   }, []);
 
+  const getSafeDate = () => "2024-03-01";
+  const safeDate = getSafeDate();
+
+  const aerialLayer = createRasterOverlayLayer(
+    {
+      id: "esri-aerial",
+      label: "ESRI Aerial",
+      shortLabel: "AERIAL",
+      description: "High-res aerial",
+      source: "ESRI",
+      family: "imagery",
+      role: "base-option",
+      kind: "raster" as const,
+      defaultOpacity: 1,
+      enabledByDefault: true,
+      maxZoom: 19,
+      tileTemplate: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      updatedAt: new Date().toISOString(),
+    },
+    1
+  );
+
   const layers = [
-    showSatellite && createViirsTrueColorLayer(new Date().toISOString().split("T")[0], satelliteOpacity / 100),
+    aerialLayer,
+    showSatellite && createViirsTrueColorLayer(safeDate, satelliteOpacity / 100),
     showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents),
     showFires && createFireLayer(fires),
   ].filter(Boolean);
