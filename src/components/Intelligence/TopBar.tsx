@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BookOpen, Network } from "lucide-react";
+import LogoStrip from "../Identity/LogoStrip";
 
 const METRICS = [
   { label: "MYD", value: "18:02", aqi: 122, temp: 28 },
@@ -34,17 +35,18 @@ export default function TopBar({
         ))}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-6">
+        <LogoStrip className="mr-4 scale-90" />
         <div className="flex flex-col text-right pr-6 border-r border-[var(--line)]">
            <div className="text-[10px] font-black tracking-widest leading-none mb-1">SENTINEL X</div>
            <div className="text-[8px] font-bold opacity-30 uppercase">Operational Intelligence surface</div>
         </div>
         <div className="flex items-center gap-2">
-           <button onClick={onOpenArchitecture} className="flex h-9 items-center gap-2 rounded border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 text-[10px] font-black hover:bg-[var(--ink)] hover:text-white transition-all uppercase tracking-widest">
+           <button onClick={onOpenArchitecture} className="flex h-9 items-center gap-2 rounded border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 text-[10px] font-black hover:bg-[var(--ink)] hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">
               <Network size={12} strokeWidth={3} />
               APIs / Architecture
            </button>
-           <button onClick={onOpenManual} className="flex h-9 items-center gap-2 rounded border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 text-[10px] font-black hover:bg-[var(--ink)] hover:text-white transition-all uppercase tracking-widest">
+           <button onClick={onOpenManual} className="flex h-9 items-center gap-2 rounded border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 text-[10px] font-black hover:bg-[var(--ink)] hover:text-white transition-all uppercase tracking-widest whitespace-nowrap">
               <BookOpen size={12} strokeWidth={3} />
               Help / Manual
            </button>

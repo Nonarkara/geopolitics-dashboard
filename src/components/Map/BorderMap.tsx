@@ -36,8 +36,12 @@ import type {
   RegionBorderCollection,
 } from "../../types/dashboard";
 
+import { getUsableMapboxToken } from "../../lib/mapbox";
+import LogoStrip from "../Identity/LogoStrip";
+
 const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+const RAW_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+const MAPBOX_TOKEN = getUsableMapboxToken(RAW_TOKEN);
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85,
@@ -63,6 +67,8 @@ export default function BorderMap({
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
+
+  const hasMapboxToken = MAPBOX_TOKEN.length > 0;
 
   useEffect(() => {
     const load = async () => {
@@ -111,7 +117,11 @@ export default function BorderMap({
         controller={true}
         layers={layers}
       >
-        <MapboxMap mapboxAccessToken={MAPBOX_TOKEN} mapStyle="mapbox://styles/mapbox/satellite-v9" attributionControl={false} />
+        {hasMapboxToken ? (
+          <MapboxMap mapboxAccessToken={MAPBOX_TOKEN} mapStyle="mapbox://styles/mapbox/satellite-v9" attributionControl={false} />
+        ) : (
+          <div className="absolute inset-0 bg-[#0c121e]/40 pointer-events-none" />
+        )}
       </DeckGL>
 
       {/* HERO CLOCK: Black / High Contrast Translucent */}
