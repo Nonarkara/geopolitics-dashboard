@@ -1,50 +1,31 @@
 @import "tailwindcss";
 
-/* ── Global Base ────────────────────────────────────────── */
-html {
-  min-height: 100%;
-}
-
-body {
-  min-height: 100%;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
-/* ── Shared Premium Base (Strategic Command / Notion) ────── */
 :root {
-  --font-ui: "Inter", "SF Pro Display", "Segoe UI", sans-serif;
-  --font-mono: "IBM Plex Mono", monospace;
+  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "IBM Plex Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   
-  /* Core Palette */
-  --bg: #fdfdfb;
-  --bg-raised: #f7f6f3;
-  --bg-surface: rgba(255, 255, 255, 0.9);
+  /* Hard Instrumentation Palette */
+  --bg: #f5f5f2;         /* Off-white paper */
+  --bg-raised: #efeee9;  /* Slightly darker paper */
+  --bg-surface: #ffffff;
   --panel: #ffffff;
-  --panel-strong: #ffffff;
   
-  /* Instrumentation */
-  --line: rgba(55, 53, 47, 0.09);
-  --line-bright: rgba(55, 53, 47, 0.16);
-  --ink: #37352f;
-  --muted: #73726e;
-  --dim: #9b9a97;
+  --line: #e0ddd5;       /* Sharp, visible borders */
+  --line-bright: #d4d1c9;
   
-  /* Accent States */
-  --accent: #eb5757; /* Red Alert */
-  --accent-soft: rgba(235, 87, 87, 0.1);
-  --cool: #0f6f88;
-  --danger: #eb5757;
-  --warning: #f2994a; /* Watchpoint Gold */
-  --success: #27ae60;
+  --ink: #1a1a1a;        /* Deep black for high contrast */
+  --muted: #4a4a4a;      /* Dark gray for metrics */
+  --dim: #7a7a7a;        /* Medium gray */
   
-  --shadow: 0 1px 2px rgba(15, 15, 15, 0.1);
-  --glow: 0 0 0 1px rgba(15, 111, 136, 0.1), 0 2px 4px rgba(15, 111, 136, 0.05);
-}
-
-.theme-border {
-  --bg: #fdfdfb;
-  --bg-raised: #f7f6f3;
+  /* Accent States (Vibrant) */
+  --accent: #ff4d00;     /* Strategic Orange */
+  --danger: #e63946;
+  --warning: #f4a261;
+  --success: #2a9d8f;
+  --cool: #457b9d;
+  
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .theme-border body {
@@ -58,64 +39,55 @@ body {
 .dashboard-panel {
   border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-sm);
+  border-radius: 4px; /* Shaper corners */
 }
 
 .dashboard-panel-strong {
   border: 1px solid var(--line-bright);
-  background: var(--panel-strong);
-  box-shadow: 0 4px 12px rgba(15, 15, 15, 0.05), 0 1px 2px rgba(15, 15, 15, 0.1);
+  background: var(--panel);
+  box-shadow: var(--shadow-md);
+  border-radius: 8px;
 }
 
 .eyebrow {
   font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  font-weight: 800; /* Bolder */
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--ink); /* High contrast */
+  opacity: 0.6;
   font-family: var(--font-mono);
 }
 
 .live-badge {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  font-size: 10px;
+  font-weight: 900;
   text-transform: uppercase;
-  background: var(--accent-soft);
-  color: var(--accent);
+  background: var(--ink);
+  color: #ffffff;
 }
 
 .live-badge::before {
   content: "";
-  width: 4px;
-  height: 4px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: currentColor;
-  animation: pulse-dot 1.5s ease-in-out infinite;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(0.8); }
+/* ── Typography Utility ────────────────────────────────── */
+.text-numeric {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  scrollbar-width: none;
-}
-
-/* Scrollbar Styling */
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--line-bright);
-  border-radius: 10px;
-}
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }

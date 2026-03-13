@@ -27,7 +27,6 @@ export default function BorderDashboard() {
       <TopBar
         onOpenManual={() => setIsManualOpen(true)}
         onOpenArchitecture={() => setIsArchitectureOpen(true)}
-        onOpenDataExplorer={() => setIsDataExplorerOpen(true)}
       />
 
       <div className="flex min-h-0 flex-1 overflow-hidden">
