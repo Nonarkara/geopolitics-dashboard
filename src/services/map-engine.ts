@@ -16,6 +16,7 @@ import type {
   FlightData,
   IncidentFeature,
   MapOverlay,
+  ProvinceSelection,
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
@@ -194,7 +195,10 @@ export function createRasterOverlayLayer(
   });
 }
 
-export const createIncidentLayer = (data: IncidentFeature[]) =>
+export const createIncidentLayer = (
+  data: IncidentFeature[],
+  onSelect?: (p: ProvinceSelection) => void
+) =>
   new ScatterplotLayer({
     id: "incidents-scatter",
     data: data || [],
@@ -204,6 +208,21 @@ export const createIncidentLayer = (data: IncidentFeature[]) =>
     getRadius: (d: IncidentFeature) =>
       Math.sqrt((d?.properties?.fatalities || 0) + 1) * 2000,
     pickable: true,
+    autoHighlight: true,
+    highlightColor: [255, 255, 255, 100],
+    onClick: (info: any) => {
+      const object = info.object as IncidentFeature;
+      if (object && onSelect) {
+        onSelect({
+          name: object.properties.title,
+          type: object.properties.type,
+          notes: object.properties.notes,
+          fatalities: object.properties.fatalities,
+          location: object.properties.location,
+          eventDate: object.properties.eventDate,
+        });
+      }
+    },
     opacity: 0.8,
   });
 
