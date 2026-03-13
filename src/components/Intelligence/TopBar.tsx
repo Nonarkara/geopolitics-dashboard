@@ -33,6 +33,7 @@ interface TopBarProps {
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
   onOpenDataExplorer: () => void;
+  variant?: "original" | "phuket";
 }
 
 function formatTime(tz: string) {
@@ -67,6 +68,7 @@ export default function TopBar({
   onOpenManual,
   onOpenArchitecture,
   onOpenDataExplorer,
+  variant = "phuket",
 }: TopBarProps) {
   const [time, setTime] = useState("");
   const [leftTimes, setLeftTimes] = useState<string[]>([]);
@@ -136,8 +138,15 @@ export default function TopBar({
         })}
       </div>
 
-      <div className="flex flex-col items-center">
-        <div className="font-mono text-[28px] font-bold tabular-nums tracking-[-0.02em] text-[var(--ink)]">
+      <div className="flex flex-col items-center gap-1">
+        {variant === "phuket" && (
+          <div className="flex items-center gap-6 mb-1">
+            <img src="/images/uwn-logo.jpg" alt="UWN" className="h-[32px] w-auto brightness-110 contrast-110" />
+            <img src="/images/depa-logo.png" alt="depa" className="h-[28px] w-auto" />
+            <img src="/images/smart-city-logo.jpg" alt="Smart City Thailand" className="h-[34px] w-auto" />
+          </div>
+        )}
+        <div className="font-mono text-[28px] font-bold tabular-nums tracking-[-0.02em] text-[var(--ink)] leading-none">
           {time || "--:--:--"}
         </div>
         <div className="flex items-center gap-3">
