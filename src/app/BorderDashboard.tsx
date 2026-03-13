@@ -16,6 +16,7 @@ import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
+import ErrorBoundary from "../components/Common/ErrorBoundary";
 import type { ProvinceSelection } from "../types/dashboard";
 
 export default function BorderDashboard() {
@@ -46,7 +47,9 @@ export default function BorderDashboard() {
 
           {/* COL 2: GLOBAL OPS SURFACE */}
           <div className="flex-1 min-w-0 grid-cell bg-[#111]">
-            <BorderMap onProvinceSelect={setSelectedProvince} />
+            <ErrorBoundary name="Tactical Map Engine">
+              <BorderMap onProvinceSelect={setSelectedProvince} />
+            </ErrorBoundary>
           </div>
 
           {/* COL 3: RIGHT DATA STACK */}
@@ -147,8 +150,8 @@ export default function BorderDashboard() {
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
       <DashboardManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
-      <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(true)} />
-      <DatabaseExplorerModal isOpen={isDataExplorerOpen} onClose={() => setIsDataExplorerOpen(true)} />
+      <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(false)} />
+      <DatabaseExplorerModal isOpen={isDataExplorerOpen} onClose={() => setIsDataExplorerOpen(false)} />
     </main>
   );
 }
