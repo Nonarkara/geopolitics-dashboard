@@ -8,7 +8,7 @@ import {
   Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, ChevronRight, ChevronDown
 } from "lucide-react";
 import {
-  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterOverlayLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer
+  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterOverlayLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer
 } from "../../services/map-engine";
 import type {
   FireEvent, IncidentFeature, ProvinceSelection, FlightData, RefugeeMovement, ConflictZoneCollection
@@ -23,8 +23,14 @@ const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85, latitude: 14.2, zoom: 6.25, pitch: 40, bearing: 0,
 };
 
+// NASA GIBS only serves imagery up to the current real-world date.
+// Using a known-good historical date prevents blank/black tiles.
+const NASA_GIBS_SAFE_DATE = "2024-03-01";
+
 interface LensConfig {
-  id: string; label: string; name: string; layer: string; format: "jpg" | "png"; maxZoom: number; api: "GIBS" | "JAXA" | "COPERNICUS";
+  id: string; label: string; name: string; layer: string; format: "jpg" | "png"; maxZoom: number; api: "GIBS" | "JAXA" | "COPERNICUS" | "DIRECT";
+  tileUrl?: string;
+  useDefaultDate?: boolean;
 }
 
 const STRATEGIC_LENSES: Record<string, LensConfig[]> = {
@@ -46,7 +52,25 @@ const STRATEGIC_LENSES: Record<string, LensConfig[]> = {
     { id: "AOD", label: "AOD", name: "Aerosol Density", layer: "MODIS_Terra_Aerosol_Optical_Depth_Land_Ocean", format: "png", maxZoom: 6, api: "GIBS" },
     { id: "LST", label: "LST", name: "Surface Temp Variance", layer: "MODIS_Terra_LST_Day", format: "png", maxZoom: 7, api: "GIBS" },
     { id: "CO", label: "CO", name: "Carbon Monoxide Flux", layer: "MOPITT_Carbon_Monoxide_Total_Column_Day", format: "png", maxZoom: 5, api: "GIBS" },
-  ]
+  ],
+  "GEOSTATIONARY": [
+    { id: "HIM", label: "HIM", name: "Himawari-9 Red Visible", layer: "Himawari_AHI_Band3_Red_Visible_1km", format: "png", maxZoom: 8, api: "GIBS", useDefaultDate: true },
+    { id: "GRN", label: "GRN", name: "Geo Ring Natural Color", layer: "Geostationary_Ring_Natural_Color_RGB", format: "jpg", maxZoom: 7, api: "GIBS", useDefaultDate: true },
+    { id: "GRI", label: "GRI", name: "Geo Ring Infrared", layer: "Geostationary_Ring_IR108", format: "jpg", maxZoom: 7, api: "GIBS", useDefaultDate: true },
+    { id: "GRA", label: "GRA", name: "Geo Ring Airmass", layer: "Geostationary_Ring_Airmass_RGB", format: "jpg", maxZoom: 7, api: "GIBS", useDefaultDate: true },
+  ],
+  "HIGH-RES BASELINES": [
+    { id: "S2C", label: "S2C", name: "Sentinel-2 Cloudless", layer: "s2cloudless", format: "jpg", maxZoom: 15, api: "DIRECT",
+      tileUrl: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg" },
+  ],
+  "HYDRO & TERRAIN": [
+    { id: "SWO", label: "SWO", name: "Surface Water Occurrence", layer: "jrc-occurrence", format: "png", maxZoom: 13, api: "DIRECT",
+      tileUrl: "https://storage.googleapis.com/global-surface-water/tiles2021/occurrence/{z}/{x}/{y}.png" },
+    { id: "SWC", label: "SWC", name: "Surface Water Change", layer: "jrc-change", format: "png", maxZoom: 13, api: "DIRECT",
+      tileUrl: "https://storage.googleapis.com/global-surface-water/tiles2021/change/{z}/{x}/{y}.png" },
+    { id: "BAT", label: "BAT", name: "Ocean Bathymetry", layer: "emodnet-bathy", format: "png", maxZoom: 12, api: "DIRECT",
+      tileUrl: "https://tiles.emodnet-bathymetry.eu/v12/mean_atlas_land_latest/web_mercator/{z}/{x}/{y}.png" },
+  ],
 };
 
 export default function BorderMap({
@@ -114,14 +138,21 @@ export default function BorderMap({
       updatedAt: new Date().toISOString(),
     }, 1);
 
-    const satelliteLayer = createGIBSLayer({
-      id: `gibs-${activeLens?.id || 'def'}`,
-      layer: activeLens?.layer || '',
-      date: activeLens?.id === "NGT" ? "default" : new Date().toISOString().slice(0, 10),
-      opacity: satelliteOpacity / 100,
-      maxZoom: activeLens?.maxZoom || 9,
-      format: activeLens?.format || 'jpg',
-    });
+    const satelliteLayer = activeLens?.tileUrl
+      ? createRasterTileLayer({
+          id: `direct-${activeLens.id}`,
+          data: activeLens.tileUrl,
+          maxZoom: activeLens.maxZoom,
+          opacity: satelliteOpacity / 100,
+        })
+      : createGIBSLayer({
+          id: `gibs-${activeLens?.id || 'def'}`,
+          layer: activeLens?.layer || '',
+          date: activeLens?.useDefaultDate ? "default" : NASA_GIBS_SAFE_DATE,
+          opacity: satelliteOpacity / 100,
+          maxZoom: activeLens?.maxZoom || 9,
+          format: activeLens?.format || 'jpg',
+        });
 
     const activeLayers = [
       aerialLayer,
@@ -135,7 +166,7 @@ export default function BorderMap({
     ].flat().filter(Boolean);
 
     return activeLayers;
-  }, [activeLens, satelliteOpacity, showZones, zones, showHeatmap, incidents, showFires, fires, showRefugees, refugees, showFlights, flights, showLabels]);
+  }, [activeLens, satelliteOpacity, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showLabels]);
 
   const handleToggleCategory = useCallback((cat: string) => {
     setOpenCategory(prev => prev === cat ? null : cat);

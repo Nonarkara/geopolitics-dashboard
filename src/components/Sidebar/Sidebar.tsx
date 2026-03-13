@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, TrendingUp, Globe, AlertTriangle, Activity, BarChart3 } from "lucide-react";
+import { Shield, TrendingUp, Globe, AlertTriangle, Activity, BarChart3, Thermometer, Radio } from "lucide-react";
 import { fallbackAseanGdp } from "../../lib/mock-data";
 import type { AseanGdpDatum } from "../../types/dashboard";
+import BriefingPanel from "../Intelligence/BriefingPanel";
+import NewsDesk from "../Intelligence/NewsDesk";
+import ConvergenceAlerts from "./ConvergenceAlerts";
+
+interface EnvironmentReading {
+  code: string;
+  location: string;
+  temperature: number | null;
+  aqi: number | null;
+}
 
 function getSignalLevel(score: number): string {
   if (score >= 90) return "critical";
@@ -27,24 +37,42 @@ function formatGdp(value: number): string {
   return `$${(value / 1_000_000).toFixed(0)}M`;
 }
 
+function getAqiClass(aqi: number | null): string {
+  if (aqi === null) return "opacity-30";
+  if (aqi > 150) return "text-[var(--accent)]";
+  if (aqi > 100) return "text-[var(--hazard)]";
+  if (aqi > 50) return "text-[var(--tech)]";
+  return "";
+}
+
 export default function Sidebar() {
   const [gdpData, setGdpData] = useState<AseanGdpDatum[]>(fallbackAseanGdp);
+  const [environment, setEnvironment] = useState<EnvironmentReading[]>([]);
 
   useEffect(() => {
-    const load = async () => {
+    const loadGdp = async () => {
       try {
         const res = await fetch("/api/markets", { cache: "no-store" });
         const payload = await res.json();
         if (payload && typeof payload === "object" && "aseanGdp" in payload && Array.isArray(payload.aseanGdp) && payload.aseanGdp.length > 0) {
           setGdpData(payload.aseanGdp);
         }
-      } catch {
-        // Keep fallback
-      }
+      } catch { /* Keep fallback */ }
     };
-    load();
-    const interval = setInterval(load, 300000); // 5 min
-    return () => clearInterval(interval);
+
+    const loadEnv = async () => {
+      try {
+        const res = await fetch("/api/environment", { cache: "no-store" });
+        const data = await res.json();
+        if (Array.isArray(data)) setEnvironment(data);
+      } catch { /* Keep empty */ }
+    };
+
+    loadGdp();
+    loadEnv();
+    const gdpInterval = setInterval(loadGdp, 300000);
+    const envInterval = setInterval(loadEnv, 120000);
+    return () => { clearInterval(gdpInterval); clearInterval(envInterval); };
   }, []);
 
   const maxGdp = Math.max(...gdpData.map(d => d.gdpUsd));
@@ -52,7 +80,7 @@ export default function Sidebar() {
   return (
     <aside className="flex h-full flex-col select-none overflow-hidden bg-white">
       {/* ── Operational Status ── */}
-      <div className="p-4 border-b-[1.5px] border-[var(--line)]">
+      <div className="p-4 border-b-[1.5px] border-[var(--line)] shrink-0">
         <div className="flex items-center justify-between mb-2">
           <div className="eyebrow">SYSTEM ALPHA</div>
           <span className="live-badge scale-90">Locked</span>
@@ -72,55 +100,25 @@ export default function Sidebar() {
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
-        {/* ── Strategic Watchpoints with Signal Density ── */}
+
+        {/* ── Strategic Sectors ── */}
         <section>
           <div className="eyebrow mb-3 flex items-center gap-2">
             <Shield size={10} className="text-[var(--accent)]" />
             Strategic Sectors
           </div>
-
           <div className="space-y-2.5">
             {[
-              {
-                loc: "MAE SOT / MYAWADDY",
-                title: "Border Convergence",
-                score: 100,
-                metrics: [["INTL", 24], ["FIRE", 8], ["MOVE", "CRIT"], ["AQI", 156]],
-              },
-              {
-                loc: "RANONG / KAWTHAUNG",
-                title: "Maritime Corridor",
-                score: 84,
-                metrics: [["INTL", 12], ["FIRE", 2], ["MOVE", "WARN"], ["AQI", 88]],
-              },
-              {
-                loc: "TAK BORDER ZONE",
-                title: "Northern Gateway",
-                score: 72,
-                metrics: [["INTL", 9], ["FIRE", 5], ["MOVE", "MOD"], ["AQI", 142]],
-              },
-              {
-                loc: "SUNGALKOLOK SECTOR",
-                title: "Deep South Pulse",
-                score: 62,
-                metrics: [["INTL", 5], ["FIRE", 0], ["MOVE", "NORM"], ["AQI", 45]],
-              },
-              {
-                loc: "THREE PAGODAS PASS",
-                title: "Karen State Interface",
-                score: 55,
-                metrics: [["INTL", 3], ["FIRE", 1], ["MOVE", "LOW"], ["AQI", 67]],
-              },
+              { loc: "MAE SOT / MYAWADDY", title: "Border Convergence", score: 100, metrics: [["INTL", 24], ["FIRE", 8], ["MOVE", "CRIT"], ["AQI", 156]] },
+              { loc: "RANONG / KAWTHAUNG", title: "Maritime Corridor", score: 84, metrics: [["INTL", 12], ["FIRE", 2], ["MOVE", "WARN"], ["AQI", 88]] },
+              { loc: "TAK BORDER ZONE", title: "Northern Gateway", score: 72, metrics: [["INTL", 9], ["FIRE", 5], ["MOVE", "MOD"], ["AQI", 142]] },
+              { loc: "SUNGALKOLOK SECTOR", title: "Deep South Pulse", score: 62, metrics: [["INTL", 5], ["FIRE", 0], ["MOVE", "NORM"], ["AQI", 45]] },
+              { loc: "THREE PAGODAS PASS", title: "Karen State Interface", score: 55, metrics: [["INTL", 3], ["FIRE", 1], ["MOVE", "LOW"], ["AQI", 67]] },
             ].map((w, i) => {
               const signal = getSignalLevel(w.score);
               return (
-                <div
-                  key={i}
-                  className={`p-3 relative group hover:border-[var(--ink)] transition-all bg-white ${getSignalBorderClass(signal)}`}
-                >
-                  {signal === "critical" && (
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)]" />
-                  )}
+                <div key={i} className={`p-3 relative group hover:border-[var(--ink)] transition-all bg-white ${getSignalBorderClass(signal)}`}>
+                  {signal === "critical" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)]" />}
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="text-[7px] font-black opacity-30 uppercase tracking-[0.2em]">{w.loc}</span>
                     <span className={`text-[10px] font-black tabular-nums px-1.5 py-0.5 ${
@@ -128,12 +126,9 @@ export default function Sidebar() {
                       signal === "high" ? "bg-[var(--hazard)] text-black" :
                       signal === "medium" ? "bg-[var(--tech)] text-white" :
                       "bg-[var(--line-dim)] text-[var(--ink)]"
-                    }`}>
-                      {w.score}
-                    </span>
+                    }`}>{w.score}</span>
                   </div>
                   <h3 className="text-[12px] font-black uppercase tracking-tight mb-2 pr-4">{w.title}</h3>
-
                   <div className="grid grid-cols-4 gap-1.5 border-t border-[var(--line-dim)] pt-2">
                     {w.metrics.map((m, j) => (
                       <div key={j} className="flex flex-col">
@@ -142,9 +137,7 @@ export default function Sidebar() {
                           m[0] === "AQI" && typeof m[1] === "number" && m[1] > 100 ? "text-[var(--accent)]" :
                           m[1] === "CRIT" ? "text-[var(--accent)]" :
                           m[1] === "WARN" ? "text-[var(--hazard)]" : ""
-                        }`}>
-                          {m[1]}
-                        </div>
+                        }`}>{m[1]}</div>
                       </div>
                     ))}
                   </div>
@@ -153,6 +146,47 @@ export default function Sidebar() {
             })}
           </div>
         </section>
+
+        {/* ── Convergence Alerts ── */}
+        <section className="pt-3 border-t border-[var(--line)]">
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <AlertTriangle size={10} className="text-[var(--accent)]" />
+            Convergence Alerts
+          </div>
+          <ConvergenceAlerts />
+        </section>
+
+        {/* ── Environment Monitor ── */}
+        {environment.length > 0 && (
+          <section className="pt-3 border-t border-[var(--line)]">
+            <div className="eyebrow mb-3 flex items-center gap-2">
+              <Thermometer size={10} />
+              Environment Monitor
+              <span className="live-badge scale-75 ml-auto">LIVE</span>
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              {environment.map((e) => (
+                <div key={e.code} className="flex items-center justify-between px-2 py-1.5 border border-[var(--line-dim)] hover:bg-[var(--bg)] transition-all">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black uppercase tracking-tight">{e.location}</span>
+                    <span className="text-[7px] font-black opacity-25 uppercase">{e.code}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-black tabular-nums">{e.temperature ?? "—"}°</span>
+                    <span className={`text-[10px] font-black tabular-nums ${getAqiClass(e.aqi)}`}>{e.aqi ?? "—"}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex items-center justify-between mt-1.5 px-1">
+              <span className="text-[7px] font-black opacity-15 uppercase tracking-[0.2em]">Open-Meteo</span>
+              <div className="flex gap-3 text-[7px] font-black opacity-25 uppercase">
+                <span>°C Temp</span>
+                <span>US AQI</span>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* ── ASEAN GDP Rankings ── */}
         <section className="pt-3 border-t border-[var(--line)]">
@@ -171,10 +205,7 @@ export default function Sidebar() {
                   </div>
                   <div className="flex items-center gap-2 mt-1">
                     <div className="h-1 flex-1 bg-[var(--line-dim)] opacity-20">
-                      <div
-                        className="h-full bg-black"
-                        style={{ width: `${(d.gdpUsd / maxGdp) * 100}%` }}
-                      />
+                      <div className="h-full bg-black" style={{ width: `${(d.gdpUsd / maxGdp) * 100}%` }} />
                     </div>
                     <span className="text-[9px] font-black opacity-40 uppercase">{d.countryCode}</span>
                     <span className="text-[9px] font-black opacity-40 tabular-nums">${d.gdpPerCapitaUsd?.toLocaleString()}/cap</span>
@@ -213,9 +244,7 @@ export default function Sidebar() {
                     s.status === "Critical" ? "danger" :
                     s.status === "Severe" ? "warning" :
                     s.status === "Watch" ? "info" : "safe"
-                  }`}>
-                    {s.status}
-                  </span>
+                  }`}>{s.status}</span>
                   <div className="h-1 w-8 bg-[var(--line-dim)] mt-1">
                     <div className={`h-full ${
                       s.trend === "up" ? "w-full bg-[var(--accent)]" :
@@ -227,6 +256,27 @@ export default function Sidebar() {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* ── Operational Briefing ── */}
+        <section className="pt-3 border-t border-[var(--line)]">
+          <div className="flex items-center justify-between mb-3">
+            <div className="eyebrow flex items-center gap-2">
+              <Radio size={10} />
+              Operational Briefing
+            </div>
+            <span className="live-badge scale-75">LIVE</span>
+          </div>
+          <BriefingPanel />
+        </section>
+
+        {/* ── Live Feed ── */}
+        <section className="pt-3 border-t border-[var(--line)]">
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <Globe size={10} />
+            Live Feed
+          </div>
+          <NewsDesk />
         </section>
 
         {/* ── Satellite Sources ── */}
@@ -258,7 +308,7 @@ export default function Sidebar() {
         </section>
       </div>
 
-      <div className="p-3 bg-white border-t border-[var(--line)] flex items-center justify-between">
+      <div className="p-3 bg-white border-t border-[var(--line)] flex items-center justify-between shrink-0">
         <div className="text-[11px] font-black opacity-15 uppercase tracking-[0.4em]">Sentinel // X</div>
         <div className="flex items-center gap-2">
           <AlertTriangle size={8} className="opacity-10" />

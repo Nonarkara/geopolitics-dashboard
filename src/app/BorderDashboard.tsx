@@ -43,7 +43,7 @@ export default function BorderDashboard() {
         <div className="flex flex-1 min-h-0 connected-grid">
 
           {/* LEFT SIDEBAR */}
-          <aside className="hidden w-[280px] shrink-0 xl:flex grid-cell flex-col">
+          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
             <Sidebar />
           </aside>
 
@@ -53,57 +53,13 @@ export default function BorderDashboard() {
               <BorderMap onProvinceSelect={setSelectedProvince} />
             </ErrorBoundary>
           </div>
-
-          {/* RIGHT PANEL */}
-          <aside className="hidden w-[320px] shrink-0 2xl:flex overflow-hidden grid-cell flex-col">
-            <div className="flex flex-col h-full divide-y-[1.5px] divide-black">
-
-              {/* BRIEFING */}
-              <section className="p-3 shrink-0 bg-white">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="eyebrow">BRIEFING</div>
-                  <span className="live-badge scale-90">LIVE</span>
-                </div>
-                <div className="max-h-[160px] overflow-y-auto no-scrollbar">
-                  <BriefingPanel />
-                </div>
-              </section>
-
-              {/* CONVERGENCE */}
-              <section className="p-3 shrink-0 bg-white">
-                <div className="eyebrow mb-2">CONVERGENCE ALERTS</div>
-                <div className="max-h-[110px] overflow-y-auto no-scrollbar">
-                  <ConvergenceAlerts />
-                </div>
-              </section>
-
-              {/* LIVE TV */}
-              <section className="p-3 shrink-0 bg-[var(--bg)]">
-                <div className="eyebrow mb-2 flex items-center justify-between">
-                  REGIONAL MONITORS
-                  <span className="text-[7px] font-black opacity-30 tracking-[0.3em]">LIVE</span>
-                </div>
-                <div className="max-h-[190px] overflow-y-auto no-scrollbar">
-                  <LiveTVPanel />
-                </div>
-              </section>
-
-              {/* NEWS FEED */}
-              <section className="flex-1 min-h-0 p-3 overflow-hidden flex flex-col bg-white">
-                <div className="eyebrow mb-2">LIVE FEED</div>
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <NewsDesk />
-                </div>
-              </section>
-            </div>
-          </aside>
         </div>
 
         {/* ROW 3: ANALYTICS STRIP */}
         <div className="h-[180px] shrink-0 connected-grid bg-black overflow-hidden">
 
           {/* MARKET RADAR */}
-          <div className="w-[280px] shrink-0 grid-cell p-3 overflow-hidden">
+          <div className="w-[340px] shrink-0 grid-cell p-3 overflow-hidden">
             <div className="eyebrow mb-1.5">MARKET RADAR</div>
             <EconomicMonitor />
           </div>

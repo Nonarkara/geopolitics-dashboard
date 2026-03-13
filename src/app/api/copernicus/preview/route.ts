@@ -3,9 +3,9 @@ import { fallbackCopernicusPreview } from "../../../../lib/mock-data";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 
 function getSafeDate() {
-  const date = new Date();
-  date.setDate(date.getDate() - 14);
-  return date.toISOString().split("T")[0];
+  // NASA GIBS only serves imagery up to the current real-world date.
+  // Use a known-good historical date to prevent blank tiles.
+  return "2024-03-01";
 }
 
 export async function GET() {

@@ -120,7 +120,7 @@ function extractTileBounds(tile: unknown): TileBounds["bbox"] | null {
   return null;
 }
 
-function createRasterTileLayer({
+export function createRasterTileLayer({
   id,
   data,
   maxZoom,

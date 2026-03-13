@@ -139,6 +139,51 @@ export function buildMapOverlayCatalog(
       tileTemplate:
         `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Combined_Value_Added_AOD/default/${focusDate}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`,
     }),
+    rasterOverlay({
+      id: "s2Cloudless",
+      label: "Sentinel-2 Cloudless",
+      shortLabel: "S2CL",
+      description:
+        "10m cloud-free annual mosaic from Sentinel-2 for high-resolution visual baseline.",
+      source: "EOX / Sentinel-2",
+      family: "imagery",
+      role: "base-option",
+      defaultOpacity: 0.8,
+      enabledByDefault: false,
+      maxZoom: 15,
+      tileTemplate:
+        "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg",
+    }),
+    rasterOverlay({
+      id: "surfaceWater",
+      label: "Surface Water",
+      shortLabel: "WATER",
+      description:
+        "30m global surface water occurrence for border river and flood risk monitoring.",
+      source: "JRC / Google",
+      family: "terrain",
+      role: "analytic",
+      defaultOpacity: 0.6,
+      enabledByDefault: false,
+      maxZoom: 13,
+      tileTemplate:
+        "https://storage.googleapis.com/global-surface-water/tiles2021/occurrence/{z}/{x}/{y}.png",
+    }),
+    rasterOverlay({
+      id: "bathymetry",
+      label: "Ocean Bathymetry",
+      shortLabel: "BATHY",
+      description:
+        "Ocean depth and land elevation for maritime border context.",
+      source: "EMODnet / GEBCO",
+      family: "terrain",
+      role: "analytic",
+      defaultOpacity: 0.55,
+      enabledByDefault: false,
+      maxZoom: 12,
+      tileTemplate:
+        "https://tiles.emodnet-bathymetry.eu/v12/mean_atlas_land_latest/web_mercator/{z}/{x}/{y}.png",
+    }),
     vectorOverlay({
       id: "borderContext",
       label: "Regional Boundaries",
