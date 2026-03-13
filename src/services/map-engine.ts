@@ -197,12 +197,12 @@ export function createRasterOverlayLayer(
 export const createIncidentLayer = (data: IncidentFeature[]) =>
   new ScatterplotLayer({
     id: "incidents-scatter",
-    data,
-    getPosition: (d: IncidentFeature) => d.geometry.coordinates,
+    data: data || [],
+    getPosition: (d: IncidentFeature) => d?.geometry?.coordinates || [0, 0],
     getFillColor: (d: IncidentFeature) =>
-      d.properties.fatalities > 0 ? [239, 68, 68, 200] : [245, 158, 11, 200],
+      (d?.properties?.fatalities || 0) > 0 ? [239, 68, 68, 200] : [245, 158, 11, 200],
     getRadius: (d: IncidentFeature) =>
-      Math.sqrt(d.properties.fatalities + 1) * 2000,
+      Math.sqrt((d?.properties?.fatalities || 0) + 1) * 2000,
     pickable: true,
     opacity: 0.8,
   });
@@ -210,9 +210,9 @@ export const createIncidentLayer = (data: IncidentFeature[]) =>
 export const createHeatmapLayer = (data: IncidentFeature[]) =>
   new HeatmapLayer({
     id: "incidents-heatmap",
-    data,
-    getPosition: (d: IncidentFeature) => d.geometry.coordinates,
-    getWeight: (d: IncidentFeature) => d.properties.fatalities + 1,
+    data: data || [],
+    getPosition: (d: IncidentFeature) => d?.geometry?.coordinates || [0, 0],
+    getWeight: (d: IncidentFeature) => (d?.properties?.fatalities || 0) + 1,
     radiusPixels: 40,
     intensity: 1,
     threshold: 0.05,
@@ -221,22 +221,22 @@ export const createHeatmapLayer = (data: IncidentFeature[]) =>
 export const createFireLayer = (data: FireEvent[]) =>
   new ScatterplotLayer({
     id: "nasa-firms-fires",
-    data,
-    getPosition: (d: FireEvent) => [d.longitude, d.latitude],
+    data: data || [],
+    getPosition: (d: FireEvent) => [d?.longitude || 0, d?.latitude || 0],
     getFillColor: [255, 165, 0, 180],
-    getRadius: (d: FireEvent) => Math.sqrt(d.brightness || 1) * 300,
+    getRadius: (d: FireEvent) => Math.sqrt(d?.brightness || 1) * 300,
     pickable: true,
   });
 
 export const createRefugeeLayer = (data: RefugeeMovement[]) =>
   new ArcLayer({
     id: "refugee-movements",
-    data,
-    getSourcePosition: (d: RefugeeMovement) => d.source,
-    getTargetPosition: (d: RefugeeMovement) => d.target,
+    data: data || [],
+    getSourcePosition: (d: RefugeeMovement) => d?.source || [0, 0],
+    getTargetPosition: (d: RefugeeMovement) => d?.target || [0, 0],
     getSourceColor: [0, 128, 255, 120],
     getTargetColor: [0, 255, 128, 120],
-    getWidth: (d: RefugeeMovement) => Math.log10(d.count + 1) * 2,
+    getWidth: (d: RefugeeMovement) => Math.log10((d?.count || 0) + 1) * 2,
     pickable: true,
   });
 
@@ -518,15 +518,15 @@ function getFlightColor(country: string): [number, number, number, number] {
 }
 
 export function createFlightPathsLayer(flights: FlightData[]) {
-  if (!flights || flights.length === 0) return null;
+  if (!flights || (Array.isArray(flights) && flights.length === 0)) return null;
 
   return [
     new ScatterplotLayer({
       id: "flight-positions",
       data: flights,
-      getPosition: (d: FlightData) => [d.longitude, d.latitude, d.altitude],
+      getPosition: (d: FlightData) => [d?.longitude || 0, d?.latitude || 0, d?.altitude || 0],
       getRadius: 3000,
-      getFillColor: (d: FlightData) => getFlightColor(d.origin_country),
+      getFillColor: (d: FlightData) => getFlightColor(d?.origin_country || "Unknown"),
       radiusMinPixels: 3,
       radiusMaxPixels: 8,
       lineWidthMinPixels: 1,
@@ -536,9 +536,9 @@ export function createFlightPathsLayer(flights: FlightData[]) {
     }),
     new TextLayer({
       id: "flight-callsigns",
-      data: flights.filter((d: FlightData) => d.callsign),
-      getPosition: (d: FlightData) => [d.longitude, d.latitude],
-      getText: (d: FlightData) => d.callsign,
+      data: flights.filter((d: FlightData) => d?.callsign),
+      getPosition: (d: FlightData) => [d?.longitude || 0, d?.latitude || 0],
+      getText: (d: FlightData) => d?.callsign || "",
       getSize: 10,
       getColor: [226, 232, 240, 160],
       getTextAnchor: "start" as const,

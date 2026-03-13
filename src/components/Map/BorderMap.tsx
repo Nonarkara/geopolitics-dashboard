@@ -215,30 +215,39 @@ export default function BorderMap({
                </div>
             </div>
             
-            <div className="max-h-[340px] overflow-y-auto no-scrollbar bg-[var(--bg)]">
-               {Object.entries(STRATEGIC_LENSES).map(([category, lenses]) => (
-                  <div key={category} className="border-b border-[var(--line)] last:border-0">
+            <div className="max-h-[380px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-black scrollbar-track-transparent bg-[var(--bg)]">
+               {Object.entries(STRATEGIC_LENSES || {}).map(([category, lenses]) => (
+                  <div key={category} className="border-b border-black last:border-0">
                      <button 
-                        onClick={() => setOpenCategory(openCategory === category ? null : category)}
-                        className="w-full px-3 py-2 flex items-center justify-between hover:bg-white transition-colors group"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenCategory(openCategory === category ? null : category);
+                        }}
+                        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white transition-all group relative"
                      >
-                        <span className="text-[8px] font-black uppercase tracking-widest opacity-60 group-hover:opacity-100">{category}</span>
-                        {openCategory === category ? <ChevronDown size={10} className="opacity-40" /> : <ChevronRight size={10} className="opacity-40" />}
+                        <span className="text-[9px] font-black uppercase tracking-[0.25em] opacity-50 group-hover:opacity-100">{category}</span>
+                        <div className="flex items-center gap-2">
+                           <span className="text-[8px] font-bold opacity-20">{lenses?.length} LENSES</span>
+                           {openCategory === category ? <ChevronDown size={12} className="opacity-40" /> : <ChevronRight size={12} className="opacity-40" />}
+                        </div>
                      </button>
                      
                      {openCategory === category && (
-                        <div className="grid grid-cols-2 gap-[1px] bg-[var(--line)] p-[1px]">
-                           {lenses.map(l => (
+                        <div className="grid grid-cols-2 gap-[1px] bg-black p-[1px] animate-in fade-in slide-in-from-top-1 duration-200">
+                           {lenses?.map(l => (
                               <button
                                  key={l.id}
-                                 onClick={() => setActiveLensId(l.id)}
-                                 className={`p-3 flex flex-col items-start transition-all border border-transparent ${activeLensId === l.id ? "bg-[var(--ink)] text-white" : "bg-white text-[var(--ink)] hover:bg-[var(--bg)] hover:border-[var(--line-dim)]"}`}
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   setActiveLensId(l.id);
+                                 }}
+                                 className={`p-3 flex flex-col items-start transition-all border border-transparent ${activeLensId === l.id ? "bg-black text-white" : "bg-white text-black hover:bg-[var(--bg)] hover:border-[var(--line-dim)]"}`}
                               >
                                  <div className="flex items-center justify-between w-full mb-1">
                                     <span className="text-[10px] font-black tracking-widest">{l.label}</span>
                                     <span className="text-[7px] font-black opacity-30">{l.api}</span>
                                  </div>
-                                 <span className="text-[7px] font-medium opacity-40 uppercase truncate w-full text-left">{l.name}</span>
+                                 <span className="text-[7px] font-medium opacity-40 uppercase truncate w-full text-left leading-tight">{l.name}</span>
                               </button>
                            ))}
                         </div>
