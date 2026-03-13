@@ -211,15 +211,15 @@ export const createIncidentLayer = (
     autoHighlight: true,
     highlightColor: [255, 255, 255, 100],
     onClick: (info: any) => {
-      const object = info.object as IncidentFeature;
-      if (object && onSelect) {
+      const object = info?.object as IncidentFeature;
+      if (object?.properties && onSelect) {
         onSelect({
-          name: object.properties.title,
-          type: object.properties.type,
-          notes: object.properties.notes,
-          fatalities: object.properties.fatalities,
-          location: object.properties.location,
-          eventDate: object.properties.eventDate,
+          name: object.properties.title || "Unknown Incident",
+          type: object.properties.type || "Event",
+          notes: object.properties.notes || "",
+          fatalities: object.properties.fatalities || 0,
+          location: object.properties.location || "",
+          eventDate: object.properties.eventDate || "",
         });
       }
     },
@@ -475,7 +475,7 @@ function getConflictZoneProperties(feature: unknown): ConflictZoneProperties {
 }
 
 export function createConflictZonesLayer(data: ConflictZoneCollection) {
-  if (!data.features.length) {
+  if (!data?.features || !Array.isArray(data.features) || data.features.length === 0) {
     return null;
   }
 
