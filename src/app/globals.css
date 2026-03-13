@@ -4,109 +4,148 @@
   --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
   
-  /* Precision Tactical Palette (Don Norman / Apple / Tesla) */
-  --bg: #f8f8f7;         /* Precision Ceramic */
+  /* Tactical Precision Palette (Tesla/Apple/Norman) */
+  --bg: #f2f2f0;         /* Technical Light Gray */
   --bg-raised: #ffffff;
   --bg-surface: #ffffff;
   --panel: #ffffff;
   
-  --line: #e2e2e0;       /* Ultra-precision hairlines */
-  --line-bright: #d0d0cc;
+  --line: #000000;       /* High-contrast pure black hairlines */
+  --line-dim: #e0e0dc;
   
-  --ink: #000000;        /* Pure black */
-  --muted: #444440;
-  --dim: #888884;
+  --ink: #000000;
+  --muted: #555552;
+  --dim: #999994;
   
-  --accent: #ff3b30;     /* Apple Red / Tesla Orange Red */
-  --danger: #ff3b30;
-  --warning: #ffcc00;    /* Apple Gold */
-  --success: #34c759;    /* Apple Green */
-  --cool: #007aff;       /* Apple Blue */
+  --accent: #ff3b30;     /* Apple Alert Red */
+  --hazard: #ff9500;     /* Apple Warning Orange */
+  --safe: #34c759;
+  --tech: #007aff;       /* Precision Blue */
+  
+  --glass: blur(20px) saturate(180%);
 }
 
-/* ── Structural Reset (Grid Continuity) ─────────────────────── */
+/* ── Absolute Grid Continuity ─────────────────────────────── */
 
 * {
-  border-radius: 0 !important;   /* No rounded corners in a tactical grid */
-  box-shadow: none !important;    /* No shadows - use 1px borders only */
+  border-radius: 0 !important;   /* Tactical precision requires 90-degree angles */
+  box-shadow: none !important;    /* No visual ambiguity - use lines */
+  outline: none !important;
 }
 
 .theme-border body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   -webkit-font-smoothing: antialiased;
 }
 
+/* Flush Grid Utilities */
 .connected-grid {
   display: flex;
   background: var(--line);
-  gap: 1px; /* The "Connected Line" secret */
+  gap: 1.5px; /* Precision gap for visible grid lines */
 }
 
 .grid-cell {
   background: var(--bg-surface);
+  position: relative;
 }
 
+.grid-cell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--line-dim);
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+/* ── High-Density Typography ─────────────────────────────── */
+
 .eyebrow {
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.2em;
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
-  color: var(--dim);
+  color: var(--ink);
   font-family: var(--font-mono);
+  opacity: 0.4;
 }
 
 .live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 8px;
-  font-size: 10px;
-  font-weight: 900;
+  padding: 0px 8px;
+  height: 18px;
+  font-size: 9px;
+  font-weight: 950;
   text-transform: uppercase;
   background: var(--ink);
   color: #ffffff;
+  letter-spacing: 0.1em;
 }
 
 .live-badge::after {
   content: "";
-  width: 5px;
-  height: 5px;
+  width: 4px;
+  height: 4px;
   background: var(--accent);
   border-radius: 50%;
-  animation: pulse-red 2s infinite;
+  animation: pulse-alert 1.5s infinite;
 }
 
-@keyframes pulse-red {
-  0% { opacity: 0.4; }
-  50% { opacity: 1; }
-  100% { opacity: 0.4; }
+@keyframes pulse-alert {
+  0% { transform: scale(0.8); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.8); opacity: 0.5; }
 }
 
 .text-numeric {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.06em;
 }
 
 .h-precision {
   font-weight: 900;
-  letter-spacing: -0.06em;
-  line-height: 0.8;
+  letter-spacing: -0.08em;
+  line-height: 0.75;
 }
 
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { scrollbar-width: none; }
 
-/* ── Apple-style Control Capsules (Internal Map) ────────── */
-.control-capsule {
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(20px);
+/* ── Operational Surfaces ────────────────────────────────── */
+
+.ops-card {
   border: 1px solid var(--line);
-  padding: 4px 12px;
+  background: white;
+  padding: 12px;
+  transition: all 0.1s ease;
+}
+
+.ops-card:hover {
+  background: var(--bg-raised);
+}
+
+.control-pill {
+  height: 24px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  padding: 0 10px;
+  border: 1.5px solid var(--line);
+  font-size: 9px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.1s ease;
+}
+
+.control-pill.active {
+  background: var(--ink);
+  color: white;
 }
