@@ -9,111 +9,120 @@ interface ProvinceDashboardProps {
 export default function ProvinceDashboard({ province, onClose }: ProvinceDashboardProps) {
   if (!province) return null;
 
-  const signalCount = province.fatalities ?? 0;
-  const readinessIndex = Math.max(5.2, Number((8.9 - signalCount * 0.4).toFixed(1)));
-  const weatherPressure = Math.min(92, 26 + signalCount * 12);
-  const tourismPulse = province.iso ? 70 : Math.max(40, 82 - signalCount * 6);
-  const tourismTone =
-    tourismPulse >= 70 ? "Strong" : tourismPulse >= 50 ? "Mixed" : "Soft";
+  const fatalities = province.fatalities ?? 0;
+  const stabilityIndex = Math.max(2.5, Number((9.6 - fatalities * 0.6).toFixed(1)));
+  const conflictDensity = Math.min(92, 18 + fatalities * 14);
+  const economicIntegration = province.iso ? 68 : Math.max(28, 78 - fatalities * 8);
+  const economicTone =
+    economicIntegration >= 60 ? "Stable" : economicIntegration >= 40 ? "Watch" : "Strained";
   const summaryLine =
-    province.notes ?? `${province.name} selected from the Phuket regional monitoring surface.`;
+    province.notes ?? `${province.name} selected from the regional border layer.`;
   const attentionLevel =
-    signalCount >= 2 ? "Immediate review" : signalCount >= 1 ? "Elevated attention" : "Routine monitoring";
+    fatalities >= 2 ? "Immediate review" : fatalities >= 1 ? "Close watch" : "Routine monitoring";
   const guidance = [
-    "Read this place against rainfall, AQI, and transport overlays before escalating.",
-    "Use the economy and briefing cards to see whether pressure is localized or regional.",
+    "Read this place against the imagery layer before turning on additional overlays.",
+    "Use market and briefing cards to see whether the signal is isolated or systemic.",
     province.eventDate
-      ? `Latest logged signal: ${province.eventDate}.`
-      : `Use ${province.name} as a geographic anchor for adjacent Phuket-region signals.`,
+      ? `Latest recorded event: ${province.eventDate}.`
+      : `Use ${province.name} as a geographic anchor for adjacent signals.`,
   ];
 
   return (
-    <div className="fixed inset-x-4 bottom-14 z-[60] mx-auto w-[min(920px,calc(100vw-2rem))] border border-[var(--line-bright)] bg-[rgba(250,248,242,0.94)] backdrop-blur-xl">
-      <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.35fr)_120px_120px_180px_auto] lg:items-start">
-        <div className="min-w-0">
+    <div className="absolute bottom-28 right-8 z-[60] w-[360px] rounded-[28px] border border-[#d6cebf] bg-[#efe7dc]/96 p-7 shadow-[0_20px_50px_rgba(0,0,0,0.18)] backdrop-blur-xl">
+      <div className="mb-6 flex items-start justify-between">
+        <div className="space-y-1">
           <div className="eyebrow">Selected place</div>
-          <h2 className="pt-1 text-[22px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
+          <h2 className="text-[26px] font-semibold tracking-[-0.04em] text-[#171512]">
             {province.name}
           </h2>
-          <p className="pt-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
-            {province.type ?? `Sector: ${province.iso ?? "Regional"}`}
+          <p className="text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
+            {province.type ?? `Sector code: ${province.iso ?? "Regional"}`}
           </p>
-          <p className="pt-3 text-[12px] leading-5 text-[var(--muted)]">{summaryLine}</p>
         </div>
-
-        <div>
-          <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
-            Readiness
-          </div>
-          <div className="pt-1 font-mono text-[28px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
-            {readinessIndex}
-          </div>
-          <div className="text-[9px] text-[var(--dim)]">out of 10</div>
-        </div>
-
-        <div>
-          <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
-            Signals
-          </div>
-          <div
-            className={`flex items-center gap-1 pt-1 font-mono text-[28px] font-semibold tracking-[-0.04em] ${
-              signalCount > 0 ? "text-[#f59e0b]" : "text-[var(--cool)]"
-            }`}
-          >
-            {signalCount}
-            <TrendingUp size={12} />
-          </div>
-          <div className="text-[9px] text-[var(--dim)]">{attentionLevel}</div>
-        </div>
-
-        <div className="space-y-3 lg:border-l lg:border-[var(--line)] lg:pl-4">
-          <div>
-            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
-              <span>Weather pressure</span>
-              <span>{signalCount > 0 ? "Elevated" : "Seasonal"}</span>
-            </div>
-            <div className="mt-1.5 h-[2px] w-full overflow-hidden bg-[var(--line)]">
-              <div className="h-full bg-[#f59e0b]" style={{ width: `${weatherPressure}%` }} />
-            </div>
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
-              <span>Tourism pulse</span>
-              <span className="text-[var(--cool)]">{tourismTone}</span>
-            </div>
-            <div className="mt-1.5 h-[2px] w-full overflow-hidden bg-[var(--line)]">
-              <div className="h-full bg-[var(--cool)]" style={{ width: `${tourismPulse}%` }} />
-            </div>
-          </div>
-        </div>
-
         <button
           onClick={onClose}
-          className="inline-flex h-9 w-9 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
+          className="rounded-full border border-[#d6cebf] bg-white/60 p-2 transition-colors hover:bg-white"
         >
-          <X size={14} />
+          <X size={14} className="text-[#5f5b52]" />
         </button>
       </div>
 
-      <div className="grid gap-3 border-t border-[var(--line)] px-4 py-3 lg:grid-cols-[minmax(0,1fr)_220px]">
-        <div className="grid gap-2 md:grid-cols-3">
+      <p className="text-[14px] leading-6 text-[#4f4a42]">{summaryLine}</p>
+
+      <div className="mt-6 grid grid-cols-2 gap-4">
+        <div className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+          <label className="block text-[9px] uppercase tracking-[0.18em] text-[#7a7468]">
+            Stability index
+          </label>
+          <div className="flex items-baseline gap-1 pt-2 text-[30px] font-semibold tracking-[-0.04em] text-[#171512]">
+            {stabilityIndex}
+            <span className="text-[10px] text-[#7a7468]">/10</span>
+          </div>
+        </div>
+        <div className="rounded-[20px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+          <label className="block text-[9px] uppercase tracking-[0.18em] text-[#7a7468]">
+            Fatalities
+          </label>
+          <div
+            className={`flex items-center gap-1 pt-2 text-[30px] font-semibold tracking-[-0.04em] ${
+              fatalities > 0 ? "text-[#8b5a40]" : "text-[#4f6871]"
+            }`}
+          >
+            {fatalities}
+            <TrendingUp size={12} />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+          <span>Immediate read</span>
+          <span className={fatalities > 0 ? "text-[#8b5a40]" : "text-[#4f6871]"}>
+            {attentionLevel}
+          </span>
+        </div>
+        <div className="mt-4 space-y-4">
+          <div>
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+              <span>Conflict density</span>
+              <span>{fatalities > 0 ? "Elevated" : "Monitored"}</span>
+            </div>
+            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
+              <div className="h-full bg-[#8b5a40]" style={{ width: `${conflictDensity}%` }} />
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+              <span>Economic integration</span>
+              <span className="text-[#4f6871]">{economicTone}</span>
+            </div>
+            <div className="mt-2 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
+              <div className="h-full bg-[#4f6871]" style={{ width: `${economicIntegration}%` }} />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-6 border-t border-[#d6cebf] pt-5">
+        <div className="eyebrow">What to watch next</div>
+        <div className="mt-3 space-y-3">
           {guidance.map((item) => (
             <div
               key={item}
-              className="border border-[var(--line)] px-3 py-2 text-[10px] leading-4 text-[var(--muted)]"
+              className="rounded-[18px] border border-[#d6cebf] bg-white/60 p-3 text-[12px] leading-5 text-[#4f4a42]"
             >
               {item}
             </div>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 border border-[var(--line)] px-3 py-2">
-          <Globe size={12} className="text-[var(--cool)]" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+        <div className="mt-4 flex items-center gap-2 rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] px-4 py-3">
+          <Globe size={12} className="text-[#5f5b52]" />
+          <span className="text-[10px] uppercase tracking-[0.16em] text-[#6d675d]">
             {province.eventDate
-              ? `Event ${province.eventDate}`
-              : `Sector ${province.iso ?? province.name}`}
+              ? `Event date: ${province.eventDate}`
+              : `Sector: ${province.iso ?? province.name}`}
           </span>
         </div>
       </div>

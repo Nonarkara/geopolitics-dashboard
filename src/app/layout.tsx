@@ -2,9 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Phuket Dashboard | Coastal Operations",
-  description:
-    "Phuket Dashboard: coastal operations view for Phuket and nearby provinces across tourism demand, road safety, rainfall, monsoon pressure, air quality, and local economy.",
+  title: "Thailand Geopolitics | Phuket Dashboard",
+  description: "Advanced monitoring platform for regional stability and economic development.",
 };
 
 export default function RootLayout({
@@ -14,7 +13,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-[var(--bg)] text-[var(--ink)] antialiased">
+      <body className="antialiased overflow-hidden">
         {children}
       </body>
     </html>

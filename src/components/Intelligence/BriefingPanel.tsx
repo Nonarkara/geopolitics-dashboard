@@ -1,33 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import type {
-  IntelligencePackageResponse,
-  PackageStatus,
-} from "../../types/dashboard";
+import { useEffect, useState } from "react";
+import { fallbackBriefing } from "../../lib/mock-data";
+import type { BriefingPayload } from "../../types/dashboard";
 
-function isIntelligencePackageResponse(
-  value: unknown,
-): value is IntelligencePackageResponse {
+function isBriefingPayload(value: unknown): value is BriefingPayload {
   return (
     typeof value === "object" &&
     value !== null &&
-    "packages" in value &&
-    Array.isArray(value.packages)
+    "title" in value &&
+    "summary" in value &&
+    "priorities" in value &&
+    Array.isArray(value.priorities)
   );
-}
-
-function statusClass(status: PackageStatus) {
-  if (status === "live") {
-    return "bg-[rgba(34,197,94,0.15)] text-[#22c55e]";
-  }
-
-  if (status === "stale") {
-    return "bg-[rgba(245,158,11,0.15)] text-[#f59e0b]";
-  }
-
-  return "bg-[rgba(239,68,68,0.15)] text-[#ef4444]";
 }
 
 function formatTimestamp(value: string) {
@@ -40,118 +25,88 @@ function formatTimestamp(value: string) {
 }
 
 export default function BriefingPanel() {
-  const [payload, setPayload] = useState<IntelligencePackageResponse | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const load = useCallback(async () => {
-    try {
-      const response = await fetch("/api/intelligence/packages");
-      const nextPayload: unknown = await response.json();
-
-      if (isIntelligencePackageResponse(nextPayload)) {
-        setPayload(nextPayload);
-      }
-    } catch {
-      setPayload(null);
-    }
-  }, []);
+  const [briefing, setBriefing] = useState<BriefingPayload>(fallbackBriefing);
 
   useEffect(() => {
-    const initialLoad = setTimeout(() => {
-      void load();
-    }, 0);
-    const interval = setInterval(() => {
-      void load();
-    }, 2 * 60 * 1000);
-    return () => {
-      clearTimeout(initialLoad);
-      clearInterval(interval);
+    const load = async () => {
+      try {
+        const response = await fetch("/api/briefings/latest");
+        const payload: unknown = await response.json();
+
+        if (isBriefingPayload(payload)) {
+          setBriefing(payload);
+        }
+      } catch {
+        setBriefing(fallbackBriefing);
+      }
     };
-  }, [load]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    load().then(() => setTimeout(() => setRefreshing(false), 600));
-  };
-
-  if (!payload) {
-    return (
-      <section className="flex h-full items-center justify-center bg-[var(--bg-surface)]">
-        <span className="eyebrow">Loading intelligence packages</span>
-      </section>
-    );
-  }
+    load();
+  }, []);
 
   return (
-    <section className="flex h-full flex-col bg-[var(--bg-surface)] p-4 overflow-y-auto">
-      <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-3">
+    <section className="flex h-full flex-col bg-[#eee6da] p-6">
+      <div className="flex items-start justify-between gap-4 border-b border-[#d6cebf] pb-4">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="eyebrow">Briefing</div>
-            <span className="live-badge">LIVE</span>
-            <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh intelligence packages">
-              <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
-            </button>
+          <div className="eyebrow">
+            Regional briefing
           </div>
-          <h2 className="pt-2 text-[18px] font-bold tracking-[-0.03em] text-[var(--ink)]">
-            Phuket packages
+          <h2 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
+            {briefing.title}
           </h2>
         </div>
-        <div className="text-right text-[9px] font-mono tabular-nums text-[var(--dim)]">
-          {formatTimestamp(payload.generatedAt)}
+        <div className="text-right text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
+          {formatTimestamp(briefing.updatedAt)}
         </div>
       </div>
 
-      <div className="mt-2 divide-y divide-[var(--line)]">
-        {payload.packages.map((pkg) => (
-          <article
-            key={pkg.id}
-            className="py-3 first:pt-0"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-                  {pkg.title}
+      <p className="pt-5 text-[15px] leading-7 text-[#2f2d29]">
+        {briefing.summary}
+      </p>
+
+      <div className="mt-5 rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
+        <div className="eyebrow">Why it matters</div>
+        <p className="pt-2 text-[13px] leading-6 text-[#4f4a42]">
+          {briefing.outlook}
+        </p>
+      </div>
+
+      <div className="grid gap-5 pt-6 xl:grid-cols-2">
+        <div>
+          <div className="eyebrow">
+            What to watch today
+          </div>
+          <div className="pt-3 space-y-3">
+            {briefing.priorities.map((item, index) => (
+              <div
+                key={item}
+                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
+              >
+                <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                  Priority {index + 1}
                 </div>
-                <div className="pt-1 text-[11px] leading-5 text-[var(--muted)]">
-                  {pkg.headline}
+                <div className="pt-2 text-[13px] leading-6 text-[#20201d]">
+                {item}
                 </div>
               </div>
-              <span
-                className={`rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.16em] ${statusClass(pkg.status)}`}
+            ))}
+          </div>
+        </div>
+        <div>
+          <div className="eyebrow">
+            Market Signals
+          </div>
+          <div className="pt-3 space-y-3">
+            {briefing.marketSignals.map((item) => (
+              <div
+                key={item}
+                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4 text-[13px] leading-6 text-[#444039]"
               >
-                {pkg.status}
-              </span>
-            </div>
-
-            <div className="pt-3 flex flex-wrap gap-1.5">
-              {pkg.dominantTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="border border-[var(--line)] px-2 py-0.5 text-[9px] text-[var(--cool)]"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-3 space-y-2">
-              {pkg.priorities.slice(0, 2).map((item) => (
-                <div
-                  key={item}
-                  className="border-l border-[var(--line-bright)] pl-3 text-[10px] leading-4 text-[var(--muted)]"
-                >
-                  {item}
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-3 flex items-center justify-between text-[9px] font-mono tabular-nums text-[var(--dim)]">
-              <span>{pkg.stats.elevated} elevated</span>
-              <span>{formatTimestamp(pkg.updatedAt)}</span>
-            </div>
-          </article>
-        ))}
+                {item}
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );

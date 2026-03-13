@@ -2,47 +2,35 @@
 
 import { useEffect, useState } from "react";
 import type { MapViewState, PickingInfo } from "@deck.gl/core";
+import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
-const DeckGL = dynamic(() => (import("@deck.gl/react") as any).then((m: any) => m.default || m.DeckGL), { ssr: false }) as any;
 import {
   CloudRain,
   Flame,
   Globe,
   Layers,
   Map as MapIcon,
-  MapPinned,
   MoonStar,
-  Plane,
   Satellite,
-  Tag,
   Users,
-  Wind,
 } from "lucide-react";
 import {
-  createAirQualityHeatmapLayers,
-  createConflictZonesLayer,
   createFireLayer,
-  createFlightPathsLayer,
   createHeatmapLayer,
   createIncidentLayer,
-  createProvinceLabelsLayer,
+  createJaxaRainLayer,
+  createModisAquaLayer,
+  createModisTerraLayer,
+  createNightlightLayer,
   createRainfallLayer,
-  createRasterOverlayLayer,
   createRefugeeLayer,
   createRegionalBorderLayer,
+  createViirsTrueColorLayer,
 } from "../../services/map-engine";
-import { luma } from "@luma.gl/core";
-import { webgl2Adapter } from "@luma.gl/webgl";
-import { getUsableMapboxToken } from "../../lib/mapbox";
-import { buildMapOverlayCatalog } from "../../lib/map-overlays";
 import type {
-  AirQualityPoint,
-  ConflictZoneCollection,
-  ConflictZoneFeature,
   FireEvent,
   IncidentFeature,
   ProvinceSelection,
-  FlightData,
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
@@ -50,21 +38,14 @@ import type {
 } from "../../types/dashboard";
 
 const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const MAPBOX_TOKEN = getUsableMapboxToken(
-  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-);
-
-// Register WebGL adapter for deck.gl v9
-luma.registerAdapters([webgl2Adapter]);
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 
 const INITIAL_VIEW_STATE: MapViewState = {
-  longitude: 98.334,
-  latitude: 7.886,
-  zoom: 10,
-  pitch: 45,
-  bearing: -5,
-  minZoom: 5,
-  maxZoom: 18,
+  longitude: 100.85,
+  latitude: 14.2,
+  zoom: 6.15,
+  pitch: 26,
+  bearing: -4,
 };
 
 const EMPTY_BORDERS: RegionBorderCollection = {
@@ -72,10 +53,17 @@ const EMPTY_BORDERS: RegionBorderCollection = {
   features: [],
 };
 
-const EMPTY_CONFLICT_ZONES: ConflictZoneCollection = {
-  type: "FeatureCollection",
-  features: [],
-};
+type SatelliteOverlayId = "modisTerra" | "modisAqua" | "viirsTrueColor";
+
+const SATELLITE_OVERLAY_OPTIONS: Array<{
+  id: SatelliteOverlayId;
+  label: string;
+  shortLabel: string;
+}> = [
+  { id: "viirsTrueColor", label: "VIIRS True Color", shortLabel: "VIIRS" },
+  { id: "modisTerra", label: "MODIS Terra", shortLabel: "TERRA" },
+  { id: "modisAqua", label: "MODIS Aqua", shortLabel: "AQUA" },
+];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -97,31 +85,12 @@ function isRegionBorderFeature(value: unknown): value is RegionBorderFeature {
   );
 }
 
-function isConflictZoneFeature(value: unknown): value is ConflictZoneFeature {
-  return (
-    isRecord(value) &&
-    isRecord(value.properties) &&
-    typeof value.properties.name === "string" &&
-    typeof value.properties.summary === "string" &&
-    typeof value.properties.priority === "number"
-  );
-}
-
 function isFireEvent(value: unknown): value is FireEvent {
   return isRecord(value) && typeof value.brightness === "number";
 }
 
 function hasLabel(value: unknown): value is RefugeeMovement | RainfallPoint {
   return isRecord(value) && typeof value.label === "string";
-}
-
-function isAirQualityPoint(value: unknown): value is AirQualityPoint {
-  return (
-    isRecord(value) &&
-    typeof value.label === "string" &&
-    typeof value.aqi === "number" &&
-    typeof value.pm25 === "number"
-  );
 }
 
 async function fetchJson<T>(url: string, fallback: T): Promise<T> {
@@ -146,14 +115,6 @@ function getTooltipText(object: unknown): string | null {
     return object.properties.NAME_0 ?? null;
   }
 
-  if (isConflictZoneFeature(object)) {
-    return `${object.properties.name}: ${object.properties.summary}`;
-  }
-
-  if (isAirQualityPoint(object)) {
-    return `${object.label}: AQI ${Math.round(object.aqi)} / PM2.5 ${Math.round(object.pm25)}`;
-  }
-
   if (hasLabel(object)) {
     return object.label;
   }
@@ -174,311 +135,91 @@ export default function BorderMap({
 }: {
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
-  const [mounted, setMounted] = useState(false);
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [showNightlights, setShowNightlights] = useState(false);
+  const [showFires, setShowFires] = useState(false);
+  const [showRefugees, setShowRefugees] = useState(false);
+  const [showRainfall, setShowRainfall] = useState(false);
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
-  const [satelliteOpacity, setSatelliteOpacity] = useState(62);
+  const [satelliteOverlay, setSatelliteOverlay] =
+    useState<SatelliteOverlayId>("viirsTrueColor");
+  const [satelliteOpacity, setSatelliteOpacity] = useState(72);
+  const [showJaxa, setShowJaxa] = useState(false);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
-  const [showAerialBasemap, setShowAerialBasemap] = useState(MAPBOX_TOKEN.length === 0);
-  const [showStreets, setShowStreets] = useState(MAPBOX_TOKEN.length === 0);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
   const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
   const [rainfall, setRainfall] = useState<RainfallPoint[]>([]);
-  const [airQuality, setAirQuality] = useState<AirQualityPoint[]>([]);
-  const [flights, setFlights] = useState<FlightData[]>([]);
   const [borders, setBorders] = useState<RegionBorderCollection | null>(null);
-  const [conflictZones, setConflictZones] =
-    useState<ConflictZoneCollection>(EMPTY_CONFLICT_ZONES);
 
   const getSafeDate = () => {
-    // NASA GIBS only serves imagery up to the current real-world date.
-    // In this simulated environment (2026), requesting Date.now() returns
-    // a future date against NASA's real calendar, resulting in transparent or black tiles.
-    return "2024-03-01";
+    const d = new Date();
+    d.setDate(d.getDate() - 14);
+    return d.toISOString().split("T")[0];
   };
 
   const safeDate = getSafeDate();
-  const overlayCatalog = buildMapOverlayCatalog(safeDate);
-  const baseOverlays = overlayCatalog.overlays.filter(
-    (overlay) => overlay.role === "base-option",
-  );
-  const additionalOverlays = overlayCatalog.overlays.filter(
-    (overlay) => overlay.role !== "base-option",
-  );
-  const [satelliteOverlay, setSatelliteOverlay] = useState<string>(
-    overlayCatalog.defaultImageryOverlayId,
-  );
-  const [enabledOverlays, setEnabledOverlays] = useState<Record<string, boolean>>(
-    () =>
-      overlayCatalog.overlays.reduce<Record<string, boolean>>((memo, overlay) => {
-        memo[overlay.id] = overlay.enabledByDefault;
-        return memo;
-      }, {}),
-  );
   const activeSatelliteOverlay =
-    baseOverlays.find((overlay) => overlay.id === satelliteOverlay) ??
-    baseOverlays[0];
+    SATELLITE_OVERLAY_OPTIONS.find((option) => option.id === satelliteOverlay) ??
+    SATELLITE_OVERLAY_OPTIONS[0];
+  const useSatelliteBasemap = isDetailedMap || showSatelliteOverlay;
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
-  const rainCount = rainfall.length;
-  const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
-  const totalActiveLayers = Object.entries(enabledOverlays).filter(
-    ([, active]) => active,
-  ).length;
-  const mapStyle = isDetailedMap
-    ? "mapbox://styles/mapbox/satellite-streets-v12"
-    : "mapbox://styles/mapbox/light-v11";
-  const fallbackBackgroundClass = isDetailedMap
-    ? "bg-[radial-gradient(circle_at_top,_var(--line-bright),_var(--bg)_52%),linear-gradient(180deg,_var(--bg)_0%,_var(--bg-surface)_100%)]"
-    : "bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.08),_rgba(10,15,26,0.98)_42%),linear-gradient(180deg,_rgba(4,8,15,1)_0%,_rgba(2,6,12,1)_100%)]";
-
-  const provinceLabelsLayer = enabledOverlays.provinceLabels
-    ? createProvinceLabelsLayer()
-    : null;
+  const selectedFocus =
+    signalCount > 0 ? incidents[0]?.properties.location ?? "Thailand" : "Thailand";
 
   const satelliteLayer =
-    showSatelliteOverlay && activeSatelliteOverlay
-      ? createRasterOverlayLayer(activeSatelliteOverlay, satelliteOpacity / 100)
-      : null;
-
-  const selectedAdditionalOverlays = additionalOverlays.filter(
-    (overlay) => enabledOverlays[overlay.id],
-  );
-  const rasterAnalyticLayers = selectedAdditionalOverlays
-    .filter((overlay) => overlay.kind === "raster")
-    .map((overlay) => createRasterOverlayLayer(overlay, overlay.defaultOpacity))
-    .filter(Boolean);
+    !showSatelliteOverlay
+      ? null
+      : satelliteOverlay === "modisTerra"
+        ? createModisTerraLayer(safeDate, satelliteOpacity / 100)
+        : satelliteOverlay === "modisAqua"
+          ? createModisAquaLayer(safeDate, satelliteOpacity / 100)
+          : createViirsTrueColorLayer(safeDate, satelliteOpacity / 100);
 
   useEffect(() => {
-    setMounted(true);
     const loadData = async () => {
       const [
         incidentData,
         fireData,
         refugeeData,
         rainfallData,
-        airQualityData,
         borderData,
-        conflictZoneData,
-        flightData,
       ] = await Promise.all([
         fetchJson<IncidentFeature[]>("/api/incidents", []),
         fetchJson<FireEvent[]>("/api/fires", []),
-        fetchJson<RefugeeMovement[]>("/api/movements", []),
+        fetchJson<RefugeeMovement[]>("/api/refugees", []),
         fetchJson<RainfallPoint[]>("/api/rainfall", []),
-        fetchJson<AirQualityPoint[]>("/api/air-quality", []),
         fetchJson<RegionBorderCollection>("/data/region_borders.geojson", EMPTY_BORDERS),
-        fetchJson<ConflictZoneCollection>("/data/conflict_zones.geojson", EMPTY_CONFLICT_ZONES),
-        fetchJson<FlightData[]>("/api/flights", []),
       ]);
 
       setIncidents(Array.isArray(incidentData) ? incidentData : []);
       setFires(Array.isArray(fireData) ? fireData : []);
       setRefugees(Array.isArray(refugeeData) ? refugeeData : []);
       setRainfall(Array.isArray(rainfallData) ? rainfallData : []);
-      setAirQuality(Array.isArray(airQualityData) ? airQualityData : []);
-      setFlights(Array.isArray(flightData) ? flightData : []);
       setBorders(borderData);
-      setConflictZones(conflictZoneData);
     };
 
     loadData();
-
-    // Refresh map data every 2 minutes
-    const mapDataInterval = setInterval(loadData, 2 * 60 * 1000);
-
-    // Refresh flight data every 30 seconds
-    const flightInterval = setInterval(async () => {
-      const flightData = await fetchJson<FlightData[]>("/api/flights", []);
-      setFlights(Array.isArray(flightData) ? flightData : []);
-    }, 30000);
-
-    return () => {
-      clearInterval(mapDataInterval);
-      clearInterval(flightInterval);
-    };
   }, []);
 
   const layers = [
     satelliteLayer,
-    ...rasterAnalyticLayers,
-    enabledOverlays.borderContext && borders && createRegionalBorderLayer(borders),
-    enabledOverlays.conflictZones && createConflictZonesLayer(conflictZones),
-    enabledOverlays.rainfallAnomalies && createRainfallLayer(rainfall),
-    ...(enabledOverlays.aqiHeatmap
-      ? createAirQualityHeatmapLayers(airQuality, "aqi")
-      : []),
-    ...(enabledOverlays.pm25Heatmap
-      ? createAirQualityHeatmapLayers(airQuality, "pm25")
-      : []),
-    enabledOverlays.incidentHeatmap
-      ? createHeatmapLayer(incidents)
-      : enabledOverlays.incidentPoints
-        ? createIncidentLayer(incidents)
-        : null,
-    enabledOverlays.thermalHotspots ? createFireLayer(fires) : null,
-    enabledOverlays.populationMovement ? createRefugeeLayer(refugees) : null,
-    ...(enabledOverlays.flightPaths ? (createFlightPathsLayer(flights) ?? []) : []),
-    provinceLabelsLayer,
+    showJaxa && createJaxaRainLayer(safeDate),
+    showNightlights && createNightlightLayer(),
+    borders && createRegionalBorderLayer(borders),
+    showRainfall && createRainfallLayer(rainfall),
+    showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents),
+    showFires && createFireLayer(fires),
+    showRefugees && createRefugeeLayer(refugees),
   ].filter(Boolean);
-
-  const analyticControls = additionalOverlays.filter(
-    (overlay) => overlay.role === "analytic",
-  );
-  const operationalControls = additionalOverlays.filter(
-    (overlay) => overlay.role === "operational",
-  );
-  const focusPresets = [
-    {
-      id: "phuket-core",
-      label: "Phuket island",
-      summary: "Town, beaches, airport, and east coast",
-      view: INITIAL_VIEW_STATE,
-    },
-    {
-      id: "patong-coast",
-      label: "Patong coast",
-      summary: "Patong, Karon, Kata, and western access",
-      view: {
-        longitude: 98.284,
-        latitude: 7.842,
-        zoom: 11.25,
-        pitch: 46,
-        bearing: -20,
-      },
-    },
-    {
-      id: "airport-link",
-      label: "Airport link",
-      summary: "Airport, bridge, and northern road corridor",
-      view: {
-        longitude: 98.315,
-        latitude: 8.112,
-        zoom: 10.45,
-        pitch: 42,
-        bearing: -8,
-      },
-    },
-    {
-      id: "phang-nga-bay",
-      label: "Phang Nga Bay",
-      summary: "Bay approaches, piers, and marine routes",
-      view: {
-        longitude: 98.53,
-        latitude: 8.085,
-        zoom: 9.75,
-        pitch: 38,
-        bearing: 14,
-      },
-    },
-  ] as const;
-  const mapModeControls = [
-    {
-      id: "satellite-overlay",
-      active: showSatelliteOverlay,
-      label: "NASA overlay",
-      icon: Globe,
-      onClick: () => setShowSatelliteOverlay((value) => !value),
-    },
-    {
-      id: "aerial-base",
-      active: showAerialBasemap,
-      label: "ESRI aerial",
-      icon: Satellite,
-      onClick: () => setShowAerialBasemap((value) => !value),
-    },
-    {
-      id: "roads-base",
-      active: showStreets,
-      label: "OSM roads",
-      icon: MapPinned,
-      onClick: () => setShowStreets((value) => !value),
-    },
-    {
-      id: "detail-base",
-      active: isDetailedMap,
-      label: "Detailed map",
-      icon: MapIcon,
-      onClick: () => setIsDetailedMap((value) => !value),
-    },
-    {
-      id: "night-lights",
-      active: enabledOverlays.nightLights,
-      label: "Night lights",
-      icon: MoonStar,
-      onClick: () => toggleOverlay("nightLights"),
-    },
-  ] as const;
-  const layerControls = [
-    ...analyticControls.map((overlay) => ({
-      id: overlay.id,
-      active: enabledOverlays[overlay.id],
-      label: overlay.label,
-      detail:
-        overlay.id === "thermalHotspots"
-          ? `${formatCompactCount(hotspotCount)} hotspots`
-          : overlay.id === "aqiHeatmap" || overlay.id === "pm25Heatmap"
-            ? `${formatCompactCount(airQuality.length)} stations`
-            : overlay.id === "rainfallAnomalies"
-              ? `${formatCompactCount(rainCount)} rain nodes`
-              : overlay.shortLabel,
-      icon:
-        overlay.family === "weather"
-          ? CloudRain
-          : overlay.family === "air"
-            ? Wind
-            : overlay.family === "thermal"
-              ? Flame
-              : overlay.family === "lights"
-                ? MoonStar
-                : Layers,
-      onClick: () => toggleOverlay(overlay.id),
-    })),
-    ...operationalControls.map((overlay) => ({
-      id: overlay.id,
-      active: enabledOverlays[overlay.id],
-      label: overlay.label,
-      detail:
-        overlay.id === "conflictZones"
-          ? `${formatCompactCount(conflictZones.features.length)} zones`
-          : overlay.id === "populationMovement"
-            ? `${formatCompactCount(refugees.length)} flows`
-            : overlay.id === "incidentHeatmap" || overlay.id === "incidentPoints"
-              ? `${formatCompactCount(signalCount)} signals`
-              : overlay.id === "provinceLabels"
-                ? "Province index"
-                : overlay.id === "flightPaths"
-                  ? `${formatCompactCount(flights.length)} aircraft`
-                  : overlay.shortLabel,
-      icon:
-        overlay.id === "populationMovement"
-          ? Users
-          : overlay.id === "conflictZones"
-            ? MapPinned
-            : overlay.id === "rainfallAnomalies"
-              ? CloudRain
-              : overlay.id === "provinceLabels"
-                ? Tag
-                : overlay.id === "flightPaths"
-                  ? Plane
-                  : Layers,
-      onClick: () => toggleOverlay(overlay.id),
-    })),
-  ];
-
-  const toggleOverlay = (overlayId: string) => {
-    setEnabledOverlays((current) => ({
-      ...current,
-      [overlayId]: !current[overlayId],
-    }));
-  };
 
   const handleMapClick = ({ object }: PickingInfo<unknown>) => {
     if (isIncidentFeature(object)) {
       onProvinceSelect?.({
-        name: object.properties.location || "Local Sector",
+        name: object.properties.location || "Tactical Sector",
         location: object.properties.location,
         type: object.properties.type,
         notes: object.properties.notes,
@@ -493,219 +234,309 @@ export default function BorderMap({
         name: object.properties.NAME_0 ?? "Regional Sector",
         iso: object.properties.ISO_A3 || object.properties.ADM0_A3,
       });
-      return;
-    }
-
-    if (isConflictZoneFeature(object)) {
-      onProvinceSelect?.({
-        name: object.properties.name,
-        type: "Focus zone",
-        notes: object.properties.summary,
-      });
     }
   };
 
-  // When aerial basemap is on, use ESRI World Imagery tiles (free, no token needed)
-  const aerialLayer = showAerialBasemap
-    ? createRasterOverlayLayer(
-        {
-          id: "esri-aerial",
-          label: "ESRI Aerial",
-          shortLabel: "AERIAL",
-          description: "High-resolution aerial imagery",
-          source: "ESRI",
-          family: "imagery",
-          role: "base-option",
-          kind: "raster" as const,
-          defaultOpacity: 1,
-          enabledByDefault: false,
-          maxZoom: 19,
-          tileTemplate:
-            "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-          updatedAt: new Date().toISOString(),
-        },
-        1,
-      )
-    : null;
-
-  // OpenStreetMap streets/roads layer (free, no token needed)
-  const streetsLayer = showStreets
-    ? createRasterOverlayLayer(
-        {
-          id: "osm-streets",
-          label: "OpenStreetMap",
-          shortLabel: "OSM",
-          description: "Street-level roads and infrastructure",
-          source: "OpenStreetMap",
-          family: "imagery",
-          role: "base-option",
-          kind: "raster" as const,
-          defaultOpacity: 0.85,
-          enabledByDefault: false,
-          maxZoom: 19,
-          tileTemplate:
-            "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-          updatedAt: new Date().toISOString(),
-        },
-        0.85,
-      )
-    : null;
-
-  // Prepend basemap layers so they sit below all other layers
-  const allLayers = [aerialLayer, streetsLayer, ...layers].filter(Boolean);
-
-  if (!mounted) {
-    return (
-      <div className="relative flex h-full w-full flex-col overflow-hidden bg-[var(--bg-raised)] animate-pulse" />
-    );
-  }
-
   return (
     <div className="relative flex h-full w-full flex-col overflow-hidden">
-      {!hasMapboxBaseMap && (
-        <div
-          className={`absolute inset-0 ${fallbackBackgroundClass}`}
-          aria-hidden="true"
-        />
-      )}
-
       <DeckGL
-        id="phuket-deck"
         viewState={viewState}
-        onViewStateChange={({ viewState: nextViewState }: { viewState: any }) => {
-          const next = nextViewState as MapViewState;
-          setViewState(next);
-        }}
+        onViewStateChange={({ viewState: nextViewState }) =>
+          setViewState(nextViewState as MapViewState)
+        }
         controller={true}
-        layers={allLayers}
+        layers={layers}
         onClick={handleMapClick}
         getTooltip={({ object }: PickingInfo<unknown>) => getTooltipText(object)}
       >
-        {hasMapboxBaseMap ? (
-          <MapboxMap
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle={mapStyle}
-            reuseMaps
-            attributionControl={false}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
-        )}
+        <MapboxMap
+          mapboxAccessToken={MAPBOX_TOKEN}
+          mapStyle={
+            useSatelliteBasemap && MAPBOX_TOKEN
+              ? "mapbox://styles/mapbox/satellite-streets-v12"
+              : MAPBOX_TOKEN
+              ? "mapbox://styles/mapbox/dark-v11"
+              : "https://tiles.openfreemap.org/styles/dark"
+          }
+          attributionControl={false}
+        />
       </DeckGL>
 
-      <div className="pointer-events-auto absolute inset-x-0 top-0 z-40 border-b border-[var(--line)] bg-[rgba(248,246,240,0.85)] backdrop-blur-md">
-        <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-1.5 xl:px-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <div className="text-[14px] font-bold tracking-tight text-[var(--ink)] uppercase">Operating Surface</div>
-              <div className="h-3 w-[1px] bg-[var(--line)]" />
-              <div className="flex gap-3 text-[9px] font-mono font-bold text-[var(--dim)] uppercase tracking-tight">
-                <span>SIG {signalCount}</span>
-                <span>AQI {airQuality.length}</span>
-                <span>FLT {flights.length}</span>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[rgba(24,21,17,0.12)] via-transparent to-[rgba(24,21,17,0.08)]" />
+
+      <div className="pointer-events-auto absolute left-4 top-24 z-40 hidden w-[316px] xl:block">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="eyebrow">Map focus</div>
+          <h2 className="pt-2 text-[24px] font-semibold tracking-[-0.04em] text-[#171512]">
+            Thailand in detailed satellite context
+          </h2>
+          <p className="pt-3 text-[14px] leading-6 text-[#4d483f]">
+            Keep the map readable first: start with the terrain and imagery,
+            then add incidents, rainfall, fires, and movement only when you
+            need that layer.
+          </p>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Signals
+              </div>
+              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
+                {signalCount}
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Fires
+              </div>
+              <div className="pt-2 text-[20px] font-semibold tracking-[-0.04em] text-[#171512]">
+                {hotspotCount}
+              </div>
+            </div>
+            <div className="rounded-[18px] border border-[#d6cebf] bg-white/55 p-3">
+              <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
+                Focus
+              </div>
+              <div className="truncate pt-2 text-[15px] font-semibold tracking-[-0.03em] text-[#171512]">
+                {selectedFocus}
               </div>
             </div>
           </div>
-
-          <div className="flex items-center gap-1.5">
-            <div className="flex items-center gap-1 border-r border-[var(--line)] pr-2 mr-1">
-              {baseOverlays.map((option) => (
-                <button
-                  key={option.id}
-                  type="button"
-                  aria-pressed={satelliteOverlay === option.id}
-                  onClick={() => setSatelliteOverlay(option.id)}
-                  className={`px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                    satelliteOverlay === option.id
-                      ? "text-[var(--ink)] underline underline-offset-4"
-                      : "text-[var(--dim)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  {option.shortLabel}
-                </button>
-              ))}
-            </div>
-            {mapModeControls.slice(0, 3).map((control) => {
-              const Icon = control.icon;
-              return (
-                <button
-                  key={control.id}
-                  type="button"
-                  aria-pressed={control.active}
-                  onClick={control.onClick}
-                  className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[9px] font-bold uppercase tracking-wider transition-colors ${
-                    control.active
-                      ? "border-[var(--cool)] bg-[rgba(15,111,136,0.06)] text-[var(--cool)]"
-                      : "border-[var(--line)] text-[var(--dim)] hover:text-[var(--ink)]"
-                  }`}
-                >
-                  <Icon size={11} />
-                  {control.label.split(" ")[0]}
-                </button>
-              );
-            })}
-          </div>
         </div>
-        <div className="flex items-center gap-3 border-t border-[var(--line)] px-3 py-1.5 xl:px-4">
-          <div className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            {focusPresets.map((preset) => (
+      </div>
+
+      <div className="pointer-events-auto absolute right-4 top-24 z-40 w-[304px] xl:right-[404px]">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="eyebrow">Imagery</div>
+              <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+                {activeSatelliteOverlay.label}
+              </h3>
+              <p className="pt-2 text-[13px] leading-5 text-[#565046]">
+                Updated from the last stable day: {safeDate}
+              </p>
+            </div>
+            <div className="rounded-full border border-[#d6cebf] bg-white/60 p-2 text-[#4f6871]">
+              <Satellite size={16} />
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            {SATELLITE_OVERLAY_OPTIONS.map((option) => (
               <button
-                key={preset.id}
+                key={option.id}
                 type="button"
-                onClick={() =>
-                  setViewState((current) => ({
-                    ...current,
-                    ...preset.view,
-                  }))
-                }
-                className="whitespace-nowrap rounded border border-[var(--line)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
+                aria-pressed={satelliteOverlay === option.id}
+                onClick={() => setSatelliteOverlay(option.id)}
+                className={`rounded-full border px-3 py-2 text-[11px] font-medium transition-colors ${
+                  satelliteOverlay === option.id
+                    ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
+                    : "border-[#d6cebf] bg-white/70 text-[#4d483f] hover:bg-white"
+                }`}
               >
-                {preset.label}
+                {option.shortLabel}
               </button>
             ))}
           </div>
-          <div className={`flex items-center gap-2 min-w-[140px] ${showSatelliteOverlay ? "opacity-100" : "opacity-40"}`}>
-            <span className="text-[9px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
+
+          <div className="mt-5 grid gap-2">
+            <button
+              type="button"
+              aria-pressed={showSatelliteOverlay}
+              onClick={() => setShowSatelliteOverlay(!showSatelliteOverlay)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                showSatelliteOverlay
+                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+              }`}
+            >
+              <span>
+                <span className="block text-[13px] font-medium">Satellite overlay</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Adds true-color imagery on top of the base map.
+                </span>
+              </span>
+              <Globe size={16} />
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={isDetailedMap}
+              onClick={() => setIsDetailedMap(!isDetailedMap)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                isDetailedMap
+                  ? "border-[#8b5a40] bg-[#8b5a40] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+              }`}
+            >
+              <span>
+                <span className="block text-[13px] font-medium">Detailed basemap</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Keeps roads, settlements, and terrain legible.
+                </span>
+              </span>
+              <MapIcon size={16} />
+            </button>
+
+            <button
+              type="button"
+              aria-pressed={showNightlights}
+              onClick={() => setShowNightlights(!showNightlights)}
+              className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                showNightlights
+                  ? "border-[#4f6871] bg-[#4f6871] text-[#f7f2ea]"
+                  : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+              }`}
+            >
+              <span>
+                <span className="block text-[13px] font-medium">Night lights</span>
+                <span className="block pt-1 text-[11px] opacity-80">
+                  Useful for comparing settlement intensity after dark.
+                </span>
+              </span>
+              <MoonStar size={16} />
+            </button>
+          </div>
+
+          <div className={showSatelliteOverlay ? "mt-5 opacity-100" : "mt-5 opacity-45"}>
+            <div className="flex items-center justify-between text-[11px] font-medium text-[#736c61]">
+              <span>Overlay opacity</span>
+              <span className="text-[#171512]">{satelliteOpacity}%</span>
+            </div>
             <input
               type="range"
               min="20"
               max="100"
-              step="10"
+              step="5"
               value={satelliteOpacity}
               disabled={!showSatelliteOverlay}
               onChange={(event) => setSatelliteOpacity(Number(event.target.value))}
-              className="w-full h-1 bg-[var(--line)] rounded-full appearance-none accent-[var(--cool)] cursor-pointer"
+              className="mt-3 w-full accent-[#4f6871] disabled:cursor-not-allowed"
             />
           </div>
         </div>
       </div>
 
-      <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[rgba(248,246,240,0.85)] backdrop-blur-md">
-        <div className="flex items-center gap-2 px-3 py-1.5 xl:px-4">
-          <div className="no-scrollbar flex min-w-0 flex-1 gap-1 overflow-x-auto">
-            {layerControls.map((control) => {
-              const Icon = control.icon;
-              return (
-                <button
-                  key={control.id}
-                  type="button"
-                  aria-pressed={control.active}
-                  onClick={control.onClick}
-                  className={`border whitespace-nowrap px-2 py-1 transition-colors ${
-                    control.active
-                      ? "border-[var(--ink)] bg-[var(--ink)] text-white"
-                      : "border-[var(--line)] text-[var(--ink)] hover:border-[var(--line-bright)]"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5">
-                    <Icon size={10} className="shrink-0" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
-                      {control.label.split(" ")[0]}
+      <div className="pointer-events-auto absolute bottom-4 left-4 z-40 w-[332px] xl:bottom-[182px]">
+        <div className="dashboard-panel rounded-[24px] p-5">
+          <div className="eyebrow">Use the map</div>
+          <h3 className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+            Start broad, then add a layer
+          </h3>
+
+          <div className="mt-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
+              Focus presets
+            </div>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setViewState({ ...INITIAL_VIEW_STATE })}
+                className="rounded-full border border-[#171512] bg-[#171512] px-4 py-2 text-[11px] font-medium text-[#f7f2ea]"
+              >
+                Thailand
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setViewState({
+                    longitude: 98.7,
+                    latitude: 16.5,
+                    zoom: 8.4,
+                    pitch: 28,
+                    bearing: 0,
+                  })
+                }
+                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
+              >
+                West border
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setViewState({
+                    longitude: 101.5,
+                    latitude: 6.5,
+                    zoom: 9.2,
+                    pitch: 28,
+                    bearing: 0,
+                  })
+                }
+                className="rounded-full border border-[#d6cebf] bg-white/70 px-4 py-2 text-[11px] font-medium text-[#26231f] hover:bg-white"
+              >
+                Deep south
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#736c61]">
+              Working layers
+            </div>
+            <div className="mt-3 grid gap-2">
+              {[
+                {
+                  active: showHeatmap,
+                  label: "Incident heatmap",
+                  description: "Turn on density only when you need clustering.",
+                  icon: Layers,
+                  onClick: () => setShowHeatmap(!showHeatmap),
+                },
+                {
+                  active: showFires,
+                  label: "Thermal anomalies",
+                  description: `${formatCompactCount(hotspotCount)} recent heat signals available.`,
+                  icon: Flame,
+                  onClick: () => setShowFires(!showFires),
+                },
+                {
+                  active: showRainfall,
+                  label: "Rainfall anomalies",
+                  description: "Compare incident areas against recent rain shifts.",
+                  icon: CloudRain,
+                  onClick: () => setShowRainfall(!showRainfall),
+                },
+                {
+                  active: showJaxa,
+                  label: "JAXA precipitation",
+                  description: "Use when you need the broader rain field.",
+                  icon: CloudRain,
+                  onClick: () => setShowJaxa(!showJaxa),
+                },
+                {
+                  active: showRefugees,
+                  label: "Population movement",
+                  description: `${formatCompactCount(refugees.length)} movement traces available.`,
+                  icon: Users,
+                  onClick: () => setShowRefugees(!showRefugees),
+                },
+              ].map((control) => {
+                const Icon = control.icon;
+
+                return (
+                  <button
+                    key={control.label}
+                    type="button"
+                    aria-pressed={control.active}
+                    onClick={control.onClick}
+                    className={`flex items-center justify-between rounded-[18px] border px-4 py-3 text-left transition-colors ${
+                      control.active
+                        ? "border-[#171512] bg-[#171512] text-[#f7f2ea]"
+                        : "border-[#d6cebf] bg-white/70 text-[#26231f] hover:bg-white"
+                    }`}
+                  >
+                    <span>
+                      <span className="block text-[13px] font-medium">{control.label}</span>
+                      <span className="block pt-1 text-[11px] opacity-80">
+                        {control.description}
+                      </span>
                     </span>
-                  </div>
-                </button>
-              );
-            })}
+                    <Icon size={16} />
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>

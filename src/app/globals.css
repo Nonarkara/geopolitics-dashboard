@@ -1,6 +1,41 @@
 @import "tailwindcss";
 
-:root {
+/* ── Global Base ────────────────────────────────────────── */
+html {
+  min-height: 100%;
+}
+
+body {
+  min-height: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ── Border Conflict Theme ─────────────────────────────── */
+.theme-border {
+  --canvas: #f3eee5;
+  --canvas-warm: #ece4d8;
+  --panel: rgba(247, 242, 234, 0.92);
+  --panel-strong: rgba(239, 232, 220, 0.96);
+  --line: #d6cebf;
+  --ink: #171512;
+  --muted: #736c61;
+  --accent: #8b5a40;
+  --accent-soft: #c7a37b;
+  --cool: #4f6871;
+  --shadow: 0 24px 60px rgba(18, 16, 12, 0.16);
+}
+
+.theme-border body {
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 34%),
+    linear-gradient(180deg, #f6f1e9 0%, #ede5d8 100%);
+  color: var(--ink);
+  font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+/* ── Phuket Theme ────────────────────────────────────────── */
+.theme-phuket {
   --font-ui: "SF Pro Display", "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
   --font-mono: "IBM Plex Mono", "SF Mono", "JetBrains Mono", monospace;
   --bg: #efede5;
@@ -23,86 +58,81 @@
   --glow: none;
 }
 
-html {
-  min-height: 100%;
-}
-
-body {
-  min-height: 100%;
+.theme-phuket body {
   background:
     radial-gradient(circle at top, rgba(15, 111, 136, 0.05), transparent 28%),
     linear-gradient(180deg, rgba(255, 255, 255, 0.38) 0%, rgba(239, 237, 229, 0.98) 100%);
   color: var(--ink);
   font-family: var(--font-ui);
   letter-spacing: -0.01em;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
+
+/* ── Common Utilities (Variable-aware) ───────────────────── */
 
 .dashboard-panel {
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.theme-phuket .dashboard-panel {
   backdrop-filter: blur(16px);
 }
 
 .dashboard-panel-strong {
+  border: 1px solid var(--line);
+}
+
+.theme-phuket .dashboard-panel-strong {
   border: 1px solid var(--line-bright);
+}
+
+.dashboard-panel-strong {
   background: var(--panel-strong);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.theme-phuket .dashboard-panel-strong {
   box-shadow: var(--shadow), var(--glow);
   backdrop-filter: blur(20px);
 }
 
-.map-overlay-panel {
+.eyebrow {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.theme-phuket .eyebrow {
+  font-weight: 700;
+  color: var(--dim);
+}
+
+/* ── Phuket Specific Utilities ──────────────────────────── */
+
+.theme-phuket .map-overlay-panel {
   border: 1px solid var(--line-bright);
   background: rgba(248, 246, 240, 0.88);
   box-shadow: none;
   backdrop-filter: blur(18px);
 }
 
-.map-overlay-panel button:not(.map-overlay-preset-primary):not(.map-overlay-preset-secondary):not([aria-pressed="true"]) {
-  background: transparent;
-}
-
-.map-overlay-panel button:not(.map-overlay-preset-primary):not(.map-overlay-preset-secondary):not([aria-pressed="true"]):hover {
-  background: rgba(17, 17, 17, 0.03);
-}
-
-.map-overlay-preset-primary {
-  background: rgba(15, 111, 136, 0.12);
-}
-
-.map-overlay-preset-secondary {
-  background: transparent;
-}
-
-.map-overlay-preset-secondary:hover {
-  background: rgba(17, 17, 17, 0.03);
-}
-
-.eyebrow {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--dim);
-}
-
-.live-badge {
+.theme-phuket .live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 0;
-  border-radius: 0;
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--ink);
-  background: transparent;
 }
 
-.live-badge::before {
+.theme-phuket .live-badge::before {
   content: "";
   width: 5px;
   height: 5px;
@@ -116,20 +146,6 @@ body {
   50% { opacity: 0.3; }
 }
 
-.stale-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0;
-  border-radius: 0;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: transparent;
-}
-
 .no-scrollbar {
   scrollbar-width: none;
 }
@@ -138,40 +154,27 @@ body {
   display: none;
 }
 
-main[data-surface="phuket-dashboard"] .rounded-md,
-main[data-surface="phuket-dashboard"] .rounded-lg {
-  border-radius: 0 !important;
-}
-
-main[data-surface="phuket-dashboard"] .rounded-xl,
-main[data-surface="phuket-dashboard"] .rounded-2xl {
-  border-radius: 0 !important;
-}
-
-main[data-surface="phuket-dashboard"] [class*="rounded-[24px]"],
-main[data-surface="phuket-dashboard"] [class*="rounded-[26px]"],
-main[data-surface="phuket-dashboard"] [class*="rounded-[28px]"],
-main[data-surface="phuket-dashboard"] [class*="rounded-[32px]"] {
-  border-radius: 0 !important;
-}
-
-main[data-surface="phuket-dashboard"] [class*="shadow-"] {
-  box-shadow: none !important;
-}
-
 ::-webkit-scrollbar {
+  width: 8px;
+}
+
+.theme-phuket ::-webkit-scrollbar {
   width: 6px;
 }
 
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
 ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
+  background: rgba(115, 108, 97, 0.32);
   border-radius: 999px;
 }
 
+.theme-phuket ::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+}
+
 ::selection {
+  background: rgba(139, 90, 64, 0.18);
+}
+
+.theme-phuket ::selection {
   background: rgba(17, 17, 17, 0.12);
 }
