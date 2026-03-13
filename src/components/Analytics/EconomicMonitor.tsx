@@ -41,59 +41,50 @@ export default function EconomicMonitor() {
 
   if (indicators.length === 0) {
     return (
-      <div className="flex h-full items-center px-6">
+      <div className="flex h-full items-center px-5">
         <span className="eyebrow">Synchronizing market signals</span>
       </div>
     );
   }
 
   return (
-    <section className="flex h-full flex-col bg-[#f7f2ea] p-5 select-none">
-      <div className="flex items-start justify-between gap-4 border-b border-[#d6cebf] pb-4">
+    <section className="flex h-full flex-col bg-[var(--bg-surface)] p-4 select-none">
+      <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 px-1">
         <div>
-          <div className="eyebrow">Market context</div>
-          <h3 className="pt-2 text-[22px] font-semibold tracking-[-0.03em] text-[#171512]">
-            Pressure around trade and supply
+          <div className="eyebrow">Economic stress</div>
+          <h3 className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+            Regional market signals
           </h3>
         </div>
-        <p className="max-w-[180px] text-right text-[12px] leading-5 text-[#5c564c]">
-          Market moves do not explain everything, but they often explain why a
-          border signal deserves extra attention.
-        </p>
+        <span className="live-badge">LIVE / MACRO</span>
       </div>
 
-      <div className="mt-4 grid flex-1 grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 flex-1 overflow-y-auto no-scrollbar">
         {indicators.slice(0, 4).map((item) => (
           <article
             key={item.label}
-            className="flex flex-col justify-between rounded-[20px] border border-[#d6cebf] bg-white/65 p-4"
+            className="flex flex-col justify-between rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] p-3"
           >
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                {item.category ?? item.source ?? "Reference"}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-[var(--dim)] truncate">
+                {item.category ?? "REF"}
               </span>
               <span
-                className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.16em] ${
-                  item.up
-                    ? "bg-[#ead8ce] text-[#8b5a40]"
-                    : "bg-[#dce7ea] text-[#4f6871]"
+                className={`text-[9px] font-bold tabular-nums ${
+                  item.up ? "text-[var(--success)]" : "text-[var(--danger)]"
                 }`}
               >
-                {item.up ? "Up" : "Down"} {item.change}
+                {item.up ? "▲" : "▼"} {item.change}
               </span>
             </div>
 
-            <div className="pt-6">
-              <div className="text-[11px] uppercase tracking-[0.18em] text-[#736c61]">
+            <div className="pt-4">
+              <div className="text-[10px] font-medium text-[var(--muted)]">
                 {item.label}
               </div>
-              <div className="pt-2 text-[28px] font-semibold leading-none tracking-[-0.05em] text-[#171512]">
+              <div className="pt-1 text-[20px] font-bold leading-none tracking-[-0.04em] text-[var(--ink)]">
                 {item.value}
               </div>
-            </div>
-
-            <div className="pt-5 text-[11px] text-[#5c564c]">
-              {item.province ?? "Regional context"}
             </div>
           </article>
         ))}

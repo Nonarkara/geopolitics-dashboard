@@ -40,22 +40,11 @@ export default function ConflictTrends() {
 
   if (!data) {
     return (
-      <div className="flex h-full w-full items-center justify-center bg-[#f7f2ea] select-none">
+      <div className="flex h-full w-full items-center justify-center bg-[var(--bg-surface)] select-none">
         <span className="eyebrow">Preparing incident trend view</span>
       </div>
     );
   }
-
-  const totalCurrent = data.provincialData.current.reduce(
-    (sum, value) => sum + value,
-    0,
-  );
-  const totalBaseline = data.provincialData.yoy.reduce(
-    (sum, value) => sum + value,
-    0,
-  );
-  const latestFatalityValue =
-    data.fatalities.data[data.fatalities.data.length - 1] ?? 0;
 
   const provincialData = {
     labels: data.provincialData.labels,
@@ -63,18 +52,18 @@ export default function ConflictTrends() {
       {
         label: "Current",
         data: data.provincialData.current,
-        backgroundColor: "#171512",
-        borderColor: "#171512",
+        backgroundColor: "#111111",
+        borderColor: "#111111",
         borderWidth: 0,
-        barThickness: 12,
+        barThickness: 8,
       },
       {
         label: "Baseline",
         data: data.provincialData.yoy,
-        backgroundColor: "#c9bca9",
-        borderColor: "#c9bca9",
+        backgroundColor: "rgba(17, 17, 17, 0.1)",
+        borderColor: "rgba(17, 17, 17, 0.1)",
         borderWidth: 0,
-        barThickness: 12,
+        barThickness: 8,
       },
     ],
   };
@@ -83,11 +72,12 @@ export default function ConflictTrends() {
     labels: data.fatalities.labels,
     datasets: [
       {
-        fill: false,
+        fill: true,
         label: "Fatalities",
         data: data.fatalities.data,
-        borderColor: "#8b5a40",
-        tension: 0.25,
+        borderColor: "#0f6f88",
+        backgroundColor: "rgba(15, 111, 136, 0.05)",
+        tension: 0.4,
         pointRadius: 0,
         borderWidth: 2,
       },
@@ -100,76 +90,54 @@ export default function ConflictTrends() {
     plugins: {
       legend: { display: false },
       tooltip: {
-        backgroundColor: "#171512",
+        backgroundColor: "#111111",
         titleFont: { size: 10, weight: 700 as const },
         bodyFont: { size: 10 },
-        padding: 12,
-        cornerRadius: 12,
+        padding: 10,
+        cornerRadius: 8,
         displayColors: false,
       },
     },
     scales: {
       y: {
-        grid: { color: "#ddd5c8", drawBorder: false },
-        ticks: { color: "#6a6458", font: { size: 9, family: "IBM Plex Sans" } },
+        grid: { color: "rgba(17, 17, 17, 0.05)", drawBorder: false },
+        ticks: { color: "#858585", font: { size: 9, family: "IBM Plex Mono" } },
       },
       x: {
         grid: { display: false },
-        ticks: { color: "#6a6458", font: { size: 9, family: "IBM Plex Sans" } },
+        ticks: { color: "#858585", font: { size: 9, family: "IBM Plex Mono" } },
       },
     },
   };
 
   return (
-    <section className="grid h-full grid-cols-1 bg-[#f7f2ea] select-none lg:grid-cols-2">
-      <div className="flex flex-col border-b border-[#d6cebf] p-6 lg:border-b-0 lg:border-r">
-        <div className="mb-6 flex items-start justify-between gap-4">
+    <section className="grid h-full grid-cols-1 bg-[var(--bg-surface)] select-none lg:grid-cols-2 divide-x divide-[var(--line)]">
+      <div className="flex flex-col p-4">
+        <div className="mb-4 flex items-start justify-between gap-3 px-1">
           <div>
-            <div className="eyebrow">Incidents by area</div>
-            <div className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
+            <div className="eyebrow">Incident density</div>
+            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
               Spatial concentration
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-              Current / baseline
-            </div>
-            <div className="pt-1 text-[18px] font-semibold tracking-[-0.03em] text-[#171512]">
-              {totalCurrent} / {totalBaseline}
-            </div>
-          </div>
+          <span className="live-badge">T-SIGNAL</span>
         </div>
-        <p className="pb-4 text-[12px] leading-5 text-[#5c564c]">
-          Use this view to compare current clustering against a simple baseline,
-          so local spikes stand out without overwhelming the map.
-        </p>
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <Bar options={options} data={provincialData} />
         </div>
       </div>
 
-      <div className="flex flex-col p-6">
-        <div className="mb-6 flex items-start justify-between gap-4">
+      <div className="flex flex-col p-4">
+        <div className="mb-4 flex items-start justify-between gap-3 px-1">
           <div>
             <div className="eyebrow">Fatality trend</div>
-            <div className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[#171512]">
-              Severity over time
+            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+              Severity variance
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-              Latest reading
-            </div>
-            <div className="pt-1 text-[18px] font-semibold tracking-[-0.03em] text-[#171512]">
-              {latestFatalityValue}
-            </div>
-          </div>
+          <span className="live-badge">S-TREND</span>
         </div>
-        <p className="pb-4 text-[12px] leading-5 text-[#5c564c]">
-          This line should be read after the map. It helps confirm whether a
-          visible cluster is merely active or genuinely worsening.
-        </p>
-        <div className="flex-1">
+        <div className="flex-1 min-h-0">
           <Line options={options} data={fatalitiesTrend} />
         </div>
       </div>

@@ -35,14 +35,14 @@ export default function SignalTicker() {
   }, []);
 
   return (
-    <section className="grid h-full grid-cols-2 bg-[#f6f1e8] lg:grid-cols-4">
-      {ticker.items.slice(0, 4).map((item) => {
+    <section className="flex h-[48px] items-center divide-x divide-[var(--line)] bg-[var(--bg-raised)] overflow-x-auto no-scrollbar">
+      {ticker.items.map((item) => {
         const toneClass =
           item.tone === "up"
-            ? "text-[#8b5a40]"
+            ? "text-[var(--success)]"
             : item.tone === "down"
-              ? "text-[#4f6871]"
-              : "text-[#5c564c]";
+              ? "text-[var(--danger)]"
+              : "text-[var(--dim)]";
         const Icon =
           item.tone === "up"
             ? ArrowUpRight
@@ -53,20 +53,20 @@ export default function SignalTicker() {
         return (
           <div
             key={item.id}
-            className="flex min-w-0 items-center justify-between gap-4 border-r border-[#d6cebf] px-5 py-4 last:border-r-0"
+            className="flex min-w-[200px] items-center justify-between gap-3 px-5 py-2 shrink-0"
           >
             <div className="min-w-0">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
+              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--dim)]">
                 {item.label}
               </div>
-              <div className="truncate pt-1 text-[17px] font-semibold tracking-[-0.03em] text-[#171512]">
+              <div className="truncate text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
                 {item.value}
               </div>
             </div>
             <div
-              className={`flex items-center gap-1 text-[10px] uppercase tracking-[0.16em] ${toneClass}`}
+              className={`flex items-center gap-1 text-[11px] font-bold tabular-nums ${toneClass}`}
             >
-              <Icon size={12} />
+              <Icon size={12} strokeWidth={3} />
               <span>{item.delta}</span>
             </div>
           </div>

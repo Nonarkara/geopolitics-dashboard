@@ -11,31 +11,8 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-/* ── Border Conflict Theme ─────────────────────────────── */
-.theme-border {
-  --canvas: #f3eee5;
-  --canvas-warm: #ece4d8;
-  --panel: rgba(247, 242, 234, 0.92);
-  --panel-strong: rgba(239, 232, 220, 0.96);
-  --line: #d6cebf;
-  --ink: #171512;
-  --muted: #736c61;
-  --accent: #8b5a40;
-  --accent-soft: #c7a37b;
-  --cool: #4f6871;
-  --shadow: 0 24px 60px rgba(18, 16, 12, 0.16);
-}
-
-.theme-border body {
-  background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.55), transparent 34%),
-    linear-gradient(180deg, #f6f1e9 0%, #ede5d8 100%);
-  color: var(--ink);
-  font-family: "Avenir Next", "IBM Plex Sans", "Segoe UI", sans-serif;
-}
-
-/* ── Phuket Theme ────────────────────────────────────────── */
-.theme-phuket {
+/* ── Shared Premium Base (Notion-esque) ──────────────────── */
+:root {
   --font-ui: "SF Pro Display", "Avenir Next", "Segoe UI", "Trebuchet MS", sans-serif;
   --font-mono: "IBM Plex Mono", "SF Mono", "JetBrains Mono", monospace;
   --bg: #efede5;
@@ -58,6 +35,27 @@ body {
   --glow: none;
 }
 
+/* ── Border Conflict Theme (Premium Version) ─────────────── */
+.theme-border {
+  /* Inherits base modern tokens, but can override if needed */
+  --bg: #f8f7f2; /* Slightly warmer than Phuket but still clean */
+  --bg-raised: #fdfdfb;
+}
+
+.theme-border body {
+  background:
+    radial-gradient(circle at top left, rgba(15, 111, 136, 0.03), transparent 34%),
+    linear-gradient(180deg, #fdfdfb 0%, #f4f3ed 100%);
+  color: var(--ink);
+  font-family: var(--font-ui);
+}
+
+/* ── Phuket Theme ────────────────────────────────────────── */
+.theme-phuket {
+  --bg: #efede5;
+  --bg-raised: #f5f3ec;
+}
+
 .theme-phuket body {
   background:
     radial-gradient(circle at top, rgba(15, 111, 136, 0.05), transparent 28%),
@@ -73,42 +71,24 @@ body {
   border: 1px solid var(--line);
   background: var(--panel);
   box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-}
-
-.theme-phuket .dashboard-panel {
   backdrop-filter: blur(16px);
 }
 
 .dashboard-panel-strong {
-  border: 1px solid var(--line);
-}
-
-.theme-phuket .dashboard-panel-strong {
   border: 1px solid var(--line-bright);
 }
 
 .dashboard-panel-strong {
   background: var(--panel-strong);
-  box-shadow: var(--shadow);
-  backdrop-filter: blur(18px);
-}
-
-.theme-phuket .dashboard-panel-strong {
   box-shadow: var(--shadow), var(--glow);
   backdrop-filter: blur(20px);
 }
 
 .eyebrow {
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--muted);
-}
-
-.theme-phuket .eyebrow {
-  font-weight: 700;
   color: var(--dim);
 }
 
@@ -121,7 +101,7 @@ body {
   backdrop-filter: blur(18px);
 }
 
-.theme-phuket .live-badge {
+.live-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -132,7 +112,7 @@ body {
   color: var(--ink);
 }
 
-.theme-phuket .live-badge::before {
+.live-badge::before {
   content: "";
   width: 5px;
   height: 5px;
@@ -155,26 +135,14 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 8px;
-}
-
-.theme-phuket ::-webkit-scrollbar {
   width: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(115, 108, 97, 0.32);
+  background: rgba(100, 116, 139, 0.3);
   border-radius: 999px;
 }
 
-.theme-phuket ::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.3);
-}
-
 ::selection {
-  background: rgba(139, 90, 64, 0.18);
-}
-
-.theme-phuket ::selection {
   background: rgba(17, 17, 17, 0.12);
 }

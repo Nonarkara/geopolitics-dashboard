@@ -16,58 +16,71 @@ export default function BorderDashboard() {
     useState<ProvinceSelection | null>(null);
 
   return (
-    <main className="relative h-screen w-screen overflow-hidden bg-[#f3eee5] text-[#171512]">
-      <div className="flex h-full">
-        <div className="hidden border-r border-[#d6cebf] bg-[#eae3d8] xl:block">
-          <Sidebar />
-        </div>
+    <main className="relative grid h-[100dvh] w-screen grid-rows-[auto_1fr_auto] overflow-hidden bg-[var(--bg)] text-[var(--ink)]">
+      {/* Top Banner - Signal Ticker */}
+      <div className="z-50 border-b border-[var(--line)] bg-[var(--bg-raised)]">
+        <SignalTicker />
+      </div>
 
-        <div className="relative min-w-0 flex-1 bg-[#d8d0c4]">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
+        {/* Left Command Column */}
+        <aside className="hidden w-[240px] shrink-0 flex-col overflow-y-auto border-r border-[var(--line)] bg-[var(--bg-raised)] xl:flex">
+          <div className="border-b border-[var(--line)] px-3 py-1.5">
+            <Sidebar />
+          </div>
+          <div className="flex-1 overflow-y-auto no-scrollbar">
+            <section className="border-b border-[var(--line)] p-4">
+              <div className="eyebrow mb-1 opacity-50">Operational Brief</div>
+              <BriefingPanel />
+            </section>
+          </div>
+        </aside>
+
+        {/* Central Map Surface */}
+        <div className="relative flex flex-1 flex-col min-w-0 bg-[#d8d0c4]">
           <BorderMap onProvinceSelect={setSelectedProvince} />
-
-          <div className="pointer-events-none absolute inset-0">
-            <div className="pointer-events-auto absolute left-4 top-4 z-40 max-w-[340px] xl:hidden">
-              <div className="dashboard-panel-strong rounded-[26px] p-5">
+          
+          {/* Dashboard Overlay - Minimal & Crisp */}
+          <div className="pointer-events-none absolute inset-0 p-6">
+            <div className="pointer-events-auto max-w-[340px]">
+              <div className="dashboard-panel-strong rounded-2xl p-6">
                 <div className="eyebrow">Thailand border monitor</div>
-                <h1 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
-                  Satellite detail first, context second.
+                <h1 className="pt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                  Tactical awareness.
                 </h1>
-                <p className="pt-3 text-[14px] leading-6 text-[#4a453d]">
-                  Read the map as the primary surface, then use the briefing,
-                  live feed, and market panels to understand why the pattern
-                  matters.
+                <p className="pt-3 text-[13px] leading-relaxed text-[var(--muted)]">
+                  Primary satellite monitoring with integrated regional briefing and market stress signals.
                 </p>
               </div>
             </div>
+          </div>
 
-            <div className="pointer-events-auto absolute left-4 right-4 top-4 z-40 xl:left-4 xl:right-[404px]">
-              <div className="dashboard-panel overflow-hidden rounded-[24px]">
-                <SignalTicker />
-              </div>
-            </div>
-
-            <div className="pointer-events-auto absolute bottom-4 left-4 right-4 z-40 hidden xl:grid xl:right-[404px] xl:grid-cols-[292px_minmax(0,1fr)] xl:gap-4">
-              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+          {/* Bottom Dock */}
+          <section className="pointer-events-none absolute bottom-6 left-6 right-6 z-40 hidden xl:grid xl:grid-cols-2 xl:gap-6">
+            <div className="pointer-events-auto dashboard-panel overflow-hidden rounded-2xl h-[180px]">
+              <div className="h-full overflow-y-auto no-scrollbar">
                 <EconomicMonitor />
               </div>
-              <div className="dashboard-panel overflow-hidden rounded-[24px]">
+            </div>
+            <div className="pointer-events-auto dashboard-panel overflow-hidden rounded-2xl h-[180px]">
+              <div className="h-full overflow-y-auto no-scrollbar">
                 <ConflictTrends />
               </div>
             </div>
-
-            <div className="pointer-events-auto absolute bottom-4 right-4 top-24 z-40 hidden w-[376px] xl:grid xl:grid-rows-[312px_minmax(0,1fr)_244px] gap-4">
-              <div className="dashboard-panel-strong overflow-hidden rounded-[24px]">
-                <BriefingPanel />
-              </div>
-              <div className="dashboard-panel overflow-hidden rounded-[24px]">
-                <NewsDesk />
-              </div>
-              <div className="dashboard-panel overflow-hidden rounded-[24px]">
-                <SourceStack />
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
+
+        {/* Right Intel Column */}
+        <aside className="hidden w-[300px] shrink-0 flex-col overflow-y-auto border-l border-[var(--line)] bg-[var(--bg-raised)] 2xl:flex">
+          <section className="border-b border-[var(--line)] p-4">
+            <div className="eyebrow mb-2 opacity-50">Local Analysis</div>
+            <NewsDesk />
+          </section>
+          <section className="p-4">
+            <div className="eyebrow mb-2 opacity-50">Assets</div>
+            <SourceStack />
+          </section>
+        </aside>
       </div>
 
       <ProvinceDashboard

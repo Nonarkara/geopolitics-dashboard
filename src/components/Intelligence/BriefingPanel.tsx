@@ -45,67 +45,41 @@ export default function BriefingPanel() {
   }, []);
 
   return (
-    <section className="flex h-full flex-col bg-[#eee6da] p-6">
-      <div className="flex items-start justify-between gap-4 border-b border-[#d6cebf] pb-4">
-        <div>
-          <div className="eyebrow">
-            Regional briefing
-          </div>
-          <h2 className="pt-2 text-[28px] font-semibold tracking-[-0.04em] text-[#171512]">
-            {briefing.title}
-          </h2>
-        </div>
-        <div className="text-right text-[10px] uppercase tracking-[0.18em] text-[#736c61]">
+    <section className="flex flex-col gap-4">
+      <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-3">
+        <h2 className="text-[18px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+          {briefing.title}
+        </h2>
+        <div className="text-right text-[9px] font-mono tabular-nums text-[var(--dim)]">
           {formatTimestamp(briefing.updatedAt)}
         </div>
       </div>
 
-      <p className="pt-5 text-[15px] leading-7 text-[#2f2d29]">
+      <p className="text-[13px] leading-relaxed text-[var(--muted)]">
         {briefing.summary}
       </p>
 
-      <div className="mt-5 rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4">
-        <div className="eyebrow">Why it matters</div>
-        <p className="pt-2 text-[13px] leading-6 text-[#4f4a42]">
+      <div className="rounded-xl border border-[var(--line)] bg-[var(--bg)] p-4">
+        <div className="eyebrow mb-1 opacity-60">Strategic Outlook</div>
+        <p className="text-[12px] leading-relaxed text-[var(--muted)]">
           {briefing.outlook}
         </p>
       </div>
 
-      <div className="grid gap-5 pt-6 xl:grid-cols-2">
-        <div>
-          <div className="eyebrow">
-            What to watch today
-          </div>
-          <div className="pt-3 space-y-3">
-            {briefing.priorities.map((item, index) => (
-              <div
-                key={item}
-                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
-              >
-                <div className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                  Priority {index + 1}
-                </div>
-                <div className="pt-2 text-[13px] leading-6 text-[#20201d]">
-                {item}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div>
-          <div className="eyebrow">
-            Market Signals
-          </div>
-          <div className="pt-3 space-y-3">
-            {briefing.marketSignals.map((item) => (
-              <div
-                key={item}
-                className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-4 text-[13px] leading-6 text-[#444039]"
-              >
+      <div className="grid gap-4">
+        <div className="space-y-3">
+          <div className="eyebrow opacity-60">Operational Priorities</div>
+          {briefing.priorities.map((item, index) => (
+            <div
+              key={item}
+              className="flex items-start gap-3 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3"
+            >
+              <span className="text-[10px] font-bold text-[var(--dim)]">0{index + 1}</span>
+              <div className="text-[12px] leading-tight text-[var(--ink)] font-medium">
                 {item}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
     </section>

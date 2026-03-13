@@ -63,56 +63,38 @@ export default function SourceStack() {
   }, []);
 
   return (
-    <section className="grid h-full grid-rows-[1fr_auto] bg-[#efe7dc]">
-      <div className="p-6">
-        <div className="border-b border-[#d6cebf] pb-4">
-          <div className="eyebrow">Sources</div>
-          <div className="pt-2 text-[22px] font-semibold tracking-[-0.03em] text-[#171512]">
-            Data behind the screen
-          </div>
-        </div>
-        <div className="space-y-3 pt-4">
-          {sources.sources.slice(0, 6).map((source) => (
-            <div
-              key={source.id}
-              className="grid grid-cols-[88px_1fr] gap-4 rounded-[18px] border border-[#ddd5c7] bg-white/65 p-3 text-[12px]"
-            >
-              <div className="font-medium uppercase tracking-[0.16em] text-[#787267]">
-                {source.target}
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium text-[#181818]">{source.label}</div>
-                <div className="truncate pt-1 text-[#5c584f]">{source.url}</div>
-              </div>
+    <section className="flex flex-col gap-6">
+      <div className="space-y-3">
+        <div className="eyebrow opacity-60">Data Connectivity</div>
+        {sources.sources.slice(0, 3).map((source) => (
+          <div
+            key={source.id}
+            className="flex items-center justify-between gap-4 rounded-lg border border-[var(--line)] bg-[var(--bg-raised)] p-3"
+          >
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-[var(--ink)]">{source.label}</div>
+              <div className="truncate text-[9px] font-mono text-[var(--dim)]">{source.url}</div>
             </div>
-          ))}
-        </div>
+            <span className="shrink-0 rounded bg-[var(--line)] px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider text-[var(--muted)]">
+              {source.target}
+            </span>
+          </div>
+        ))}
       </div>
 
-      <div className="border-t border-[#d6cebf] px-6 py-4">
-        <div className="eyebrow">
-          Imagery layers / {preview.focusDate}
-        </div>
-        <div className="grid gap-3 pt-3">
-          {preview.imagerySources.map((source) => (
-            <div
-              key={source.id}
-              className="rounded-[18px] border border-[#d6cebf] bg-[#f7f2ea] p-3"
-            >
-              <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-[#121212]">
-                {source.label}
-              </div>
-              <p className="pt-2 text-[12px] leading-5 text-[#555046]">
-                {source.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-4 rounded-[18px] border border-[#d6cebf] bg-white/60 p-3 text-[12px] leading-5 text-[#555046]">
-          Combining ground incidents, market movement, and daily imagery makes
-          the dashboard harder to misread from a single signal alone.
-        </div>
+      <div className="space-y-3 pt-2">
+        <div className="eyebrow opacity-60">Satellite Layers</div>
+        {preview.imagerySources.slice(0, 2).map((source) => (
+          <div
+            key={source.id}
+            className="rounded-lg border border-[var(--line)] bg-[var(--bg)] p-3"
+          >
+            <div className="text-[11px] font-bold text-[var(--ink)]">{source.label}</div>
+            <p className="pt-1 text-[11px] leading-relaxed text-[var(--muted)]">
+              {source.description}
+            </p>
+          </div>
+        ))}
       </div>
     </section>
   );
