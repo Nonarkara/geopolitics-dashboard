@@ -47,11 +47,11 @@ export default function ConflictTrends() {
   }
 
   const provincialData = {
-    labels: data.provincialData.labels,
+    labels: data?.provincialData?.labels || [],
     datasets: [
       {
         label: "Current",
-        data: data.provincialData.current,
+        data: data?.provincialData?.current || [],
         backgroundColor: "#111111",
         borderColor: "#111111",
         borderWidth: 0,
@@ -59,7 +59,7 @@ export default function ConflictTrends() {
       },
       {
         label: "Baseline",
-        data: data.provincialData.yoy,
+        data: data?.provincialData?.yoy || [],
         backgroundColor: "rgba(17, 17, 17, 0.1)",
         borderColor: "rgba(17, 17, 17, 0.1)",
         borderWidth: 0,
@@ -69,12 +69,12 @@ export default function ConflictTrends() {
   };
 
   const fatalitiesTrend = {
-    labels: data.fatalities.labels,
+    labels: data?.fatalities?.labels || [],
     datasets: [
       {
         fill: true,
         label: "Fatalities",
-        data: data.fatalities.data,
+        data: data?.fatalities?.data || [],
         borderColor: "#0f6f88",
         backgroundColor: "rgba(15, 111, 136, 0.05)",
         tension: 0.4,
