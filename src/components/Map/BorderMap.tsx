@@ -13,7 +13,9 @@ import {
   Compass,
   Zap,
   Eye,
-  Moon,
+  Plane,
+  Users,
+  Target,
 } from "lucide-react";
 import {
   createFireLayer,
@@ -27,11 +29,18 @@ import {
   createBlueMarbleLayer,
   createNightlightLayer,
   createJaxaRainLayer,
+  createFlightPathsLayer,
+  createRefugeeLayer,
+  createConflictZonesLayer,
+  createProvinceLabelsLayer,
 } from "../../services/map-engine";
 import type {
   FireEvent,
   IncidentFeature,
   ProvinceSelection,
+  FlightData,
+  RefugeeMovement,
+  ConflictZoneCollection,
 } from "../../types/dashboard";
 import { getUsableMapboxToken } from "../../lib/mapbox";
 
@@ -55,25 +64,43 @@ export default function BorderMap({
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
   const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  
+  // Intelligence States
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showFires, setShowFires] = useState(true);
+  const [showFlights, setShowFlights] = useState(true);
+  const [showRefugees, setShowRefugees] = useState(true);
+  const [showZones, setShowZones] = useState(true);
+  const [showLabels, setShowLabels] = useState(true);
+  
   const [satelliteOpacity, setSatelliteOpacity] = useState(85);
   const [activeLens, setActiveLens] = useState<LensType>("VIIRS");
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
+  const [flights, setFlights] = useState<FlightData[]>([]);
+  const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
+  const [zones, setZones] = useState<ConflictZoneCollection | null>(null);
 
   const hasMapboxToken = MAPBOX_TOKEN.length > 0;
 
   useEffect(() => {
     const load = async () => {
-      const incidentData = await fetch("/api/incidents").then(res => res.json()).catch(() => []);
-      const fireData = await fetch("/api/fires").then(res => res.json()).catch(() => []);
-      setIncidents(incidentData);
-      setFires(fireData);
+      const [inc, fir, flt, ref, zn] = await Promise.all([
+        fetch("/api/incidents").then(res => res.json()).catch(() => []),
+        fetch("/api/fires").then(res => res.json()).catch(() => []),
+        fetch("/api/flights").then(res => res.json()).catch(() => []),
+        fetch("/api/refugees").then(res => res.json()).catch(() => []),
+        fetch("/api/map/overlays").then(res => res.json()).catch(() => null),
+      ]);
+      setIncidents(inc);
+      setFires(fir);
+      setFlights(flt);
+      setRefugees(ref);
+      setZones(zn);
     };
     load();
-    const poll = setInterval(load, 30000); // 30s Refreshes
+    const poll = setInterval(load, 30000); // High-frequency polling
     return () => clearInterval(poll);
   }, []);
 
@@ -112,9 +139,13 @@ export default function BorderMap({
   const layers = [
     aerialLayer,
     satelliteLayers[activeLens],
+    showZones && zones && createConflictZonesLayer(zones),
     showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents),
     showFires && createFireLayer(fires),
-  ].filter(Boolean);
+    showRefugees && createRefugeeLayer(refugees),
+    showFlights && createFlightPathsLayer(flights),
+    showLabels && createProvinceLabelsLayer(),
+  ].flat().filter(Boolean);
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black select-none">
@@ -156,8 +187,11 @@ export default function BorderMap({
 
          <div className="flex bg-white h-7 connected-grid shadow-2xl">
             {[
-              { active: showHeatmap, set: setShowHeatmap, label: "HEATMAP", icon: Layers },
-              { active: showFires, set: setShowFires, label: "THERMAL", icon: Flame },
+              { active: showHeatmap, set: setShowHeatmap, label: "HEAT", icon: Layers },
+              { active: showFires, set: setShowFires, label: "THRM", icon: Flame },
+              { active: showFlights, set: setShowFlights, label: "AIR", icon: Plane },
+              { active: showRefugees, set: setShowRefugees, label: "REF", icon: Users },
+              { active: showZones, set: setShowZones, label: "ZONE", icon: Target },
             ].map((t, i) => (
               <button key={i} onClick={() => t.set(!t.active)} className={`px-4 flex items-center gap-2 transition-all ${t.active ? "bg-[var(--ink)] text-white" : "bg-white text-[var(--ink)] hover:bg-[var(--bg)]"}`}>
                  <t.icon size={10} />
@@ -178,29 +212,37 @@ export default function BorderMap({
          </div>
       </div>
 
-      {/* ── Dashboard Pulse Utility ── */}
-      <div className="absolute bottom-6 left-6 z-40">
-         <div className="flex items-center gap-3 bg-[var(--ink)] text-white px-4 py-2 shadow-2xl">
+      {/* ── Operational Intelligence HUD ── */}
+      <div className="absolute bottom-6 left-6 z-40 space-y-2">
+         <div className="flex items-center gap-4 bg-[var(--ink)] text-white px-4 py-2 shadow-2xl">
             <div className="flex items-center gap-2">
                <Zap size={12} className="text-[var(--accent)] animate-pulse" />
-               <span className="text-[11px] font-black uppercase tracking-[0.2em]">Operational Pulse</span>
+               <span className="text-[11px] font-black uppercase tracking-[0.2em]">Tactical Pulse</span>
             </div>
             <div className="h-4 w-[1px] bg-white/20" />
-            <div className="flex items-center gap-4">
-               <div className="flex flex-col">
-                  <span className="text-[7px] font-black opacity-40 uppercase">Incidents</span>
-                  <span className="text-[11px] font-black tabular-nums">{incidents.length}</span>
-               </div>
-               <div className="flex flex-col">
-                  <span className="text-[7px] font-black opacity-40 uppercase">Thermal</span>
-                  <span className="text-[11px] font-black tabular-nums">{fires.length}</span>
-               </div>
+            <div className="grid grid-cols-4 gap-4">
+               {[
+                 { label: "SIGNALS", val: incidents.length },
+                 { label: "THERMAL", val: fires.length },
+                 { label: "TRAFFIC", val: flights.length },
+                 { label: "DISPL", val: refugees.length },
+               ].map(m => (
+                 <div key={m.label} className="flex flex-col">
+                    <span className="text-[7px] font-black opacity-40 uppercase">{m.label}</span>
+                    <span className="text-[11px] font-black tabular-nums leading-none">{m.val}</span>
+                 </div>
+               ))}
             </div>
+         </div>
+         
+         <div className="flex items-center gap-2 bg-white/90 border border-[var(--line)] px-3 py-1.5 shadow-xl">
+            <div className={`h-2 w-2 rounded-full ${hasMapboxToken ? 'bg-[var(--safe)]' : 'bg-[var(--hazard)]'}`} />
+            <span className="text-[9px] font-black uppercase tracking-widest opacity-60">Engine: Deck.GL + {hasMapboxToken ? 'Mapbox Satellite' : 'ESRI Fallback'}</span>
          </div>
       </div>
 
       <div className="absolute bottom-6 right-6 z-40 flex flex-col gap-1">
-         <button className="h-8 w-8 bg-white border border-[var(--line)] flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl">
+         <button onClick={() => setViewState(INITIAL_VIEW_STATE)} className="h-8 w-8 bg-white border border-[var(--line)] flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl">
             <Compass size={14} strokeWidth={3} />
          </button>
          <button className="h-8 w-8 bg-white border border-[var(--line)] flex items-center justify-center hover:bg-black hover:text-white transition-all shadow-xl">
