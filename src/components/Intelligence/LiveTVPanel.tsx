@@ -147,7 +147,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
   return (
     <div
       ref={containerRef}
-      className="relative flex flex-col overflow-hidden rounded-md border border-[var(--line-bright)] bg-[var(--bg)]"
+      className="relative flex flex-col overflow-hidden border border-[var(--line-dim)] bg-[var(--bg)]"
     >
       {/* Video area */}
       <div className="relative aspect-video w-full bg-black">
@@ -185,7 +185,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
         {/* Loading state */}
         {visible && !loaded && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-            <div className="h-3 w-3 animate-spin rounded-full border border-[var(--cool)] border-t-transparent" />
+            <div className="h-3 w-3 animate-spin border border-[var(--tech)] border-t-transparent" />
           </div>
         )}
 
@@ -206,7 +206,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
             </span>
           </div>
           <span className="flex items-center gap-0.5 mt-0.5">
-            <span className="inline-block h-1 w-1 animate-pulse rounded-full bg-[#ef4444]" />
+            <span className="inline-block h-1 w-1 animate-pulse bg-[#ef4444]" />
             <span className="text-[6px] font-bold uppercase tracking-[0.15em] text-[var(--dim)]">
               LIVE
             </span>
@@ -218,7 +218,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
           <button
             type="button"
             onClick={toggleMute}
-            className="flex h-5 w-5 items-center justify-center rounded-sm bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-bright)]"
+            className="flex h-5 w-5 items-center justify-center bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-dim)]"
             title={muted ? "Unmute" : "Mute"}
           >
             {muted ? <VolumeX size={10} /> : <Volume2 size={10} />}
@@ -227,7 +227,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
             href={channel.externalUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-5 w-5 items-center justify-center rounded-sm bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-bright)]"
+            className="flex h-5 w-5 items-center justify-center bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-dim)]"
             title="Open Stream"
           >
             <ExternalLink size={9} />
@@ -243,7 +243,7 @@ export default function LiveTVPanel() {
     <section className="flex h-full flex-col bg-[var(--bg-surface)] p-3 overflow-visible">
       <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          <Tv size={12} className="text-[var(--cool)]" />
+          <Tv size={12} className="text-[var(--tech)]" />
           <div className="eyebrow">Thailand / south</div>
         </div>
         <span className="text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">

@@ -3,33 +3,42 @@
 :root {
   --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
-  
+
   /* Tactical Precision Palette (Tesla/Apple/Norman) */
-  --bg: #f2f2f0;         /* Technical Light Gray */
+  --bg: #f2f2f0;
   --bg-raised: #ffffff;
   --bg-surface: #ffffff;
   --panel: #ffffff;
-  
-  --line: #000000;       /* High-contrast pure black hairlines */
+
+  --line: #000000;
   --line-dim: #e0e0dc;
-  
+
   --ink: #000000;
   --muted: #555552;
   --dim: #999994;
-  
+
   --accent: #ff3b30;     /* Apple Alert Red */
   --hazard: #ff9500;     /* Apple Warning Orange */
   --safe: #34c759;
   --tech: #007aff;       /* Precision Blue */
-  
+  --danger: #ff3b30;
+  --success: #34c759;
+
   --glass: blur(20px) saturate(180%);
+
+  /* Signal Intensity Border System */
+  --signal-none: rgba(0,0,0,0.06);
+  --signal-low: rgba(0,122,255,0.25);
+  --signal-medium: rgba(255,149,0,0.45);
+  --signal-high: rgba(255,59,48,0.6);
+  --signal-critical: rgba(255,59,48,0.9);
 }
 
 /* ── Absolute Grid Continuity ─────────────────────────────── */
 
 * {
-  border-radius: 0 !important;   /* Tactical precision requires 90-degree angles */
-  box-shadow: none !important;    /* No visual ambiguity - use lines */
+  border-radius: 0 !important;
+  box-shadow: none !important;
   outline: none !important;
 }
 
@@ -45,7 +54,7 @@
 .connected-grid {
   display: flex;
   background: var(--line);
-  gap: 1.5px; /* Precision gap for visible grid lines */
+  gap: 1.5px;
 }
 
 .grid-cell {
@@ -59,19 +68,57 @@
   inset: 0;
   border: 1px solid var(--line-dim);
   pointer-events: none;
-  opacity: 0.1;
+  opacity: 0.08;
+}
+
+/* ── Signal-Intensity Border System ─────────────────────── */
+
+.signal-border {
+  border: 2px solid var(--signal-none);
+  transition: border-color 0.3s ease;
+}
+
+.signal-border[data-signal="low"] {
+  border-color: var(--signal-low);
+}
+
+.signal-border[data-signal="medium"] {
+  border-color: var(--signal-medium);
+}
+
+.signal-border[data-signal="high"] {
+  border-color: var(--signal-high);
+}
+
+.signal-border[data-signal="critical"] {
+  border-color: var(--signal-critical);
+  animation: signal-pulse 2s ease-in-out infinite;
+}
+
+@keyframes signal-pulse {
+  0%, 100% { border-color: var(--signal-critical); }
+  50% { border-color: rgba(255,59,48,0.4); }
+}
+
+/* Signal glow for critical modules */
+.signal-glow-critical {
+  box-shadow: 0 0 12px rgba(255,59,48,0.15) !important;
+}
+
+.signal-glow-warning {
+  box-shadow: 0 0 8px rgba(255,149,0,0.12) !important;
 }
 
 /* ── High-Density Typography ─────────────────────────────── */
 
 .eyebrow {
-  font-size: 8px;
+  font-size: 11px;
   font-weight: 900;
-  letter-spacing: 0.25em;
+  letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--ink);
   font-family: var(--font-mono);
-  opacity: 0.4;
+  opacity: 0.6;
 }
 
 .live-badge {
@@ -79,13 +126,13 @@
   align-items: center;
   gap: 6px;
   padding: 0px 8px;
-  height: 18px;
-  font-size: 9px;
+  height: 20px;
+  font-size: 11px;
   font-weight: 950;
   text-transform: uppercase;
   background: var(--ink);
   color: #ffffff;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.05em;
 }
 
 .live-badge::after {
@@ -93,7 +140,7 @@
   width: 4px;
   height: 4px;
   background: var(--accent);
-  border-radius: 50%;
+  border-radius: 50% !important;
   animation: pulse-alert 1.5s infinite;
 }
 
@@ -124,24 +171,25 @@
   border: 1px solid var(--line);
   background: white;
   padding: 12px;
-  transition: all 0.1s ease;
+  transition: all 0.15s ease;
 }
 
 .ops-card:hover {
   background: var(--bg-raised);
+  border-color: var(--ink);
 }
 
 .control-pill {
-  height: 24px;
+  height: 28px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 0 10px;
+  padding: 0 12px;
   border: 1.5px solid var(--line);
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 900;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.02em;
   transition: all 0.1s ease;
 }
 
@@ -149,7 +197,83 @@
   background: var(--ink);
   color: white;
 }
-/* ── Tactical Pulse Animations ───────────────────────────────── */
+
+/* ── Signal Module Cards ───────────────────────────────── */
+
+.module-card {
+  background: white;
+  border: 1.5px solid var(--line-dim);
+  position: relative;
+  transition: border-color 0.3s ease;
+}
+
+.module-card[data-priority="critical"] {
+  border-color: var(--accent);
+  border-width: 2.5px;
+}
+
+.module-card[data-priority="warning"] {
+  border-color: var(--hazard);
+  border-width: 2px;
+}
+
+.module-card[data-priority="info"] {
+  border-color: var(--tech);
+  border-width: 1.5px;
+}
+
+.module-card[data-priority="normal"] {
+  border-color: var(--line-dim);
+  border-width: 1px;
+}
+
+/* Priority indicator stripe */
+.module-card[data-priority="critical"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+}
+
+.module-card[data-priority="warning"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--hazard);
+}
+
+/* ── Data Density Micro Components ──────────────────────── */
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 9px;
+  font-weight: 900;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--bg);
+  border: 1px solid var(--line-dim);
+}
+
+.stat-pill.danger { background: rgba(255,59,48,0.08); color: var(--accent); border-color: rgba(255,59,48,0.2); }
+.stat-pill.warning { background: rgba(255,149,0,0.08); color: var(--hazard); border-color: rgba(255,149,0,0.2); }
+.stat-pill.safe { background: rgba(52,199,89,0.08); color: var(--safe); border-color: rgba(52,199,89,0.2); }
+.stat-pill.info { background: rgba(0,122,255,0.08); color: var(--tech); border-color: rgba(0,122,255,0.2); }
+
+/* ── Country Flag Colors ────────────────────────────────── */
+
+.country-bar { height: 3px; width: 100%; }
+
+/* ── Tactical Pulse Animations ───────────────────────────── */
 
 @keyframes marquee {
   0% { transform: translateX(0); }
@@ -162,4 +286,43 @@
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+@keyframes sweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateX(100%); opacity: 0; }
+}
+
+.animate-sweep {
+  animation: sweep 4s ease-in-out infinite;
+}
+
+/* ── GDP Bar Chart Micro ─────────────────────────────────── */
+
+.gdp-bar {
+  height: 4px;
+  background: var(--line-dim);
+  position: relative;
+  overflow: hidden;
+}
+
+.gdp-bar-fill {
+  height: 100%;
+  transition: width 0.6s ease;
+}
+
+/* ── Scrollbar for sidebar ──────────────────────────────── */
+
+.thin-scrollbar::-webkit-scrollbar {
+  width: 3px;
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--line-dim);
 }

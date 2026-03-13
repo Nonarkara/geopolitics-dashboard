@@ -112,30 +112,20 @@ export default function ConflictTrends() {
 
   return (
     <section className="grid h-full grid-cols-1 bg-[var(--bg-surface)] select-none lg:grid-cols-2 divide-x divide-[var(--line)]">
-      <div className="flex flex-col p-4">
-        <div className="mb-4 flex items-start justify-between gap-3 px-1">
-          <div>
-            <div className="eyebrow">Incident density</div>
-            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-              Spatial concentration
-            </div>
-          </div>
-          <span className="live-badge">T-SIGNAL</span>
+      <div className="flex flex-col p-2 pt-3">
+        <div className="mb-1 flex items-center justify-between px-1">
+          <div className="eyebrow">BY AREA</div>
+          <span className="live-badge scale-75">CONCENTRATION</span>
         </div>
         <div className="flex-1 min-h-0">
           <Bar options={options} data={provincialData} />
         </div>
       </div>
 
-      <div className="flex flex-col p-4">
-        <div className="mb-4 flex items-start justify-between gap-3 px-1">
-          <div>
-            <div className="eyebrow">Fatality trend</div>
-            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-              Severity variance
-            </div>
-          </div>
-          <span className="live-badge">S-TREND</span>
+      <div className="flex flex-col p-2 pt-3">
+        <div className="mb-1 flex items-center justify-between px-1">
+          <div className="eyebrow">FATALITY TREND</div>
+          <span className="live-badge scale-75">SEVERITY</span>
         </div>
         <div className="flex-1 min-h-0">
           <Line options={options} data={fatalitiesTrend} />

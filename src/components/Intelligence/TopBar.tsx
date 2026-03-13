@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Network, Clock, Shield } from "lucide-react";
-import LogoStrip from "../Identity/LogoStrip";
+import { BookOpen, Clock, Shield, Database } from "lucide-react";
 import GlobalPulse from "./GlobalPulse";
 
 export default function TopBar({
   onOpenManual,
   onOpenArchitecture,
+  onOpenDataExplorer,
 }: {
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
+  onOpenDataExplorer?: () => void;
 }) {
   const [time, setTime] = useState("");
 
@@ -56,6 +57,12 @@ export default function TopBar({
                <Shield size={10} strokeWidth={3} />
                APIs
             </button>
+            {onOpenDataExplorer && (
+              <button onClick={onOpenDataExplorer} className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black hover:bg-black hover:text-white transition-all uppercase tracking-widest">
+                 <Database size={10} strokeWidth={3} />
+                 Data
+              </button>
+            )}
             <button onClick={onOpenManual} className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black hover:bg-black hover:text-white transition-all uppercase tracking-widest">
                <BookOpen size={10} strokeWidth={3} />
                Docs

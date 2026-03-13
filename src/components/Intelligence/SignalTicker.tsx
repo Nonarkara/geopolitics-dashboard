@@ -32,17 +32,13 @@ export default function SignalTicker() {
     };
 
     load();
+    const interval = setInterval(load, 60000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
-    <section className="flex h-[48px] items-center divide-x divide-[var(--line)] bg-[var(--bg-raised)] overflow-x-auto no-scrollbar">
-      {ticker?.items?.map((item) => {
-        const toneClass =
-          item.tone === "up"
-            ? "text-[var(--success)]"
-            : item.tone === "down"
-              ? "text-[var(--danger)]"
-              : "text-[var(--dim)]";
+    <div className="flex items-center gap-0 animate-marquee whitespace-nowrap">
+      {[...ticker.items, ...ticker.items].map((item, idx) => {
         const Icon =
           item.tone === "up"
             ? ArrowUpRight
@@ -52,26 +48,27 @@ export default function SignalTicker() {
 
         return (
           <div
-            key={item.id}
-            className="flex min-w-[200px] items-center justify-between gap-3 px-5 py-2 shrink-0"
+            key={`${item.id}-${idx}`}
+            className="flex items-center gap-3 px-5 shrink-0"
           >
-            <div className="min-w-0">
-              <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-[var(--dim)]">
-                {item.label}
-              </div>
-              <div className="truncate text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-                {item.value}
-              </div>
-            </div>
-            <div
-              className={`flex items-center gap-1 text-[11px] font-bold tabular-nums ${toneClass}`}
-            >
-              <Icon size={12} strokeWidth={3} />
-              <span>{item.delta}</span>
-            </div>
+            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">
+              {item.label}
+            </span>
+            <span className="text-[11px] font-black tabular-nums tracking-tight">
+              {item.value}
+            </span>
+            <span className={`flex items-center gap-0.5 text-[9px] font-black tabular-nums ${
+              item.tone === "up" ? "text-[var(--safe)]" :
+              item.tone === "down" ? "text-[var(--accent)]" :
+              "text-[var(--dim)]"
+            }`}>
+              <Icon size={10} strokeWidth={3} />
+              {item.delta}
+            </span>
+            <div className="h-2 w-[1px] bg-white/20 ml-2" />
           </div>
         );
       })}
-    </section>
+    </div>
   );
 }

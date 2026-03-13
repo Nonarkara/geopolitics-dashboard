@@ -42,7 +42,7 @@ export default function NewsDesk() {
           className="ops-card group flex flex-col gap-1 hover:border-[var(--ink)]"
         >
           <div className="flex items-center justify-between">
-            <div className={`text-[8px] font-black px-1.5 py-0.5 rounded-sm uppercase tracking-widest ${item.severity === 'alert' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--line-dim)] text-[var(--ink)]'}`}>
+            <div className={`text-[8px] font-black px-1.5 py-0.5 uppercase tracking-widest ${item.severity === 'alert' ? 'bg-[var(--accent)] text-white' : 'bg-[var(--line-dim)] text-[var(--ink)]'}`}>
               Signal {item.tag}
             </div>
             <span className="text-[8px] font-black tabular-nums opacity-30">

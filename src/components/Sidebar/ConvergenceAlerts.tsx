@@ -17,51 +17,49 @@ export default function ConvergenceAlerts() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2">
       {hotspots.map((spot) => (
         <div
           key={spot.id}
-          className="rounded-[22px] border border-[#d6cebf] bg-[#f7f2ea] p-4"
+          className={`border p-3 ${
+            spot.risk === "Priority"
+              ? "border-[var(--accent)] border-[2px]"
+              : "border-[var(--line-dim)]"
+          }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase tracking-[0.16em] text-[#736c61]">
-                Area {spot.id}
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-40">
+                AREA {spot.id}
               </span>
-              <span
-                className={`rounded-full px-2 py-1 text-[10px] uppercase tracking-[0.16em] ${
-                  spot.risk === "Priority"
-                    ? "bg-[#ead8ce] text-[#8b5a40]"
-                    : "bg-[#dce7ea] text-[#4f6871]"
-                }`}
-              >
+              <span className={`stat-pill ${spot.risk === "Priority" ? "danger" : "info"}`}>
                 {spot.risk}
               </span>
             </div>
-            <span className="text-[12px] font-semibold tabular-nums text-[#171512]">
+            <span className="text-[11px] font-black tabular-nums">
               {spot.level}%
             </span>
           </div>
 
-          <h4 className="pt-4 text-[16px] font-semibold tracking-[-0.02em] text-[#171512]">
+          <h4 className="text-[12px] font-black uppercase tracking-tight mb-2">
             {spot.location}
           </h4>
 
-          <div className="pt-3 flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1 mb-2">
             {spot.factors.map((factor) => (
               <span
                 key={factor}
-                className="rounded-full bg-[#ece3d8] px-2.5 py-1 text-[10px] text-[#5b554b]"
+                className="text-[9px] font-black uppercase tracking-widest opacity-60 px-1.5 py-0.5 bg-[var(--bg)] border border-[var(--line-dim)]"
               >
                 {factor}
               </span>
             ))}
           </div>
 
-          <div className="relative mt-4 h-[3px] w-full overflow-hidden rounded-full bg-[#d7d0c3]">
+          <div className="h-[2px] w-full bg-[var(--line-dim)]">
             <div
-              className={`absolute inset-y-0 left-0 rounded-full ${
-                spot.risk === "Priority" ? "bg-[#8b5a40]" : "bg-[#4f6871]"
+              className={`h-full ${
+                spot.risk === "Priority" ? "bg-[var(--accent)]" : "bg-[var(--tech)]"
               }`}
               style={{ width: `${spot.level}%` }}
             />

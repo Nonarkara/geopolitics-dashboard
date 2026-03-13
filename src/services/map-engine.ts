@@ -206,7 +206,7 @@ export const createIncidentLayer = (
     getFillColor: (d: IncidentFeature) =>
       (d?.properties?.fatalities || 0) > 0 ? [239, 68, 68, 200] : [245, 158, 11, 200],
     getRadius: (d: IncidentFeature) =>
-      Math.sqrt((d?.properties?.fatalities || 0) + 1) * 2000,
+      Math.sqrt(Math.max(0, d?.properties?.fatalities || 0) + 1) * 2000,
     pickable: true,
     autoHighlight: true,
     highlightColor: [255, 255, 255, 100],
@@ -255,7 +255,7 @@ export const createRefugeeLayer = (data: RefugeeMovement[]) =>
     getTargetPosition: (d: RefugeeMovement) => d?.target || [0, 0],
     getSourceColor: [0, 128, 255, 120],
     getTargetColor: [0, 255, 128, 120],
-    getWidth: (d: RefugeeMovement) => Math.log10((d?.count || 0) + 1) * 2,
+    getWidth: (d: RefugeeMovement) => Math.log10(Math.max(0, d?.count || 0) + 1) * 2,
     pickable: true,
   });
 
@@ -263,8 +263,8 @@ export const createRainfallLayer = (data: RainfallPoint[]) =>
   new HeatmapLayer({
     id: "rainfall-anomalies",
     data,
-    getPosition: (d: RainfallPoint) => [d.lng, d.lat],
-    getWeight: (d: RainfallPoint) => Math.abs(d.value),
+    getPosition: (d: RainfallPoint) => [d?.lng || 0, d?.lat || 0],
+    getWeight: (d: RainfallPoint) => Math.abs(d?.value || 0),
     radiusPixels: 60,
     colorRange: [
       [255, 255, 255, 0],
@@ -346,9 +346,9 @@ export function createAirQualityHeatmapLayers(
     new TextLayer({
       id: `${idPrefix}-labels`,
       data,
-      getPosition: (d: AirQualityPoint) => [d.lng, d.lat],
+      getPosition: (d: AirQualityPoint) => [d?.lng || 100, d?.lat || 13],
       getText: (d: AirQualityPoint) =>
-        weightKey === "pm25" ? `${Math.round(d.pm25)}` : `${Math.round(d.aqi)}`,
+        weightKey === "pm25" ? `${Math.round(d?.pm25 || 0)}` : `${Math.round(d?.aqi || 0)}`,
       getColor: [226, 232, 240, 220],
       getSize: 11,
       getTextAnchor: "middle",
@@ -508,9 +508,9 @@ export function createProvinceLabelsLayer() {
   return new TextLayer({
     id: "province-labels",
     data: labels,
-    getPosition: (d: ProvinceLabel) => d.coordinates,
-    getText: (d: ProvinceLabel) => d.name,
-    getSize: (d: ProvinceLabel) => (d.borderArea ? 13 : 11),
+    getPosition: (d: ProvinceLabel) => d?.coordinates || [100, 13],
+    getText: (d: ProvinceLabel) => d?.name || "",
+    getSize: (d: ProvinceLabel) => (d?.borderArea ? 13 : 11),
     getColor: (d: ProvinceLabel) =>
       d.borderArea ? [245, 158, 11, 220] : [148, 163, 184, 180],
     getTextAnchor: "middle" as const,

@@ -59,10 +59,10 @@ export default function GlobalPulse() {
     <div className="flex items-center gap-0 h-full overflow-hidden bg-white border-x border-[var(--line-dim)]">
       <div className="flex bg-black text-white h-full px-6 items-center gap-4 border-r border-black shrink-0 relative z-10">
          <div className="flex flex-col">
-            <span className="text-[7px] font-black opacity-40 uppercase tracking-widest leading-none mb-1">REGION MAX AQI</span>
+            <span className="text-[9px] font-black opacity-40 uppercase tracking-widest leading-none mb-1">REGION MAX AQI</span>
             <div className="flex items-center gap-3">
-               <span className="text-[14px] font-black leading-none text-[var(--danger)] tabular-nums">{maxAqi?.aqi || "--"}</span>
-               <span className="text-[9px] font-black uppercase opacity-60 truncate max-w-[80px]">{maxAqi?.label || "SYSTEM"}</span>
+               <span className="text-[17px] font-black leading-none text-[var(--accent)] tabular-nums">{maxAqi?.aqi || "--"}</span>
+               <span className="text-[11px] font-black uppercase opacity-60 truncate max-w-[100px]">{maxAqi?.label || "SYSTEM"}</span>
             </div>
          </div>
       </div>
@@ -79,22 +79,22 @@ export default function GlobalPulse() {
           return (
             <div key={i} className="flex items-center gap-3 shrink-0 py-2">
               <div className="flex flex-col">
-                <span className="text-[7px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
-                <span className="text-[10px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
+                <span className="text-[9px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
+                <span className="text-[11px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
               </div>
               
               <div className="h-4 w-[1px] bg-black opacity-5" />
               
               <div className="flex items-center gap-2">
                  <div className="flex flex-col items-center">
-                    <span className="text-[7px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
-                    <span className={`text-[9px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
+                    <span className="text-[8px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
+                    <span className={`text-[11px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
                        {p.aqi}
                     </span>
                  </div>
                  <div className="flex flex-col items-center">
                     <WeatherIcon condition={p.condition} />
-                    <span className="text-[9px] font-bold tabular-nums leading-none mt-0.5">
+                    <span className="text-[11px] font-bold tabular-nums leading-none mt-0.5">
                        {p.temp ?? "--"}°
                     </span>
                  </div>

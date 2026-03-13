@@ -1,16 +1,23 @@
 "use client";
 
-import React from "react";
-import { fallbackEconomicIndicators } from "../../lib/mock-data";
-import type { EconomicIndicator } from "../../types/dashboard";
+import { useEffect, useState } from "react";
+import { fallbackEconomicIndicators, fallbackAseanGdp } from "../../lib/mock-data";
+import type { EconomicIndicator, AseanGdpDatum } from "../../types/dashboard";
 
 const isEconomicIndicatorArray = (value: unknown): value is EconomicIndicator[] =>
   Array.isArray(value);
 
-export default function EconomicMonitor() {
-  const [indicators, setIndicators] = React.useState<EconomicIndicator[]>([]);
+function formatGdpCompact(value: number): string {
+  if (value >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(1)}T`;
+  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(0)}B`;
+  return `$${(value / 1_000_000).toFixed(0)}M`;
+}
 
-  React.useEffect(() => {
+export default function EconomicMonitor() {
+  const [indicators, setIndicators] = useState<EconomicIndicator[]>([]);
+  const [gdpData, setGdpData] = useState<AseanGdpDatum[]>(fallbackAseanGdp);
+
+  useEffect(() => {
     const fetchEconomics = async () => {
       try {
         const res = await fetch("/api/markets");
@@ -28,6 +35,10 @@ export default function EconomicMonitor() {
           isEconomicIndicatorArray(payload.data)
         ) {
           setIndicators(payload.data);
+
+          if ("aseanGdp" in payload && Array.isArray(payload.aseanGdp) && payload.aseanGdp.length > 0) {
+            setGdpData(payload.aseanGdp);
+          }
           return;
         }
 
@@ -37,6 +48,8 @@ export default function EconomicMonitor() {
       }
     };
     fetchEconomics();
+    const interval = setInterval(fetchEconomics, 120000);
+    return () => clearInterval(interval);
   }, []);
 
   if (indicators.length === 0) {
@@ -48,47 +61,37 @@ export default function EconomicMonitor() {
   }
 
   return (
-    <section className="flex h-full flex-col bg-[var(--bg-surface)] p-4 select-none">
-      <div className="flex items-center justify-between border-b border-[var(--line)] pb-3 px-1">
-        <div>
-          <div className="eyebrow">Economic stress</div>
-          <h3 className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
-            Regional market signals
-          </h3>
-        </div>
-        <span className="live-badge">LIVE / MACRO</span>
-      </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-3 flex-1 overflow-y-auto no-scrollbar">
-        {indicators?.slice(0, 4).map((item) => (
-          <article
-            key={item.label}
-            className="flex flex-col justify-between rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] p-3"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-[8px] font-bold uppercase tracking-[0.14em] text-[var(--dim)] truncate">
-                {item.category ?? "REF"}
-              </span>
-              <span
-                className={`text-[9px] font-bold tabular-nums ${
-                  item.up ? "text-[var(--success)]" : "text-[var(--danger)]"
-                }`}
-              >
-                {item.up ? "▲" : "▼"} {item.change}
+    <div className="flex flex-col h-full overflow-hidden select-none gap-1.5">
+      {/* Compact vertical list of market indicators */}
+      <div className="flex-1 overflow-y-auto no-scrollbar space-y-1">
+        {indicators.slice(0, 5).map((item) => (
+          <div key={item.label} className="flex items-center justify-between border-b border-[var(--line-dim)] pb-1">
+            <div className="min-w-0">
+              <div className="text-[7px] font-black uppercase tracking-widest opacity-30">{item.category ?? "REF"}</div>
+              <div className="text-[10px] font-black truncate">{item.label}</div>
+            </div>
+            <div className="text-right shrink-0 ml-2">
+              <div className="text-[13px] font-black tabular-nums leading-none">{item.value}</div>
+              <span className={`text-[8px] font-black tabular-nums ${item.up ? "text-[var(--safe)]" : "text-[var(--accent)]"}`}>
+                {item.up ? "\u25B2" : "\u25BC"} {item.change}
               </span>
             </div>
-
-            <div className="pt-4">
-              <div className="text-[10px] font-medium text-[var(--muted)]">
-                {item.label}
-              </div>
-              <div className="pt-1 text-[20px] font-bold leading-none tracking-[-0.04em] text-[var(--ink)]">
-                {item.value}
-              </div>
-            </div>
-          </article>
+          </div>
         ))}
       </div>
-    </section>
+
+      {/* GDP mini strip */}
+      <div className="shrink-0 pt-1 border-t border-[var(--line-dim)]">
+        <div className="text-[6px] font-black opacity-25 uppercase tracking-widest mb-0.5">ASEAN GDP TOP 5</div>
+        <div className="flex gap-2">
+          {gdpData.slice(0, 5).map((d) => (
+            <div key={d.countryCode} className="text-center">
+              <div className="text-[7px] font-black opacity-40">{d.countryCode}</div>
+              <div className="text-[8px] font-black tabular-nums">{formatGdpCompact(d.gdpUsd)}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
