@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
@@ -15,7 +15,6 @@ import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
-import LogoStrip from "../components/Identity/LogoStrip";
 import type { ProvinceSelection } from "../types/dashboard";
 
 export default function BorderDashboard() {
@@ -25,96 +24,101 @@ export default function BorderDashboard() {
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
 
   return (
-    <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-[var(--bg)] text-[var(--ink)] theme-border">
-      {/* ── Top Bar (Connected Grid) ────────────────────────────────── */}
-      <div className="connected-border-b">
-        <TopBar
-          onOpenManual={() => setIsManualOpen(true)}
-          onOpenArchitecture={() => setIsArchitectureOpen(true)}
-        />
-      </div>
-
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        {/* ── Left Infrastructure (Connected Grid) ───────────────────── */}
-        <aside className="hidden w-[300px] shrink-0 flex-col connected-border-r bg-[var(--bg-raised)] xl:flex">
-          <Sidebar />
-        </aside>
-
-        {/* ── Primary Ops Surface (Unlimited Focus) ─────────────────── */}
-        <div className="relative flex-1 min-w-0 bg-[#f0f0ee]">
-          <BorderMap onProvinceSelect={setSelectedProvince} />
-        </div>
-
-        {/* ── Right Intel Column (Connected Grid) ────────────────────── */}
-        <aside className="hidden w-[320px] shrink-0 flex-col border-l border-[var(--line)] bg-[var(--bg-raised)] 2xl:flex overflow-hidden">
-          <div className="flex-1 overflow-y-auto no-scrollbar divide-y divide-[var(--line)]">
-            <section className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="eyebrow opacity-60">OPERATIONAL BRIEFING</div>
-                <span className="live-badge">Live</span>
-              </div>
-              <BriefingPanel />
-            </section>
-            
-            <section className="p-4">
-              <div className="eyebrow opacity-60 mb-3">SATELLITE INTEL</div>
-              <LiveTVPanel />
-            </section>
-
-            <section className="p-4">
-               <div className="eyebrow opacity-60 mb-3">INCIDENT FEED</div>
-               <NewsDesk />
-            </section>
-          </div>
-        </aside>
-      </div>
-
-      {/* ── Footer Analytics (Connected Grid) ───────────────────────── */}
-      <footer className="z-40 flex h-[150px] shrink-0 border-t border-[var(--line)] bg-[var(--bg-surface)] divide-x divide-[var(--line)] overflow-hidden">
-        <div className="w-[300px] p-4 flex flex-col justify-between shrink-0 connected-border-r">
-          <div>
-            <div className="eyebrow opacity-60 mb-2">PARTNERS</div>
-            <LogoStrip className="mb-2 scale-75 origin-left" />
-            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] opacity-30 mt-4">Security Surface Alpha</h3>
-          </div>
-        </div>
+    <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
+      {/* ── Connected Grid Container ── */}
+      <div className="flex flex-col h-full connected-grid">
         
-        <div className="flex-1 min-w-0 p-4">
-          <div className="eyebrow opacity-60 mb-2">TRADE RADAR</div>
-          <EconomicMonitor />
-        </div>
+        {/* Row 1: TopBar */}
+        <header className="grid-cell shrink-0">
+          <TopBar
+            onOpenManual={() => setIsManualOpen(true)}
+            onOpenArchitecture={() => setIsArchitectureOpen(true)}
+          />
+        </header>
 
-        <div className="flex-1 min-w-0 p-4">
-          <div className="eyebrow opacity-60 mb-2">FATALITY TRENDS</div>
-          <ConflictTrends />
-        </div>
+        {/* Row 2: Main Ops Surface */}
+        <div className="flex flex-1 min-h-0 connected-grid">
+          {/* Col 1: Left Intelligence */}
+          <aside className="hidden w-[300px] shrink-0 xl:flex grid-cell">
+            <Sidebar />
+          </aside>
 
-        <div className="w-[280px] p-4 shrink-0 bg-[var(--bg-raised)]">
-          <div className="eyebrow opacity-60 mb-2">CONFLICT SIGNALS</div>
-          <div className="space-y-1.5 mt-2">
-             {[
-               { type: "CONFLICT", val: "Myanmar civil war", color: "text-[var(--danger)]" },
-               { type: "DANGER", val: "Cambodia scan", color: "text-[var(--warning)]" },
-               { type: "MILITARY", val: "Myawaddy sector", color: "text-[var(--danger)]" }
-             ].map((s, i) => (
-               <div key={i} className="flex items-center justify-between text-[10px] font-bold border-b border-[var(--line)] pb-1 last:border-0">
-                  <span className={`${s.color} px-1.5 py-0.5 bg-white border border-[var(--line)] rounded-sm text-[8px]`}>{s.type}</span>
-                  <span className="truncate ml-2">{s.val}</span>
-               </div>
-             ))}
+          {/* Col 2: High Stakes Map */}
+          <div className="flex-1 min-w-0 bg-[#e0e0dc] grid-cell">
+            <BorderMap onProvinceSelect={setSelectedProvince} />
           </div>
+
+          {/* Col 3: Right Intelligence */}
+          <aside className="hidden w-[320px] shrink-0 2xl:flex overflow-hidden grid-cell">
+            <div className="flex flex-col h-full divide-y divide-[var(--line)]">
+              <section className="p-4 flex-none">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="eyebrow">BRIEFING</div>
+                  <span className="live-badge scale-90">Live</span>
+                </div>
+                <BriefingPanel />
+              </section>
+              
+              <section className="p-4 flex-none">
+                <div className="eyebrow mb-3">SATELLITE</div>
+                <LiveTVPanel />
+              </section>
+
+              <section className="flex-1 min-h-0 p-4 overflow-hidden flex flex-col">
+                 <div className="eyebrow mb-3">INCIDENTS</div>
+                 <div className="flex-1 overflow-y-auto no-scrollbar">
+                    <NewsDesk />
+                 </div>
+              </section>
+            </div>
+          </aside>
         </div>
 
-        <div className="w-[240px] p-4 shrink-0">
-          <div className="eyebrow opacity-60 mb-2">INTEL SOURCES</div>
-          <SourceStack />
-        </div>
-      </footer>
+        {/* Row 3: Footer Analytics */}
+        <footer className="h-[140px] shrink-0 connected-grid grid-cell divide-x divide-[var(--line)]">
+          <div className="w-[300px] p-4 flex flex-col justify-between shrink-0">
+             <div className="eyebrow opacity-40">ALPHA SURFACE</div>
+             <h3 className="text-[10px] font-black uppercase tracking-[0.3em] leading-none mb-1">Grid Operational</h3>
+             <p className="text-[8px] font-bold opacity-30 leading-tight">PRECISION TACTICAL INTERFACE V1.0</p>
+          </div>
+          
+          <div className="flex-1 p-3">
+            <div className="eyebrow mb-1">TRADE</div>
+            <EconomicMonitor />
+          </div>
 
-      {/* Global Ticker */}
-      <div className="h-7 border-t border-[var(--line)] flex items-center bg-black text-white px-4 overflow-hidden">
-        <div className="text-[9px] font-black uppercase tracking-widest mr-4 shrink-0">Global Signal Ticker</div>
-        <SignalTicker />
+          <div className="flex-1 p-3">
+            <div className="eyebrow mb-1">CONFL</div>
+            <ConflictTrends />
+          </div>
+
+          <div className="w-[280px] p-3 bg-[var(--bg)] flex flex-col">
+            <div className="eyebrow mb-2">SIGNALS</div>
+            <div className="space-y-1">
+               {[
+                 { type: "WAR", val: "Myanmar civil war", color: "text-[var(--danger)]" },
+                 { type: "SEC", val: "Cambodia scan", color: "text-[var(--warning)]" },
+                 { type: "OPS", val: "Myawaddy sector", color: "text-[var(--danger)]" }
+               ].map((s, i) => (
+                 <div key={i} className="flex items-center justify-between text-[9px] font-black border-b border-[var(--line)] pb-1 last:border-0 border-dotted">
+                    <span className={`${s.color} px-1.5 py-0.5 bg-white border border-[var(--line)] text-[7px]`}>{s.type}</span>
+                    <span className="truncate ml-2">{s.val}</span>
+                 </div>
+               ))}
+            </div>
+          </div>
+
+          <div className="w-[240px] p-3">
+            <div className="eyebrow mb-1">SOURCE</div>
+            <SourceStack />
+          </div>
+        </footer>
+
+        {/* Row 4: Global Ticker */}
+        <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
+          <div className="text-[8px] font-black uppercase tracking-widest mr-4">STRL // SIGNALS</div>
+          <SignalTicker />
+        </div>
       </div>
 
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
