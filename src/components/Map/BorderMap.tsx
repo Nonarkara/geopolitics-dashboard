@@ -207,7 +207,7 @@ export default function BorderMap({
 
       {/* ── Lens Matrix (Categorized & High Density) ─────────────────────────── */}
       <div className="absolute top-6 left-6 z-40 flex flex-col gap-2 w-72">
-         <div className="bg-white connected-grid shadow-2xl overflow-hidden border border-black">
+         <div className="bg-white flex flex-col connected-grid shadow-2xl overflow-hidden border border-black">
             <div className="px-3 py-2 bg-[var(--ink)] text-white flex items-center justify-between border-b border-black">
                <div className="flex items-center gap-2">
                   <Globe size={12} className="text-[var(--accent)]" />
