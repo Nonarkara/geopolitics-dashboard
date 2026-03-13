@@ -537,7 +537,7 @@ function getFlightColor(country: string): [number, number, number, number] {
 }
 
 export function createFlightPathsLayer(flights: FlightData[]) {
-  if (!flights || (Array.isArray(flights) && flights.length === 0)) return null;
+  if (!Array.isArray(flights) || flights.length === 0) return null;
 
   return [
     new ScatterplotLayer({
