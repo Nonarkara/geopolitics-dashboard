@@ -1,81 +1,94 @@
 "use client";
 
-import { Zap } from "lucide-react";
+import { AlertTriangle, Activity, Zap, Radio } from "lucide-react";
 
 export default function Sidebar() {
   return (
-    <aside className="flex h-full flex-col select-none overflow-hidden bg-[var(--bg-raised)]">
-      <div className="p-4 border-b border-[var(--line)]">
-        <div className="eyebrow opacity-40 mb-1">COMMAND</div>
+    <aside className="flex h-full flex-col select-none overflow-hidden">
+      {/* ── Operational Status ── */}
+      <div className="p-4 border-b border-[var(--line)] bg-white">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-xl font-black tracking-tighter uppercase italic">Thailand Border</h1>
-          <span className="live-badge scale-90">Live</span>
+           <div className="eyebrow opacity-40">SYSTEM STATUS</div>
+           <span className="live-badge">Operational</span>
         </div>
-        <p className="text-[10px] font-medium leading-tight text-[var(--muted)]">
-          Real-time geospatial intelligence: regional stability and border dynamics.
-        </p>
+        <div className="h-1 w-full bg-[var(--line)] rounded-full overflow-hidden">
+           <div className="h-full w-[88%] bg-[var(--success)] shadow-[0_0_8px_var(--success)]" />
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-6">
+      <div className="flex-1 overflow-y-auto no-scrollbar p-4 space-y-4">
+        {/* ── High Intensity Pulse Cards ── */}
         <section>
-          <div className="eyebrow mb-4 opacity-40">CRITICAL WATCHPOINTS</div>
+          <div className="eyebrow mb-3 opacity-60 flex items-center gap-2">
+             <Activity size={10} />
+             Live Watchpoints
+          </div>
           
-          <div className="space-y-4">
-            {/* High Intensity Watchpoint 1 */}
-            <div className="bg-[var(--bg-surface)] border border-[var(--line-bright)] p-4 relative overflow-hidden shadow-sm">
-               <div className="absolute top-0 left-0 w-1 h-full bg-[var(--accent)]" />
-               <div className="flex items-center justify-between mb-2">
-                 <div className="text-[8px] font-black opacity-40 uppercase tracking-widest">MAE SOT / MYAWADDY</div>
-                 <div className="bg-[var(--accent)] text-white text-[8px] font-black px-1.5 py-0 rounded-sm uppercase tracking-tighter">Priority</div>
-               </div>
-               <div className="flex items-end justify-between gap-2 mb-2">
-                 <h3 className="text-[14px] font-black leading-none uppercase tracking-tight">Corridor convergence</h3>
-                 <span className="text-2xl font-black tabular-nums leading-none tracking-tighter">100</span>
-               </div>
-               <p className="text-[10px] font-medium leading-normal text-[var(--dim)] mb-4">
-                 Incident, news, market are converging, led by cross-border disruption risk.
-               </p>
-               <div className="grid grid-cols-4 gap-2 border-t border-[var(--line)] pt-3">
-                 {[
-                   { label: "LIVE", val: 7, color: "text-[var(--danger)]" },
-                   { label: "STALE", val: 5, color: "text-[var(--warning)]" },
-                   { label: "OFF", val: 2, color: "text-[var(--dim)]" },
-                   { label: "TOTAL", val: 14, color: "text-[var(--ink)]" },
-                 ].map(m => (
-                   <div key={m.label}>
-                     <div className="text-[7px] font-black opacity-30 tracking-widest mb-0.5">{m.label}</div>
-                     <div className={`text-[11px] font-black text-numeric ${m.color}`}>{m.val}</div>
-                   </div>
-                 ))}
-               </div>
-            </div>
-
-            {/* High Intensity Watchpoint 2 */}
-            <div className="bg-[var(--bg-surface)] border border-[var(--line-bright)] p-4 relative overflow-hidden shadow-sm">
-               <div className="flex items-center justify-between mb-1">
-                 <div className="text-[8px] font-black opacity-40 uppercase tracking-widest">PRIORITY</div>
-                 <span className="text-lg font-black tabular-nums tracking-tighter">100</span>
-               </div>
-               <h3 className="text-[14px] font-black leading-tight uppercase mb-2">Cross-border disruption</h3>
-               <p className="text-[10px] font-medium leading-normal text-[var(--dim)] mb-3">
-                 Explosions / Remote violence / Mae Sot lead incident signal.
-               </p>
-               <div className="flex gap-1.5">
-                  <span className="text-[8px] font-black px-1.5 py-0.5 bg-[var(--bg-raised)] border border-[var(--line)] rounded-sm opacity-60 uppercase">INCIDENT</span>
-                  <span className="text-[8px] font-black px-1.5 py-0.5 bg-[var(--bg-raised)] border border-[var(--line)] rounded-sm opacity-60 uppercase">NEWS</span>
-                  <span className="text-[8px] font-black px-1.5 py-0.5 bg-[var(--bg-raised)] border border-[var(--line)] rounded-sm opacity-60 uppercase">MARKET</span>
-               </div>
-            </div>
+          <div className="space-y-2">
+            {[
+              { 
+                loc: "MAE SOT / MYAWADDY", 
+                title: "Corridor convergence", 
+                score: 100, 
+                intensity: "text-[var(--danger)]",
+                metrics: [["INTEL", 12], ["NEWS", 5], ["MKT", "DISR"]] 
+              },
+              { 
+                loc: "CHIANG RAI SECTOR", 
+                title: "Trade route friction", 
+                score: 72, 
+                intensity: "text-[var(--warning)]",
+                metrics: [["INTEL", 4], ["NEWS", 2], ["MKT", "NORM"]] 
+              }
+            ].map((w, i) => (
+              <div key={i} className="bg-white border border-[var(--line)] p-3 relative overflow-hidden group hover:border-[var(--line-bright)] transition-all">
+                <div className="absolute top-0 right-0 p-2 opacity-5 group-hover:opacity-20 transition-all">
+                   <Zap size={40} />
+                </div>
+                <div className="flex items-center justify-between mb-1.5">
+                   <span className="text-[8px] font-black opacity-30 uppercase tracking-widest">{w.loc}</span>
+                   <span className={`text-[12px] font-black tabular-nums ${w.intensity}`}>{w.score}</span>
+                </div>
+                <h3 className="text-[12px] font-black uppercase tracking-tight mb-3 pr-8">{w.title}</h3>
+                
+                <div className="flex gap-2 border-t border-[var(--line)] pt-2 mt-2">
+                   {w.metrics.map((m, j) => (
+                     <div key={j} className="flex-1">
+                        <div className="text-[7px] font-bold opacity-30 uppercase">{m[0]}</div>
+                        <div className="text-[10px] font-black tabular-nums tracking-tighter">{m[1]}</div>
+                     </div>
+                   ))}
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
+        {/* ── Radio / Signals ── */}
         <section className="pt-4 border-t border-[var(--line)]">
-          <div className="eyebrow opacity-40 mb-4 uppercase">System Status</div>
-          <div className="flex items-center gap-3 bg-[var(--bg-surface)] px-4 py-3 border border-[var(--line)] rounded-sm">
-             <div className="h-2 w-2 rounded-full bg-[var(--success)] animate-pulse" />
-             <span className="text-[10px] font-black tracking-widest opacity-60">GEOSPATIAL STACK : NOMINAL</span>
-          </div>
+           <div className="eyebrow mb-3 opacity-60 flex items-center gap-2">
+              <Radio size={10} />
+              Signal Density
+           </div>
+           <div className="space-y-1.5">
+              {[
+                { label: "Myawaddy Fighting", time: "2m ago", type: "Heavy" },
+                { label: "Rakhine Displacement", time: "14m ago", type: "Stale" }
+              ].map((s, i) => (
+                <div key={i} className="flex items-center justify-between p-2 hover:bg-white transition-all rounded-sm">
+                   <div className="flex flex-col">
+                      <span className="text-[10px] font-bold">{s.label}</span>
+                      <span className="text-[8px] opacity-40 uppercase font-black">{s.time}</span>
+                   </div>
+                   <span className="text-[8px] font-black px-1.5 py-0.5 border border-[var(--line)] opacity-40 uppercase">{s.type}</span>
+                </div>
+              ))}
+           </div>
         </section>
+      </div>
+
+      <div className="p-4 bg-white border-t border-[var(--line)]">
+         <div className="text-[10px] font-black opacity-20 uppercase tracking-[0.4em] text-center">Sentinel Access Alpha v1</div>
       </div>
     </aside>
   );
