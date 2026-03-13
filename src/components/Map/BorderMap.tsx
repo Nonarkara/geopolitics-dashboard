@@ -78,11 +78,11 @@ export default function BorderMap({
     const load = async () => {
       try {
         const [inc, fir, flt, ref, zn] = await Promise.all([
-          fetch("/api/incidents").then(res => res.json()).catch(() => []),
-          fetch("/api/fires").then(res => res.json()).catch(() => []),
-          fetch("/api/flights").then(res => res.json()).catch(() => []),
-          fetch("/api/refugees").then(res => res.json()).catch(() => []),
-          fetch("/api/map/overlays").then(res => res.json()).catch(() => null),
+          fetch("/api/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/fires", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/flights", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/refugees", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/map/overlays", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
         ]);
         setIncidents(inc || []);
         setFires(fir || []);
