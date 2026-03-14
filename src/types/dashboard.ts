@@ -293,7 +293,10 @@ export type PublicCameraCategory =
   | "traffic"
   | "town"
   | "nightlife"
-  | "harbor";
+  | "harbor"
+  | "border"
+  | "logistics"
+  | "capital";
 
 export interface PublicCamera {
   id: string;
@@ -305,6 +308,9 @@ export interface PublicCamera {
   sourcePageUrl: string;
   embedUrl?: string;
   snapshotUrl?: string;
+  locationLabel?: string;
+  focusArea?: string;
+  strategicNote?: string;
   status: PackageStatus;
   refreshSeconds: number;
   lastCheckedAt: string;

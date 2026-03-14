@@ -4,16 +4,12 @@ import { useState } from "react";
 import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
-import BriefingPanel from "../components/Intelligence/BriefingPanel";
-import NewsDesk from "../components/Intelligence/NewsDesk";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import SourceStack from "../components/Intelligence/SourceStack";
-import LiveTVPanel from "../components/Intelligence/LiveTVPanel";
 import FinePrint from "../components/Intelligence/FinePrint";
 import EconomicMonitor from "../components/Analytics/EconomicMonitor";
-import ConflictTrends from "../components/Analytics/ConflictTrends";
+import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
-import ConvergenceAlerts from "../components/Sidebar/ConvergenceAlerts";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
@@ -56,7 +52,7 @@ export default function BorderDashboard() {
         </div>
 
         {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[180px] shrink-0 connected-grid bg-black overflow-hidden">
+        <div className="h-[210px] shrink-0 connected-grid bg-black overflow-hidden">
 
           {/* MARKET RADAR */}
           <div className="w-[340px] shrink-0 grid-cell p-3 overflow-hidden">
@@ -64,9 +60,9 @@ export default function BorderDashboard() {
             <EconomicMonitor />
           </div>
 
-          {/* CONFLICT TRENDS */}
+          {/* CRITICAL CAMERA RAIL */}
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
-            <ConflictTrends />
+            <CriticalCameraRail />
           </div>
 
           {/* CONFLICT SIGNALS */}
