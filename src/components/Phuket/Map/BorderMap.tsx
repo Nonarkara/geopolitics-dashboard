@@ -30,7 +30,6 @@ import {
   createFlightPathsLayer,
   createHeatmapLayer,
   createIncidentLayer,
-  createKilometerGridLayer,
   createProvinceLabelsLayer,
   createRainfallLayer,
   createRasterOverlayLayer,
@@ -142,20 +141,13 @@ function isPublicCameraResponse(value: unknown): value is PublicCameraResponse {
   );
 }
 
-function createViewport(
-  viewState: MapViewState,
-  width: number,
-  height: number,
-) {
-  return new WebMercatorViewport({
-    width,
-    height,
-    longitude: viewState.longitude,
-    latitude: viewState.latitude,
-    zoom: viewState.zoom,
-    pitch: viewState.pitch,
-    bearing: viewState.bearing,
-  });
+function isMapViewState(value: unknown): value is MapViewState {
+  return (
+    isRecord(value) &&
+    typeof value.longitude === "number" &&
+    typeof value.latitude === "number" &&
+    typeof value.zoom === "number"
+  );
 }
 
 function projectCameraMarkers(
@@ -164,7 +156,15 @@ function projectCameraMarkers(
   width: number,
   height: number,
 ) {
-  const viewport = createViewport(viewState, width, height);
+  const viewport = new WebMercatorViewport({
+    width,
+    height,
+    longitude: viewState.longitude,
+    latitude: viewState.latitude,
+    zoom: viewState.zoom,
+    pitch: viewState.pitch,
+    bearing: viewState.bearing,
+  });
 
   return cameras
     .map((camera) => {
@@ -185,15 +185,6 @@ function projectCameraMarkers(
         marker.y >= -24 &&
         marker.y <= height + 24,
     );
-}
-
-function isMapViewState(value: unknown): value is MapViewState {
-  return (
-    isRecord(value) &&
-    typeof value.longitude === "number" &&
-    typeof value.latitude === "number" &&
-    typeof value.zoom === "number"
-  );
 }
 
 function getCameraMarkerOffset(cameraId: string) {
@@ -339,27 +330,6 @@ export default function BorderMap({
     .filter((overlay) => overlay.kind === "raster")
     .map((overlay) => createRasterOverlayLayer(overlay, overlay.defaultOpacity))
     .filter(Boolean);
-  const isDistanceGridVisible =
-    mapSurfaceSize.width > 0 &&
-    mapSurfaceSize.height > 0 &&
-    viewState.zoom >= 9;
-  const kilometerGridLayer = isDistanceGridVisible
-    ? (() => {
-        const viewport = createViewport(
-          viewState,
-          mapSurfaceSize.width,
-          mapSurfaceSize.height,
-        );
-        const [west, south, east, north] = viewport.getBounds();
-
-        return createKilometerGridLayer({
-          west,
-          south,
-          east,
-          north,
-        });
-      })()
-    : null;
 
   useEffect(() => {
     const element = mapSurfaceRef.current;
@@ -444,7 +414,6 @@ export default function BorderMap({
   const layers = [
     satelliteLayer,
     ...rasterAnalyticLayers,
-    kilometerGridLayer,
     enabledOverlays.borderContext && borders && createRegionalBorderLayer(borders),
     enabledOverlays.conflictZones && createConflictZonesLayer(conflictZones),
     enabledOverlays.rainfallAnomalies && createRainfallLayer(rainfall),
@@ -815,16 +784,6 @@ export default function BorderMap({
                 <span>SIG {signalCount}</span>
                 <span>AQI {airQuality.length}</span>
                 <span>FLT {flights.length}</span>
-                <span
-                  data-testid="distance-grid-indicator"
-                  title={
-                    isDistanceGridVisible
-                      ? "1 km by 1 km distance grid is active on the map."
-                      : "Zoom in to reactivate the 1 km by 1 km distance grid."
-                  }
-                >
-                  {isDistanceGridVisible ? "GRID 1KM" : "GRID Z9+"}
-                </span>
               </div>
             </div>
           </div>
