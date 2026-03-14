@@ -141,6 +141,15 @@ function isPublicCameraResponse(value: unknown): value is PublicCameraResponse {
   );
 }
 
+function isMapViewState(value: unknown): value is MapViewState {
+  return (
+    isRecord(value) &&
+    typeof value.longitude === "number" &&
+    typeof value.latitude === "number" &&
+    typeof value.zoom === "number"
+  );
+}
+
 function projectCameraMarkers(
   cameras: PublicCamera[],
   viewState: MapViewState,
@@ -698,12 +707,10 @@ export default function BorderMap({
       <DeckGL
         id="phuket-deck"
         viewState={viewState}
-        onViewStateChange={({
-          viewState: nextViewState,
-        }: {
-          viewState: MapViewState;
-        }) => {
-          setViewState(nextViewState);
+        onViewStateChange={({ viewState: nextViewState }) => {
+          if (isMapViewState(nextViewState)) {
+            setViewState(nextViewState);
+          }
         }}
         controller={true}
         layers={allLayers}
