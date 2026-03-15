@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { Sun, Cloud, CloudRain, Zap, Wind, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Sun, Cloud, CloudRain, Zap, Wind, Minus } from "lucide-react";
 
 interface GlobalPoint {
   label: string;

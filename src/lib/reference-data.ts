@@ -274,7 +274,7 @@ export async function fetchReferenceEconomicIndicators() {
       change: 0,
       up: true,
       category: "FX",
-      source: "dr-non-operating-systems",
+      source: "ExchangeRate API (open.er-api.com)",
     },
     {
       label: "SGD/THB",
@@ -282,7 +282,7 @@ export async function fetchReferenceEconomicIndicators() {
       change: 0,
       up: true,
       category: "FX",
-      source: "dr-non-operating-systems",
+      source: "ExchangeRate API (open.er-api.com)",
     },
     {
       label: "MYR/THB",
@@ -290,7 +290,7 @@ export async function fetchReferenceEconomicIndicators() {
       change: 0,
       up: true,
       category: "FX",
-      source: "dr-non-operating-systems",
+      source: "ExchangeRate API (open.er-api.com)",
     },
     {
       label: "BTC/USD",
@@ -298,7 +298,7 @@ export async function fetchReferenceEconomicIndicators() {
       change: Number(btcChange.toFixed(2)),
       up: btcChange >= 0,
       category: "Crypto",
-      source: "dr-non-operating-systems",
+      source: "Binance BTCUSDT",
     },
   ] satisfies EconomicIndicator[];
 }

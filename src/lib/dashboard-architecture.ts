@@ -379,6 +379,16 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     fallback: "Returns `fallbackIncidents` when the event store is unavailable.",
   },
   {
+    path: "/api/border/incidents",
+    category: "Operations",
+    purpose:
+      "Delivers a border-filtered incident layer for the Myanmar, Cambodia, and Malaysia frontiers.",
+    consumers: ["Border map", "border command", "border news and ticker"],
+    upstreams: ["Postgres `events` via `loadThailandIncidents()`", "border-region filtering"],
+    fallback:
+      "Returns curated tri-border incidents when the database is unavailable or when live events are outside the command footprint.",
+  },
+  {
     path: "/api/fires",
     category: "Operations",
     purpose:
@@ -395,6 +405,16 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     consumers: ["Map surface", "convergence scoring"],
     upstreams: ["Curated fallback movement traces", "legacy `population_movements` cache"],
     fallback: "Returns `fallbackRefugees` as a local visitor-flow stand-in when no live mobility feed is configured.",
+  },
+  {
+    path: "/api/border/movements",
+    category: "Operations",
+    purpose:
+      "Provides tri-border movement overlays, with Myanmar humanitarian pressure enriched by UNHCR refugee counts.",
+    consumers: ["Border map", "border command"],
+    upstreams: ["UNHCR Refugee Data Finder", "curated crossing and freight traces"],
+    fallback:
+      "Returns static Myanmar, Cambodia, and Malaysia corridor traces when live humanitarian counts are unavailable.",
   },
   {
     path: "/api/flights",
@@ -456,6 +476,44 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     consumers: ["BriefingPanel", "convergence scoring", "API clients"],
     upstreams: ["RSS and JSON feeds", "reference markets", "Postgres incidents/weather/movement/fire", "intelligence cache"],
     fallback: "Serves cache-backed or synthesized stale payloads rather than dropping the briefing surface.",
+  },
+  {
+    path: "/api/border/osint",
+    category: "Intelligence",
+    purpose:
+      "Builds the border OSINT cache used for narrative corroboration, humanitarian context, and provider health.",
+    consumers: ["Border command", "border news", "future provider diagnostics"],
+    upstreams: ["GDELT DOC 2", "UNHCR Refugee Data Finder", "optional ACLED configuration"],
+    fallback:
+      "Serves cached or curated humanitarian snapshots when live OSINT providers are slow, rate-limited, or unavailable.",
+  },
+  {
+    path: "/api/border/news",
+    category: "Intelligence",
+    purpose:
+      "Builds the border news desk from GDELT narrative matches, UNHCR displacement context, field incidents, and markets.",
+    consumers: ["BorderNewsDesk"],
+    upstreams: ["Border OSINT cache", "border incidents", "reference markets"],
+    fallback: "Returns `fallbackNews` if border curation fails.",
+  },
+  {
+    path: "/api/border/ticker",
+    category: "Intelligence",
+    purpose:
+      "Builds the tri-border ticker with FX, field pressure, narrative volume, and humanitarian context.",
+    consumers: ["SignalTicker"],
+    upstreams: ["Border OSINT cache", "border incidents", "reference markets"],
+    fallback: "Returns `fallbackTicker` if border ticker synthesis fails.",
+  },
+  {
+    path: "/api/border-command/brief",
+    category: "Intelligence",
+    purpose:
+      "Builds the executive border brief with area scoring, concerns, intervention queue, and cited source labels.",
+    consumers: ["TopBar", "Sidebar", "border dashboard shell"],
+    upstreams: ["border incidents", "reference markets", "critical cameras", "border OSINT cache"],
+    fallback:
+      "Serves a cached command brief for 60 seconds so the executive posture stays stable during transient upstream churn.",
   },
   {
     path: "/api/news",
@@ -562,6 +620,15 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     endpoints: ["https://news.google.com/rss/search?q=..."],
   },
   {
+    id: "gdelt-doc-2",
+    label: "GDELT DOC 2",
+    category: "News",
+    description:
+      "Near-real-time border narrative feed used to corroborate reporting around Myanmar, Cambodia, and Malaysia.",
+    surfaces: ["Border news", "border ticker", "border command"],
+    endpoints: ["https://api.gdeltproject.org/api/v2/doc/doc?query=...&mode=artlist&format=json"],
+  },
+  {
     id: "rss2json",
     label: "RSS2JSON Fallback",
     category: "News",
@@ -592,6 +659,18 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     description: "Regional state vector feed for live aircraft tracks.",
     surfaces: ["Flight paths overlay"],
     endpoints: ["https://opensky-network.org/api/states/all?lamin=...&lomin=...&lamax=...&lomax=..."],
+  },
+  {
+    id: "unhcr-refugee-data-finder",
+    label: "UNHCR Refugee Data Finder",
+    category: "Mobility",
+    description:
+      "Public refugee and displacement statistics used to contextualize humanitarian pressure on the Myanmar frontier.",
+    surfaces: ["Border command", "border ticker", "border movements"],
+    endpoints: [
+      "https://api.unhcr.org/population/v1/population/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=...&yearTo=...",
+      "https://api.unhcr.org/population/v1/demographics/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=...&yearTo=...",
+    ],
   },
   {
     id: "reference-dashboard",
@@ -666,6 +745,25 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     endpoints: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
   },
   {
+    id: "overpass-api",
+    label: "Overpass API",
+    category: "Mapping & Media",
+    description:
+      "OpenStreetMap query API recommended for operational layers such as checkpoints, customs nodes, shelters, and hospitals.",
+    surfaces: ["Future border infrastructure overlays"],
+    endpoints: ["https://overpass-api.de/api/interpreter"],
+  },
+  {
+    id: "sentinel-hub",
+    label: "Sentinel Hub",
+    category: "Mapping & Media",
+    description:
+      "Optional Copernicus processing layer for on-demand Sentinel imagery, statistics, and time-series over border areas of interest.",
+    surfaces: ["Future satellite change detection", "operator imagery overlays"],
+    endpoints: ["https://services.sentinel-hub.com/api/v1/process"],
+    optional: true,
+  },
+  {
     id: "youtube",
     label: "YouTube Embed",
     category: "Mapping & Media",
@@ -680,6 +778,46 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     description: "Optional styled basemap service used only when a valid token is configured.",
     surfaces: ["Detailed or dark Mapbox basemap"],
     endpoints: ["https://api.mapbox.com/styles/v1/mapbox/..."],
+    optional: true,
+  },
+  {
+    id: "acled",
+    label: "ACLED",
+    category: "Optional",
+    description:
+      "Optional coded conflict-event provider recommended for border violence, protest, and civilian-harm overlays once credentials are configured.",
+    surfaces: ["Future coded conflict overlays", "border command corroboration"],
+    endpoints: ["https://acleddata.com/acled-api-documentation"],
+    optional: true,
+  },
+  {
+    id: "google-earth-engine",
+    label: "Google Earth Engine",
+    category: "Optional",
+    description:
+      "Optional planetary analysis platform for scripted Sentinel and Landsat change detection across Thai border areas.",
+    surfaces: ["Future satellite analytics"],
+    endpoints: ["https://earthengine.googleapis.com/"],
+    optional: true,
+  },
+  {
+    id: "thai-customs-catalog",
+    label: "Thai Customs Data Catalog",
+    category: "Optional",
+    description:
+      "Optional official trade and customs source for border throughput, import/export, and HS-code trend overlays.",
+    surfaces: ["Future trade and smuggling indicators"],
+    endpoints: ["https://catalog.customs.go.th/"],
+    optional: true,
+  },
+  {
+    id: "thailand-open-government-data",
+    label: "Thailand Open Government Data",
+    category: "Optional",
+    description:
+      "Optional CKAN-based dataset catalog for public Thai government data discovery and aggregate border indicators.",
+    surfaces: ["Future official-data enrichment"],
+    endpoints: ["https://data.go.th/api/3/action/package_search"],
     optional: true,
   },
   {

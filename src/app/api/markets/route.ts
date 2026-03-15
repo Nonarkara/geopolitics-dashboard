@@ -28,8 +28,8 @@ export async function GET() {
     const indicators = await fetchReferenceEconomicIndicators();
     if (indicators.length > 0) {
       signals = indicators;
-      sources.add("ExchangeRate API");
-      sources.add("Binance Ticker");
+      sources.add("ExchangeRate API (open.er-api.com)");
+      sources.add("Binance BTCUSDT");
       liveSignalsLoaded = true;
 
       try {

@@ -15,10 +15,12 @@ export default function LogoStrip({ className }: { className?: string }) {
     <div className={`flex items-center gap-6 ${className}`}>
       {LOGOS.map((logo, i) => (
         <div key={i} className="relative h-8 w-16 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all">
-          <img
+          <Image
             src={logo.src}
             alt={logo.alt}
-            className="h-full w-full object-contain"
+            fill
+            sizes="64px"
+            className="object-contain"
           />
         </div>
       ))}

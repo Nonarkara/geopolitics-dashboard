@@ -251,6 +251,108 @@ const airQualityResponse = [
   },
 ];
 
+const aseanProfileResponses = {
+  THA: {
+    generatedAt: "2026-03-14T09:00:00.000Z",
+    country: {
+      code: "THA",
+      label: "Thailand",
+      aliases: ["Thailand", "Thai", "Kingdom of Thailand"],
+    },
+    metadata: {
+      alpha2: "TH",
+      alpha3: "THA",
+      officialName: "Kingdom of Thailand",
+      flagEmoji: "🇹🇭",
+      flagSvgUrl: "https://flagcdn.com/th.svg",
+      region: "Asia",
+      subregion: "South-Eastern Asia",
+      capital: "Bangkok",
+      capitalLatLng: [13.75, 100.516667],
+      currencies: [{ code: "THB", name: "Thai baht", symbol: "฿" }],
+      languages: [{ code: "tha", name: "Thai" }],
+      timezones: ["UTC+07:00"],
+      borders: ["KHM", "LAO", "MMR", "MYS"],
+    },
+    metrics: [
+      {
+        id: "gdp-growth",
+        label: "GDP growth",
+        value: 2.5,
+        unit: "%",
+        year: 2024,
+        source: "World Bank WDI",
+      },
+    ],
+    news: [],
+    sources: ["World Bank WDI", "REST Countries"],
+  },
+  SGP: {
+    generatedAt: "2026-03-14T09:05:00.000Z",
+    country: {
+      code: "SGP",
+      label: "Singapore",
+      aliases: ["Singapore", "Singaporean"],
+    },
+    metadata: {
+      alpha2: "SG",
+      alpha3: "SGP",
+      officialName: "Republic of Singapore",
+      flagEmoji: "🇸🇬",
+      flagSvgUrl: "https://flagcdn.com/sg.svg",
+      region: "Asia",
+      subregion: "South-Eastern Asia",
+      capital: "Singapore",
+      capitalLatLng: [1.283333, 103.85],
+      currencies: [{ code: "SGD", name: "Singapore dollar", symbol: "$" }],
+      languages: [
+        { code: "eng", name: "English" },
+        { code: "msa", name: "Malay" },
+      ],
+      timezones: ["UTC+08:00"],
+      borders: [],
+    },
+    metrics: [
+      {
+        id: "gdp-growth",
+        label: "GDP growth",
+        value: 3.2,
+        unit: "%",
+        year: 2024,
+        source: "World Bank WDI",
+      },
+    ],
+    news: [],
+    sources: ["World Bank WDI", "REST Countries"],
+  },
+  BRN: {
+    generatedAt: "2026-03-14T09:10:00.000Z",
+    country: {
+      code: "BRN",
+      label: "Brunei",
+      aliases: ["Brunei", "Brunei Darussalam"],
+    },
+    metadata: {
+      alpha2: "BN",
+      alpha3: "BRN",
+      officialName: null,
+      flagEmoji: "🇧🇳",
+      flagSvgUrl: null,
+      region: "Asia",
+      subregion: "South-Eastern Asia",
+      capital: null,
+      capitalLatLng: null,
+      currencies: [],
+      languages: [],
+      timezones: [],
+      borders: ["MYS"],
+    },
+    metrics: [],
+    news: [],
+    sources: ["World Bank WDI"],
+  },
+} as const;
+
 const flightsResponse = [
   {
     icao24: "abc123",
@@ -407,6 +509,20 @@ async function mockDashboardApis(page: Page) {
     });
   });
 
+  await page.route("**/api/asean/profile**", async (route) => {
+    const requestUrl = new URL(route.request().url());
+    const countryCode = requestUrl.searchParams.get("country")?.toUpperCase() ?? "THA";
+    const payload =
+      aseanProfileResponses[countryCode as keyof typeof aseanProfileResponses] ??
+      aseanProfileResponses.THA;
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify(payload),
+    });
+  });
+
   await page.route("**/api/flights", async (route) => {
     await route.fulfill({
       status: 200,
@@ -447,7 +563,13 @@ test.beforeEach(async ({ page }) => {
 test("renders the Phuket bottom rail with live feeds, dossier, and context", async ({
   page,
 }) => {
+  const publicCamerasResponse = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/public-cameras") && response.status() === 200,
+  );
+
   await page.goto("/phuket");
+  await publicCamerasResponse;
 
   await expect(page.getByTestId("phuket-bottom-rail")).toBeVisible();
   await expect(page.getByTestId("live-feeds-zone")).toBeVisible();
@@ -463,6 +585,7 @@ test("toggles satellite and layer controls and keeps opacity slider in sync", as
 }) => {
   await page.goto("/phuket");
   await expect(page.getByTestId("camera-marker-patong-coast")).toBeVisible();
+  await expect(page.getByTestId("distance-grid-indicator")).toHaveText("GRID 1KM");
 
   const imageryFalseColor = page.getByTestId("imagery-modisFalseColor");
   await expect(imageryFalseColor).toBeVisible();
@@ -524,6 +647,57 @@ test("renders camera markers, opens map detail, and degrades offline snapshots s
   await expect(page.getByTestId("camera-card-bangla-road")).toContainText(
     "Snapshot unavailable",
   );
+});
+
+test("renders ASEAN country facts and degrades cleanly on partial metadata", async ({
+  page,
+}) => {
+  const countrySelector = page.getByLabel("Select ASEAN country");
+
+  await page.goto("/phuket");
+  await expect(page.getByTestId("asean-country-facts")).toBeVisible();
+  await expect(page.getByTestId("asean-country-fact-official-name")).toHaveText(
+    "Kingdom of Thailand",
+  );
+  await expect(page.getByTestId("asean-country-fact-capital")).toHaveText("Bangkok");
+  await expect(page.getByTestId("asean-country-fact-currency")).toContainText("THB");
+  await expect(page.getByTestId("asean-country-fact-timezone")).toHaveText(
+    "UTC+07:00",
+  );
+
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/asean/profile?country=SGP") &&
+        response.status() === 200,
+    ),
+    countrySelector.selectOption("SGP"),
+  ]);
+
+  await expect(page.getByTestId("asean-country-fact-official-name")).toHaveText(
+    "Republic of Singapore",
+  );
+  await expect(page.getByTestId("asean-country-fact-capital")).toHaveText("Singapore");
+  await expect(page.getByTestId("asean-country-fact-currency")).toContainText("SGD");
+  await expect(page.getByTestId("asean-country-fact-language")).toHaveText("English");
+  await expect(page.getByTestId("asean-country-fact-timezone")).toHaveText(
+    "UTC+08:00",
+  );
+
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/asean/profile?country=BRN") &&
+        response.status() === 200,
+    ),
+    countrySelector.selectOption("BRN"),
+  ]);
+
+  await expect(page.getByTestId("asean-country-fact-official-name")).toHaveText("--");
+  await expect(page.getByTestId("asean-country-fact-capital")).toHaveText("--");
+  await expect(page.getByTestId("asean-country-fact-currency")).toHaveText("--");
+  await expect(page.getByTestId("asean-country-fact-language")).toHaveText("--");
+  await expect(page.getByTestId("asean-country-fact-timezone")).toHaveText("--");
 });
 
 test("shows the shared visible version badge on both dashboard variants", async ({

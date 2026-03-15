@@ -1,4 +1,8 @@
-import type { PublicCamera, PublicCameraCategory } from "../types/dashboard";
+import type {
+  PublicCamera,
+  PublicCameraCategory,
+  PublicCameraValidationState,
+} from "../types/dashboard";
 
 export const CAMERA_REFRESH_SECONDS = 180;
 const FETCH_TIMEOUT_MS = 8000;
@@ -13,6 +17,7 @@ export type CameraDefinition = {
   lng: number;
   provider: string;
   sourcePageUrl: string;
+  validationState?: PublicCameraValidationState;
   locationLabel?: string;
   focusArea?: string;
   strategicNote?: string;
@@ -109,11 +114,15 @@ export function listCameraDefinitions(
     provider: camera.provider,
     sourcePageUrl: camera.sourcePageUrl,
     embedUrl: camera.embedUrl,
-    snapshotUrl: `${snapshotBasePath}/${camera.id}/snapshot`,
+    snapshotUrl:
+      camera.validationState === "candidate"
+        ? undefined
+        : `${snapshotBasePath}/${camera.id}/snapshot`,
+    validationState: camera.validationState ?? "verified",
     locationLabel: camera.locationLabel,
     focusArea: camera.focusArea,
     strategicNote: camera.strategicNote,
-    status: "live",
+    status: camera.validationState === "candidate" ? "stale" : "live",
     refreshSeconds: CAMERA_REFRESH_SECONDS,
     lastCheckedAt: checkedAt,
   }));

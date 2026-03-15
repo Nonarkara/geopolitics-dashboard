@@ -1,318 +1,224 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Shield, TrendingUp, Globe, AlertTriangle, Activity, BarChart3, Thermometer, Radio } from "lucide-react";
-import { fallbackAseanGdp } from "../../lib/mock-data";
-import type { AseanGdpDatum } from "../../types/dashboard";
-import BriefingPanel from "../Intelligence/BriefingPanel";
-import NewsDesk from "../Intelligence/NewsDesk";
-import ConvergenceAlerts from "./ConvergenceAlerts";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  Radio,
+  Shield,
+  Siren,
+} from "lucide-react";
+import type { BorderCommandBrief } from "../../types/dashboard";
 
-interface EnvironmentReading {
-  code: string;
-  location: string;
-  temperature: number | null;
-  aqi: number | null;
-}
-
-function getSignalLevel(score: number): string {
-  if (score >= 90) return "critical";
-  if (score >= 70) return "high";
-  if (score >= 50) return "medium";
-  return "low";
-}
-
-function getSignalBorderClass(level: string): string {
-  switch (level) {
-    case "critical": return "border-[var(--accent)] border-[2.5px]";
-    case "high": return "border-[var(--hazard)] border-2";
-    case "medium": return "border-[var(--tech)] border-[1.5px]";
-    default: return "border-[var(--line-dim)] border";
+function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
+  switch (posture) {
+    case "priority":
+      return "border-[var(--accent)] bg-[rgba(255,59,48,0.06)]";
+    case "watch":
+      return "border-[var(--hazard)] bg-[rgba(245,158,11,0.06)]";
+    default:
+      return "border-[var(--line)] bg-white";
   }
 }
 
-function formatGdp(value: number): string {
-  if (value >= 1_000_000_000_000) return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
-  if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(0)}B`;
-  return `$${(value / 1_000_000).toFixed(0)}M`;
+function posturePill(posture: BorderCommandBrief["overallPosture"]) {
+  switch (posture) {
+    case "priority":
+      return "danger";
+    case "watch":
+      return "warning";
+    default:
+      return "safe";
+  }
 }
 
-function getAqiClass(aqi: number | null): string {
-  if (aqi === null) return "opacity-30";
-  if (aqi > 150) return "text-[var(--accent)]";
-  if (aqi > 100) return "text-[var(--hazard)]";
-  if (aqi > 50) return "text-[var(--tech)]";
-  return "";
+interface SidebarProps {
+  brief: BorderCommandBrief | null;
 }
 
-export default function Sidebar() {
-  const [gdpData, setGdpData] = useState<AseanGdpDatum[]>(fallbackAseanGdp);
-  const [environment, setEnvironment] = useState<EnvironmentReading[]>([]);
-
-  useEffect(() => {
-    const loadGdp = async () => {
-      try {
-        const res = await fetch("/api/markets", { cache: "no-store" });
-        const payload = await res.json();
-        if (payload && typeof payload === "object" && "aseanGdp" in payload && Array.isArray(payload.aseanGdp) && payload.aseanGdp.length > 0) {
-          setGdpData(payload.aseanGdp);
-        }
-      } catch { /* Keep fallback */ }
-    };
-
-    const loadEnv = async () => {
-      try {
-        const res = await fetch("/api/environment", { cache: "no-store" });
-        const data = await res.json();
-        if (Array.isArray(data)) setEnvironment(data);
-      } catch { /* Keep empty */ }
-    };
-
-    loadGdp();
-    loadEnv();
-    const gdpInterval = setInterval(loadGdp, 300000);
-    const envInterval = setInterval(loadEnv, 120000);
-    return () => { clearInterval(gdpInterval); clearInterval(envInterval); };
-  }, []);
-
-  const maxGdp = Math.max(...gdpData.map(d => d.gdpUsd));
-
+export default function Sidebar({ brief }: SidebarProps) {
   return (
     <aside className="flex h-full flex-col select-none overflow-hidden bg-white">
-      {/* ── Operational Status ── */}
-      <div className="p-4 border-b-[1.5px] border-[var(--line)] shrink-0">
-        <div className="flex items-center justify-between mb-2">
-          <div className="eyebrow">SYSTEM ALPHA</div>
-          <span className="live-badge scale-90">Locked</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex-1 h-[2px] bg-[var(--line-dim)]">
-            <div className="h-full w-[94%] bg-[var(--safe)]" />
+      <div className="border-b-[1.5px] border-[var(--line)] p-4 shrink-0">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="eyebrow flex items-center gap-2">
+              <Shield size={10} className="text-[var(--accent)]" />
+              Border Command Posture
+            </div>
+            <div className="mt-2 text-[15px] font-black uppercase tracking-tight">
+              {brief?.headline ?? "Synchronizing command posture"}
+            </div>
           </div>
-          <span className="text-[10px] font-black tabular-nums tracking-tighter">94%</span>
+          <span className={`stat-pill ${posturePill(brief?.overallPosture ?? "watch")}`}>
+            {brief?.overallPosture ?? "sync"}
+          </span>
         </div>
-        <div className="flex gap-1.5 mt-2">
-          <div className="stat-pill safe">NASA GIBS</div>
-          <div className="stat-pill info">JAXA</div>
-          <div className="stat-pill safe">ESA</div>
-          <div className="stat-pill warning">ROSCOSMOS</div>
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div className="text-[11px] leading-relaxed text-[var(--muted)]">
+            {brief?.summary ??
+              "The border command story will appear here once the executive brief finishes loading."}
+          </div>
+          <div className="shrink-0 text-right">
+            <div className="text-[22px] font-black tabular-nums leading-none">
+              {brief?.overallScore ?? "--"}
+            </div>
+            <div className="text-[8px] font-black uppercase tracking-[0.18em] opacity-35">
+              command score
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
-
-        {/* ── Strategic Sectors ── */}
         <section>
           <div className="eyebrow mb-3 flex items-center gap-2">
-            <Shield size={10} className="text-[var(--accent)]" />
-            Strategic Sectors
+            <Siren size={10} className="text-[var(--accent)]" />
+            Tri-Border Priority Board
           </div>
           <div className="space-y-2.5">
-            {[
-              { loc: "MAE SOT / MYAWADDY", title: "Border Convergence", score: 100, metrics: [["INTL", 24], ["FIRE", 8], ["MOVE", "CRIT"], ["AQI", 156]] },
-              { loc: "RANONG / KAWTHAUNG", title: "Maritime Corridor", score: 84, metrics: [["INTL", 12], ["FIRE", 2], ["MOVE", "WARN"], ["AQI", 88]] },
-              { loc: "TAK BORDER ZONE", title: "Northern Gateway", score: 72, metrics: [["INTL", 9], ["FIRE", 5], ["MOVE", "MOD"], ["AQI", 142]] },
-              { loc: "SUNGALKOLOK SECTOR", title: "Deep South Pulse", score: 62, metrics: [["INTL", 5], ["FIRE", 0], ["MOVE", "NORM"], ["AQI", 45]] },
-              { loc: "THREE PAGODAS PASS", title: "Karen State Interface", score: 55, metrics: [["INTL", 3], ["FIRE", 1], ["MOVE", "LOW"], ["AQI", 67]] },
-            ].map((w, i) => {
-              const signal = getSignalLevel(w.score);
-              return (
-                <div key={i} className={`p-3 relative group hover:border-[var(--ink)] transition-all bg-white ${getSignalBorderClass(signal)}`}>
-                  {signal === "critical" && <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)]" />}
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-[7px] font-black opacity-30 uppercase tracking-[0.2em]">{w.loc}</span>
-                    <span className={`text-[10px] font-black tabular-nums px-1.5 py-0.5 ${
-                      signal === "critical" ? "bg-[var(--accent)] text-white" :
-                      signal === "high" ? "bg-[var(--hazard)] text-black" :
-                      signal === "medium" ? "bg-[var(--tech)] text-white" :
-                      "bg-[var(--line-dim)] text-[var(--ink)]"
-                    }`}>{w.score}</span>
+            {(brief?.areas ?? []).map((area) => (
+              <article
+                key={area.id}
+                className={`border p-3 transition-all ${postureClasses(area.posture)}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <div className="text-[8px] font-black uppercase tracking-[0.2em] opacity-40">
+                      {area.counterpart}
+                    </div>
+                    <div className="mt-1 text-[12px] font-black uppercase tracking-tight">
+                      {area.label}
+                    </div>
                   </div>
-                  <h3 className="text-[12px] font-black uppercase tracking-tight mb-2 pr-4">{w.title}</h3>
-                  <div className="grid grid-cols-4 gap-1.5 border-t border-[var(--line-dim)] pt-2">
-                    {w.metrics.map((m, j) => (
-                      <div key={j} className="flex flex-col">
-                        <div className="text-[8px] font-black opacity-30 uppercase">{m[0]}</div>
-                        <div className={`text-[12px] font-black tabular-nums tracking-tighter leading-none mt-0.5 ${
-                          m[0] === "AQI" && typeof m[1] === "number" && m[1] > 100 ? "text-[var(--accent)]" :
-                          m[1] === "CRIT" ? "text-[var(--accent)]" :
-                          m[1] === "WARN" ? "text-[var(--hazard)]" : ""
-                        }`}>{m[1]}</div>
-                      </div>
-                    ))}
+                  <div className="text-right">
+                    <span className={`stat-pill ${posturePill(area.posture)}`}>
+                      {area.posture}
+                    </span>
+                    <div className="mt-1 text-[10px] font-black tabular-nums opacity-60">
+                      {area.score}/100
+                    </div>
                   </div>
                 </div>
-              );
-            })}
+
+                <p className="mt-2 text-[10px] leading-relaxed text-[var(--muted)]">
+                  {area.summary}
+                </p>
+
+                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--line)] pt-2">
+                  <div>
+                    <div className="text-[8px] font-black uppercase opacity-30">Incidents</div>
+                    <div className="text-[12px] font-black tabular-nums">
+                      {area.incidentCount}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] font-black uppercase opacity-30">Fatalities</div>
+                    <div className="text-[12px] font-black tabular-nums">
+                      {area.fatalityCount}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] font-black uppercase opacity-30">Cameras</div>
+                    <div className="text-[12px] font-black tabular-nums">
+                      {area.verifiedCameras}/{area.candidateCameras}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {area.watchpoints.slice(0, 2).map((watchpoint) => (
+                    <span
+                      key={watchpoint}
+                      className="border border-[var(--line-dim)] bg-[var(--bg)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest opacity-70"
+                    >
+                      {watchpoint}
+                    </span>
+                  ))}
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
-        {/* ── Convergence Alerts ── */}
         <section className="pt-3 border-t border-[var(--line)]">
           <div className="eyebrow mb-3 flex items-center gap-2">
             <AlertTriangle size={10} className="text-[var(--accent)]" />
-            Convergence Alerts
+            Immediate Concerns
           </div>
-          <ConvergenceAlerts />
-        </section>
-
-        {/* ── Environment Monitor ── */}
-        {environment.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
-            <div className="eyebrow mb-3 flex items-center gap-2">
-              <Thermometer size={10} />
-              Environment Monitor
-              <span className="live-badge scale-75 ml-auto">LIVE</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1">
-              {environment.map((e) => (
-                <div key={e.code} className="flex items-center justify-between px-2 py-1.5 border border-[var(--line-dim)] hover:bg-[var(--bg)] transition-all">
-                  <div className="flex flex-col">
-                    <span className="text-[10px] font-black uppercase tracking-tight">{e.location}</span>
-                    <span className="text-[7px] font-black opacity-25 uppercase">{e.code}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-black tabular-nums">{e.temperature ?? "—"}°</span>
-                    <span className={`text-[10px] font-black tabular-nums ${getAqiClass(e.aqi)}`}>{e.aqi ?? "—"}</span>
-                  </div>
+          <div className="space-y-2">
+            {(brief?.topConcerns ?? []).slice(0, 5).map((concern) => (
+              <div key={concern.id} className="border border-[var(--line)] bg-[var(--bg)] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`stat-pill ${posturePill(concern.posture)}`}>
+                    {concern.areaLabel.split(" ")[0]}
+                  </span>
+                  <span className="text-[9px] font-black tabular-nums opacity-40">
+                    {concern.metric}
+                  </span>
                 </div>
-              ))}
-            </div>
-            <div className="flex items-center justify-between mt-1.5 px-1">
-              <span className="text-[7px] font-black opacity-15 uppercase tracking-[0.2em]">Open-Meteo</span>
-              <div className="flex gap-3 text-[7px] font-black opacity-25 uppercase">
-                <span>°C Temp</span>
-                <span>US AQI</span>
-              </div>
-            </div>
-          </section>
-        )}
-
-        {/* ── ASEAN GDP Rankings ── */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
-            <BarChart3 size={10} />
-            ASEAN GDP Rankings
-          </div>
-          <div className="space-y-1.5">
-            {gdpData.slice(0, 11).map((d, i) => (
-              <div key={d.countryCode} className="flex items-center gap-2 group">
-                <span className="text-[10px] font-black opacity-30 w-3 text-right tabular-nums">{i + 1}</span>
-                <div className="flex-1 flex flex-col min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-black uppercase tracking-tight truncate">{d.country}</span>
-                    <span className="text-[11px] font-black tabular-nums opacity-60 ml-1 shrink-0">{formatGdp(d.gdpUsd)}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="h-1 flex-1 bg-[var(--line-dim)] opacity-20">
-                      <div className="h-full bg-black" style={{ width: `${(d.gdpUsd / maxGdp) * 100}%` }} />
-                    </div>
-                    <span className="text-[9px] font-black opacity-40 uppercase">{d.countryCode}</span>
-                    <span className="text-[9px] font-black opacity-40 tabular-nums">${d.gdpPerCapitaUsd?.toLocaleString()}/cap</span>
-                  </div>
+                <div className="mt-2 text-[11px] font-black uppercase tracking-tight">
+                  {concern.label}
                 </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-2 text-[7px] font-black opacity-15 uppercase tracking-[0.3em] text-center">
-            Source: World Bank {gdpData[0]?.gdpYear || 2024}
-          </div>
-        </section>
-
-        {/* ── Signal Density ── */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
-            <TrendingUp size={10} />
-            Signal Density
-          </div>
-          <div className="space-y-1.5">
-            {[
-              { label: "Myawaddy Fighting", time: "2m", status: "Critical", trend: "up" },
-              { label: "Refugee Intake", time: "14m", status: "Moderate", trend: "down" },
-              { label: "Air Quality Alert", time: "1h", status: "Severe", trend: "up" },
-              { label: "Customs Disruption", time: "2h", status: "Normal", trend: "stable" },
-              { label: "Naval Movement", time: "45m", status: "Watch", trend: "up" },
-              { label: "Satellite Pass (VIIRS)", time: "3h", status: "Scheduled", trend: "stable" },
-            ].map((s, i) => (
-              <div key={i} className="flex items-center justify-between p-2 border border-transparent hover:border-[var(--line-dim)] hover:bg-[var(--bg)] transition-all">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-black uppercase tracking-tighter">{s.label}</span>
-                  <span className="text-[8px] font-bold opacity-30 uppercase">Updated {s.time} ago</span>
-                </div>
-                <div className="flex flex-col items-end">
-                  <span className={`stat-pill ${
-                    s.status === "Critical" ? "danger" :
-                    s.status === "Severe" ? "warning" :
-                    s.status === "Watch" ? "info" : "safe"
-                  }`}>{s.status}</span>
-                  <div className="h-1 w-8 bg-[var(--line-dim)] mt-1">
-                    <div className={`h-full ${
-                      s.trend === "up" ? "w-full bg-[var(--accent)]" :
-                      s.trend === "down" ? "w-2/3 bg-[var(--tech)]" :
-                      "w-1/2 bg-[var(--dim)]"
-                    }`} />
-                  </div>
-                </div>
+                <p className="mt-1 text-[10px] leading-relaxed text-[var(--muted)]">
+                  {concern.detail}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* ── Operational Briefing ── */}
         <section className="pt-3 border-t border-[var(--line)]">
           <div className="flex items-center justify-between mb-3">
             <div className="eyebrow flex items-center gap-2">
               <Radio size={10} />
-              Operational Briefing
+              Intervention Queue
             </div>
             <span className="live-badge scale-75">LIVE</span>
           </div>
-          <BriefingPanel />
-        </section>
-
-        {/* ── Live Feed ── */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
-            <Globe size={10} />
-            Live Feed
-          </div>
-          <NewsDesk />
-        </section>
-
-        {/* ── Satellite Sources ── */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
-            <Activity size={10} />
-            Satellite Sources Active
-          </div>
-          <div className="grid grid-cols-2 gap-1">
-            {[
-              { name: "NASA GIBS", flag: "US", status: "ok" },
-              { name: "JAXA GCOM", flag: "JP", status: "ok" },
-              { name: "ESA Copernicus", flag: "EU", status: "ok" },
-              { name: "ROSCOSMOS", flag: "RU", status: "delayed" },
-              { name: "CNSA FY-4A", flag: "CN", status: "ok" },
-              { name: "UKSA NovaSAR", flag: "UK", status: "ok" },
-              { name: "ISRO Cartosat", flag: "IN", status: "ok" },
-              { name: "KARI CAS500", flag: "KR", status: "ok" },
-            ].map((src, i) => (
-              <div key={i} className="flex items-center gap-3 py-2 border-b border-[var(--line-dim)] last:border-0 hover:bg-[var(--bg)] transition-all px-1 cursor-default">
-                <div className={`w-1 h-1 rounded-full ${src.status === "ok" ? "bg-[var(--safe)]" : "bg-[var(--hazard)]"}`} />
-                <span className="text-[10px] font-black opacity-40 uppercase">{src.flag}</span>
-                <span className="text-[11px] font-black uppercase tracking-tight truncate">{src.name}</span>
-                <div className="flex-1" />
-                <span className={`stat-pill ${src.status === "ok" ? "safe" : "warning"} scale-90`}>{src.status}</span>
+          <div className="space-y-2">
+            {(brief?.actionQueue ?? []).map((action, index) => (
+              <div key={action.id} className="border border-[var(--line)] bg-white p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[9px] font-black tabular-nums opacity-40">
+                    0{index + 1}
+                  </span>
+                  <span className={`stat-pill ${posturePill(action.posture)}`}>
+                    {action.owner}
+                  </span>
+                </div>
+                <div className="mt-2 text-[11px] font-black uppercase tracking-tight">
+                  {action.title}
+                </div>
+                <p className="mt-1 text-[10px] leading-relaxed text-[var(--muted)]">
+                  {action.detail}
+                </p>
+                <div className="mt-2 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] opacity-50">
+                  {action.areaLabel}
+                  <ArrowRight size={10} />
+                </div>
               </div>
             ))}
+          </div>
+        </section>
+
+        <section className="pt-3 border-t border-[var(--line)]">
+          <div className="eyebrow mb-3 flex items-center gap-2">
+            <Camera size={10} />
+            Coverage Note
+          </div>
+          <div className="border border-[var(--line)] bg-[var(--bg)] p-3 text-[10px] leading-relaxed text-[var(--muted)]">
+            Verified cameras now anchor the Myanmar and Malaysia corridors, while scout slots flag the coverage gap on the Cambodia frontier. That makes the intervention queue useful to a governor: it shows both where the heat is and where visibility is still weak.
           </div>
         </section>
       </div>
 
       <div className="p-3 bg-white border-t border-[var(--line)] flex items-center justify-between shrink-0">
-        <div className="text-[11px] font-black opacity-15 uppercase tracking-[0.4em]">Sentinel // X</div>
-        <div className="flex items-center gap-2">
-          <AlertTriangle size={8} className="opacity-10" />
-          <Globe size={10} className="opacity-10" />
+        <div className="text-[11px] font-black opacity-15 uppercase tracking-[0.4em]">
+          Sentinel // Border
+        </div>
+        <div className="flex items-center gap-2 text-[8px] font-black uppercase opacity-30">
+          {(brief?.sources ?? ["Synchronizing sources"]).slice(0, 2).join(" / ")}
         </div>
       </div>
     </aside>

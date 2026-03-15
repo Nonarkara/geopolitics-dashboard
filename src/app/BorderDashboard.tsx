@@ -1,26 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
+import BorderNewsDesk from "../components/Intelligence/BorderNewsDesk";
 import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
-import SourceStack from "../components/Intelligence/SourceStack";
 import FinePrint from "../components/Intelligence/FinePrint";
-import EconomicMonitor from "../components/Analytics/EconomicMonitor";
 import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
-import type { ProvinceSelection } from "../types/dashboard";
+import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
+
+function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "areas" in value &&
+    Array.isArray(value.areas) &&
+    "actionQueue" in value &&
+    Array.isArray(value.actionQueue)
+  );
+}
 
 export default function BorderDashboard() {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadBrief = async () => {
+      try {
+        const response = await fetch("/api/border-command/brief", {
+          cache: "no-store",
+        });
+        const payload: unknown = await response.json();
+
+        if (active && isBorderCommandBrief(payload)) {
+          setBrief(payload);
+        }
+      } catch {
+        // Keep the last good command brief in place.
+      }
+    };
+
+    void loadBrief();
+    const interval = setInterval(() => {
+      void loadBrief();
+    }, 60_000);
+
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
@@ -29,6 +70,7 @@ export default function BorderDashboard() {
         {/* ROW 1: HEADER */}
         <header className="grid-cell shrink-0 z-50">
           <TopBar
+            brief={brief}
             onOpenManual={() => setIsManualOpen(true)}
             onOpenArchitecture={() => setIsArchitectureOpen(true)}
             onOpenDataExplorer={() => setIsDataExplorerOpen(true)}
@@ -40,7 +82,7 @@ export default function BorderDashboard() {
 
           {/* LEFT SIDEBAR */}
           <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
-            <Sidebar />
+            <Sidebar brief={brief} />
           </aside>
 
           {/* CENTER: MAP */}
@@ -52,12 +94,11 @@ export default function BorderDashboard() {
         </div>
 
         {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[210px] shrink-0 connected-grid bg-black overflow-hidden">
+        <div className="h-[236px] shrink-0 connected-grid bg-black overflow-hidden">
 
-          {/* MARKET RADAR */}
-          <div className="w-[340px] shrink-0 grid-cell p-3 overflow-hidden">
-            <div className="eyebrow mb-1.5">MARKET RADAR</div>
-            <EconomicMonitor />
+          {/* MARKET PULSE */}
+          <div className="w-[320px] shrink-0 grid-cell overflow-hidden">
+            <BorderMarketPulse />
           </div>
 
           {/* CRITICAL CAMERA RAIL */}
@@ -65,28 +106,9 @@ export default function BorderDashboard() {
             <CriticalCameraRail />
           </div>
 
-          {/* CONFLICT SIGNALS */}
-          <div className="w-[200px] shrink-0 grid-cell p-3 bg-[var(--bg)] overflow-hidden">
-            <div className="eyebrow mb-1.5">CONFLICT SIGNALS</div>
-            <div className="space-y-2">
-              {[
-                { type: "CONFLICT", val: "Myanmar civil war", signal: "critical" as const },
-                { type: "BORDER", val: "Border infiltration", signal: "warning" as const },
-                { type: "MILITARY", val: "Myawaddy fighting", signal: "critical" as const },
-                { type: "REFUGEE", val: "Mae Sot influx", signal: "warning" as const },
-              ].map((s, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className={`stat-pill ${s.signal === "critical" ? "danger" : "warning"}`}>{s.type}</span>
-                  <span className="text-[9px] font-bold uppercase tracking-tight truncate">{s.val}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* SOURCES */}
-          <div className="w-[200px] shrink-0 grid-cell p-3 overflow-hidden">
-            <div className="eyebrow mb-1.5">SOURCES</div>
-            <SourceStack />
+          {/* LIVE BORDER NEWS */}
+          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
+            <BorderNewsDesk />
           </div>
         </div>
 
@@ -96,7 +118,7 @@ export default function BorderDashboard() {
             <div className="animate-ping w-1.5 h-1.5 bg-[var(--accent)] rounded-full" />
             <div className="text-[11px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
           </div>
-          <SignalTicker />
+          <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
         {/* ROW 5: FINE PRINT */}
