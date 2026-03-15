@@ -6,6 +6,8 @@ import { ASEAN_COUNTRIES } from "../../../lib/asean-country-registry";
 import type {
   AseanCountryProfileResponse,
   AseanProfileMetric,
+  CountryCurrency,
+  CountryLanguage,
 } from "../../../types/dashboard";
 
 function isAseanProfileMetric(value: unknown): value is AseanProfileMetric {
@@ -94,6 +96,32 @@ function formatSecondaryMetric(metric: AseanProfileMetric) {
   }`;
 }
 
+function formatCurrency(currency: CountryCurrency | null) {
+  if (!currency) {
+    return "--";
+  }
+
+  const parts = [currency.code];
+
+  if (currency.symbol) {
+    parts.push(currency.symbol);
+  }
+
+  if (currency.name) {
+    parts.push(currency.name);
+  }
+
+  return parts.join(" · ");
+}
+
+function formatLanguage(language: CountryLanguage | null) {
+  return language?.name ?? "--";
+}
+
+function formatCountryFact(value: string | null | undefined) {
+  return value && value.trim().length > 0 ? value : "--";
+}
+
 function MetricCard({ metric }: { metric: AseanProfileMetric }) {
   const secondary = formatSecondaryMetric(metric);
 
@@ -125,6 +153,30 @@ function MetricCard({ metric }: { metric: AseanProfileMetric }) {
   );
 }
 
+function CountryFactCard({
+  label,
+  value,
+  testId,
+}: {
+  label: string;
+  value: string;
+  testId: string;
+}) {
+  return (
+    <div className="border border-[var(--line)] p-3">
+      <div className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[var(--dim)]">
+        {label}
+      </div>
+      <div
+        className="pt-2 text-[12px] font-medium leading-5 text-[var(--ink)]"
+        data-testid={testId}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
 export default function AseanEconomicsPanel() {
   const [selectedCountry, setSelectedCountry] = useState("THA");
   const [payload, setPayload] = useState<AseanCountryProfileResponse | null>(null);
@@ -132,6 +184,16 @@ export default function AseanEconomicsPanel() {
   const selectedLabel =
     ASEAN_COUNTRIES.find((country) => country.code === selectedCountry)?.label ??
     "Thailand";
+  const primaryCurrency = payload?.metadata?.currencies[0] ?? null;
+  const primaryLanguage = payload?.metadata?.languages[0] ?? null;
+  const flagEmoji = formatCountryFact(payload?.metadata?.flagEmoji ?? null);
+  const officialName = formatCountryFact(payload?.metadata?.officialName ?? null);
+  const capital = formatCountryFact(payload?.metadata?.capital ?? null);
+  const timezone = formatCountryFact(payload?.metadata?.timezones[0] ?? null);
+  const sourceLine =
+    payload?.sources && payload.sources.length > 0
+      ? payload.sources.join(" · ")
+      : "World Bank WDI";
 
   useEffect(() => {
     let cancelled = false;
@@ -221,6 +283,54 @@ export default function AseanEconomicsPanel() {
         </div>
       ) : (
         <>
+          <div
+            className="mt-4 space-y-3 border border-[var(--line)] p-3"
+            data-testid="asean-country-facts"
+          >
+            <div className="flex items-start gap-3">
+              <div
+                className="flex h-12 w-12 items-center justify-center border border-[var(--line)] bg-[var(--bg)] text-[24px]"
+                aria-hidden="true"
+              >
+                {flagEmoji}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--dim)]">
+                  Official name
+                </div>
+                <div
+                  className="pt-1 text-[13px] font-medium leading-5 text-[var(--ink)]"
+                  data-testid="asean-country-fact-official-name"
+                >
+                  {officialName}
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <CountryFactCard
+                label="Capital"
+                value={capital}
+                testId="asean-country-fact-capital"
+              />
+              <CountryFactCard
+                label="Currency"
+                value={formatCurrency(primaryCurrency)}
+                testId="asean-country-fact-currency"
+              />
+              <CountryFactCard
+                label="Language"
+                value={formatLanguage(primaryLanguage)}
+                testId="asean-country-fact-language"
+              />
+              <CountryFactCard
+                label="Timezone"
+                value={timezone}
+                testId="asean-country-fact-timezone"
+              />
+            </div>
+          </div>
+
           <div className="mt-4 grid grid-cols-2 gap-2">
             {(payload?.metrics ?? []).map((metric) => (
               <MetricCard key={metric.id} metric={metric} />
@@ -261,7 +371,7 @@ export default function AseanEconomicsPanel() {
           </div>
 
           <div className="pt-3 text-[10px] leading-4 text-[var(--dim)]">
-            World Bank · Country news feed
+            {sourceLine}
           </div>
         </>
       )}

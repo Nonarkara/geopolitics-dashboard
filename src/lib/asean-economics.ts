@@ -1,5 +1,6 @@
 import axios from "axios";
 import { getAseanCountry, type AseanCountryCode } from "./asean-country-registry";
+import { loadCountryMetadata } from "./country-metadata";
 import {
   loadLatestStoredCountryEconomicIndicators,
   persistCountryEconomicIndicators,
@@ -662,9 +663,10 @@ export async function loadAseanCountryProfile(
   }
 
   const generatedAt = new Date().toISOString();
-  const [indicatorState, news] = await Promise.all([
+  const [indicatorState, news, metadata] = await Promise.all([
     loadIndicatorMap(countryCode),
     fetchCountryEconomicNews(countryCode).catch(() => []),
+    loadCountryMetadata(countryCode),
   ]);
 
   const metrics = PROFILE_METRICS.map((metric) =>
@@ -676,6 +678,16 @@ export async function loadAseanCountryProfile(
     sources.push("Country news feed");
   }
 
+  if (
+    metadata.officialName ||
+    metadata.capital ||
+    metadata.currencies.length > 0 ||
+    metadata.languages.length > 0 ||
+    metadata.timezones.length > 0
+  ) {
+    sources.push("REST Countries");
+  }
+
   return {
     generatedAt,
     country: {
@@ -683,6 +695,7 @@ export async function loadAseanCountryProfile(
       label: country.label,
       aliases: country.aliases,
     },
+    metadata,
     metrics,
     news,
     sources: sources.length > 0 ? Array.from(new Set(sources)) : ["World Bank WDI"],

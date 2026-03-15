@@ -23,6 +23,37 @@ const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85, latitude: 14.2, zoom: 6.25, pitch: 40, bearing: 0,
 };
 
+const THAILAND_BORDER_BOUNDS = {
+  west: 94.5,
+  east: 107.5,
+  south: 4.5,
+  north: 22.5,
+} as const;
+const MIN_BORDER_ZOOM = 5.6;
+const MAX_BORDER_ZOOM = 12.5;
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(maximum, Math.max(minimum, value));
+}
+
+function clampViewState(viewState: MapViewState): MapViewState {
+  return {
+    ...viewState,
+    longitude: clamp(
+      viewState.longitude,
+      THAILAND_BORDER_BOUNDS.west,
+      THAILAND_BORDER_BOUNDS.east,
+    ),
+    latitude: clamp(
+      viewState.latitude,
+      THAILAND_BORDER_BOUNDS.south,
+      THAILAND_BORDER_BOUNDS.north,
+    ),
+    zoom: clamp(viewState.zoom, MIN_BORDER_ZOOM, MAX_BORDER_ZOOM),
+    pitch: clamp(viewState.pitch ?? INITIAL_VIEW_STATE.pitch ?? 0, 0, 60),
+  };
+}
+
 // NASA GIBS only serves imagery up to the current real-world date.
 // Using a known-good historical date prevents blank/black tiles.
 const NASA_GIBS_SAFE_DATE = "2024-03-01";
@@ -78,7 +109,9 @@ export default function BorderMap({
 }: {
   onProvinceSelect?: (p: ProvinceSelection) => void;
 }) {
-  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [viewState, setViewState] = useState(() =>
+    clampViewState(INITIAL_VIEW_STATE),
+  );
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showFires, setShowFires] = useState(true);
   const [showFlights, setShowFlights] = useState(true);
@@ -101,10 +134,10 @@ export default function BorderMap({
     const load = async () => {
       try {
         const [inc, fir, flt, ref, zn] = await Promise.all([
-          fetch("/api/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/border/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/fires", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/flights", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
-          fetch("/api/refugees", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
+          fetch("/api/border/movements", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/map/overlays", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
         ]);
         setIncidents(inc || []);
@@ -190,16 +223,58 @@ export default function BorderMap({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black select-none">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_22%,rgba(255,59,48,0.16),transparent_22%),radial-gradient(circle_at_78%_74%,rgba(20,184,166,0.12),transparent_26%),radial-gradient(circle_at_58%_40%,rgba(245,158,11,0.08),transparent_20%),linear-gradient(180deg,#08111d_0%,#04070c_58%,#010203_100%)]" />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.16]"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)",
+          backgroundSize: "72px 72px",
+        }}
+      />
+      <div className="pointer-events-none absolute inset-0 z-10">
+        <div className="absolute left-[25%] top-[23%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Mae Sot
+        </div>
+        <div className="absolute left-[69%] top-[48%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Aranyaprathet
+        </div>
+        <div className="absolute left-[56%] top-[73%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Sadao
+        </div>
+        <div className="absolute right-6 top-6 max-w-[220px] border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
+          <div className="text-[8px] font-black uppercase tracking-[0.22em] text-white/45">
+            Thailand Border Focus
+          </div>
+          <div className="mt-1 font-black uppercase tracking-[0.08em] text-white">
+            Myanmar / Cambodia / Malaysia
+          </div>
+          <div className="mt-1">
+            Strategic lens, movement arcs, and incident density stay readable even when external imagery degrades.
+          </div>
+        </div>
+      </div>
       <DeckGL
         viewState={viewState}
-        onViewStateChange={({ viewState: nv }) => setViewState(nv as MapViewState)}
+        onViewStateChange={({ viewState: nv }) =>
+          setViewState(clampViewState(nv as MapViewState))
+        }
         controller={true}
         layers={layers}
       >
         {hasMapboxToken ? (
-          <MapboxMap mapboxAccessToken={MAPBOX_TOKEN} mapStyle="mapbox://styles/mapbox/satellite-v9" attributionControl={false} />
+          <MapboxMap
+            mapboxAccessToken={MAPBOX_TOKEN}
+            mapStyle="mapbox://styles/mapbox/satellite-v9"
+            attributionControl={false}
+            renderWorldCopies={false}
+            maxBounds={[
+              [THAILAND_BORDER_BOUNDS.west, THAILAND_BORDER_BOUNDS.south],
+              [THAILAND_BORDER_BOUNDS.east, THAILAND_BORDER_BOUNDS.north],
+            ]}
+          />
         ) : (
-          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+          <div className="absolute inset-0 border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0)_100%)] pointer-events-none" />
         )}
       </DeckGL>
 
@@ -251,7 +326,7 @@ export default function BorderMap({
               { active: showHeatmap, set: setShowHeatmap, label: "HEAT", icon: Layers },
               { active: showFires, set: setShowFires, label: "THRM", icon: Flame },
               { active: showFlights, set: setShowFlights, label: "AIR", icon: Plane },
-              { active: showRefugees, set: setShowRefugees, label: "REF", icon: Users },
+              { active: showRefugees, set: setShowRefugees, label: "FLOW", icon: Users },
               { active: showZones, set: setShowZones, label: "ZONE", icon: Target },
               { active: showLabels, set: setShowLabels, label: "LBL", icon: Globe },
             ].map((t, i) => (
@@ -289,7 +364,7 @@ export default function BorderMap({
                  { label: "SIGNALS", val: incidents?.length || 0 },
                  { label: "THERMAL", val: fires?.length || 0 },
                  { label: "TRAFFIC", val: flights?.length || 0 },
-                 { label: "DISPL", val: refugees?.length || 0 },
+                 { label: "FLOW", val: refugees?.length || 0 },
                ].map(m => (
                  <div key={m.label} className="flex flex-col">
                     <span className="text-[9px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>
@@ -301,7 +376,7 @@ export default function BorderMap({
       </div>
 
       <div className="absolute bottom-6 right-6 z-40 flex flex-col gap-1">
-         <button onClick={() => setViewState(INITIAL_VIEW_STATE)} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all ">
+         <button onClick={() => setViewState(clampViewState(INITIAL_VIEW_STATE))} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all ">
             <Compass size={14} strokeWidth={3} />
          </button>
          <button className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all ">

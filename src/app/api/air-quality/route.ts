@@ -1,8 +1,4 @@
 import { NextResponse } from "next/server";
-import {
-  loadLatestStoredAirQualitySnapshots,
-  persistAirQualitySnapshots,
-} from "../../../lib/history-store";
 import type { AirQualityPoint } from "../../../types/dashboard";
 
 const AIR_QUALITY_LOCATIONS = [

@@ -22,6 +22,21 @@ const CRITICAL_CAMERA_DEFINITIONS: CameraDefinition[] = [
       "Western crossing watchpoint for queue buildup, truck movement, and sudden access changes.",
   },
   {
+    id: "aranyaprathet-gate",
+    label: "Aranyaprathet gate",
+    category: "border",
+    lat: 13.6587,
+    lng: 102.5636,
+    provider: "Scout slot",
+    sourcePageUrl:
+      "https://www.openstreetmap.org/?mlat=13.6587&mlon=102.5636#map=13/13.6587/102.5636",
+    validationState: "candidate",
+    locationLabel: "Sa Kaeo / Poipet approach",
+    focusArea: "Eastern gate",
+    strategicNote:
+      "Camera scout slot for queue buildup, customs pressure, and passenger-turnback risk on the Cambodia frontier.",
+  },
+  {
     id: "mae-sai-frontier",
     label: "Mae Sai frontier",
     category: "border",
@@ -65,6 +80,21 @@ const CRITICAL_CAMERA_DEFINITIONS: CameraDefinition[] = [
     focusArea: "Southbound flow",
     strategicNote:
       "Tracks southern rail-road throughput and diversion risk toward the Malaysia-facing corridor.",
+  },
+  {
+    id: "sadao-checkpoint",
+    label: "Sadao checkpoint",
+    category: "border",
+    lat: 6.7483,
+    lng: 100.4186,
+    provider: "Scout slot",
+    sourcePageUrl:
+      "https://www.openstreetmap.org/?mlat=6.7483&mlon=100.4186#map=13/6.7483/100.4186",
+    validationState: "candidate",
+    locationLabel: "Songkhla / Bukit Kayu Hitam",
+    focusArea: "Southern gate",
+    strategicNote:
+      "Camera scout slot for customs lane congestion, coach traffic, and surge control on the Malaysia corridor.",
   },
   {
     id: "bangkok-traffic",

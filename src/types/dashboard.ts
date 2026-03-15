@@ -6,6 +6,7 @@ import type {
 } from "geojson";
 
 export type Coordinates = [number, number];
+export type LatLng = [number, number];
 
 export interface ProvinceSelection {
   name: string;
@@ -144,6 +145,38 @@ export interface CountryEconomicIndicatorSnapshot {
   source: string;
 }
 
+export interface CountryCurrency {
+  code: string;
+  name: string | null;
+  symbol: string | null;
+}
+
+export interface CountryLanguage {
+  code: string;
+  name: string;
+}
+
+export interface CountryCapital {
+  name: string | null;
+  latlng: LatLng | null;
+}
+
+export interface CountryMetadata {
+  alpha2: string | null;
+  alpha3: string;
+  officialName: string | null;
+  flagEmoji: string | null;
+  flagSvgUrl: string | null;
+  region: string | null;
+  subregion: string | null;
+  capital: string | null;
+  capitalLatLng: LatLng | null;
+  currencies: CountryCurrency[];
+  languages: CountryLanguage[];
+  timezones: string[];
+  borders: string[];
+}
+
 export interface AseanProfileMetric {
   id: string;
   label: string;
@@ -172,6 +205,7 @@ export interface AseanCountryProfileResponse {
     label: string;
     aliases: string[];
   };
+  metadata: CountryMetadata;
   metrics: AseanProfileMetric[];
   news: AseanProfileNewsItem[];
   sources: string[];
@@ -298,6 +332,8 @@ export type PublicCameraCategory =
   | "logistics"
   | "capital";
 
+export type PublicCameraValidationState = "verified" | "candidate";
+
 export interface PublicCamera {
   id: string;
   label: string;
@@ -308,6 +344,7 @@ export interface PublicCamera {
   sourcePageUrl: string;
   embedUrl?: string;
   snapshotUrl?: string;
+  validationState: PublicCameraValidationState;
   locationLabel?: string;
   focusArea?: string;
   strategicNote?: string;
@@ -449,6 +486,90 @@ export interface CorridorConvergenceResponse {
   alerts: ConvergenceAlert[];
   sourceCoverage: ConvergenceSourceCoverage;
   dataGaps: string[];
+}
+
+export type BorderCommandPosture = "priority" | "watch" | "stable";
+
+export interface BorderAreaStatus {
+  id: string;
+  label: string;
+  counterpart: string;
+  posture: BorderCommandPosture;
+  score: number;
+  incidentCount: number;
+  fatalityCount: number;
+  verifiedCameras: number;
+  candidateCameras: number;
+  summary: string;
+  watchpoints: string[];
+  signals: string[];
+  recommendedAction: string;
+}
+
+export interface BorderCommandConcern {
+  id: string;
+  areaId: string;
+  areaLabel: string;
+  label: string;
+  posture: BorderCommandPosture;
+  detail: string;
+  metric: string;
+}
+
+export interface BorderActionItem {
+  id: string;
+  areaId: string;
+  areaLabel: string;
+  title: string;
+  detail: string;
+  owner: string;
+  posture: BorderCommandPosture;
+}
+
+export interface BorderCommandBrief {
+  generatedAt: string;
+  headline: string;
+  summary: string;
+  overallPosture: BorderCommandPosture;
+  overallScore: number;
+  areas: BorderAreaStatus[];
+  topConcerns: BorderCommandConcern[];
+  actionQueue: BorderActionItem[];
+  sources: string[];
+}
+
+export interface BorderNarrativeSignal {
+  id: string;
+  areaId: string;
+  areaLabel: string;
+  title: string;
+  summary: string;
+  source: string;
+  sourceUrl: string;
+  publishedAt: string;
+  provider: string;
+  severity: NewsSeverity;
+  tags: string[];
+}
+
+export interface BorderHumanitarianSnapshot {
+  id: string;
+  areaId: string;
+  areaLabel: string;
+  label: string;
+  count: number;
+  unit: string;
+  asOf: string;
+  source: string;
+  sourceUrl: string;
+  detail: string;
+}
+
+export interface BorderOsintResponse {
+  generatedAt: string;
+  signals: BorderNarrativeSignal[];
+  humanitarian: BorderHumanitarianSnapshot[];
+  sources: SourceHealth[];
 }
 
 export type MapOverlayKind = "raster" | "vector";

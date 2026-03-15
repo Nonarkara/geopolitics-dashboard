@@ -3,7 +3,7 @@ import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
 
 export const metadata: Metadata = {
-  title: `Thailand Geopolitics ${formatDashboardVersion()} | Phuket Dashboard`,
+  title: `Thailand Geopolitics ${formatDashboardVersion()} | Border Command Dashboard`,
   description: "Advanced monitoring platform for regional stability and economic development.",
 };
 

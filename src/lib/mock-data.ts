@@ -81,11 +81,11 @@ export const fallbackFires: FireEvent[] = [
 export const fallbackEconomicIndicators: EconomicIndicator[] = [
   {
     label: "USD/THB",
-    value: 35.72,
-    change: 0.18,
-    up: false,
+    value: 32.28,
+    change: 0.05,
+    up: true,
     category: "FX",
-    source: "ExchangeRate API",
+    source: "ExchangeRate API (fallback)",
   },
   {
     label: "SET Index",
@@ -237,7 +237,11 @@ export const fallbackMarketRadarResponse: MarketRadarResponse = {
   data: fallbackEconomicIndicators,
   signals: fallbackEconomicIndicators,
   aseanGdp: fallbackAseanGdp,
-  sources: ["Tourism snapshot", "Regional FX reference", "Fallback macro snapshot"],
+  sources: [
+    "ExchangeRate API (fallback)",
+    "Regional market snapshot",
+    "Fallback macro snapshot",
+  ],
 };
 
 export const fallbackRefugees: RefugeeMovement[] = [
@@ -309,7 +313,7 @@ export const fallbackNews: NewsResponse = {
       id: "news-05",
       title: "Thai baht weakens on regional instability concerns",
       summary:
-        "USD/THB rises to 35.7 as foreign investors reduce exposure to Thai assets amid border tensions. SET Index declines 1.2% in early trading.",
+        "USD/THB is holding near the low-32 range while regional instability still weighs on sentiment and border-trade confidence.",
       source: "Bloomberg / BOT",
       tag: "Markets",
       publishedAt: "2026-03-11T05:00:00.000Z",
@@ -324,9 +328,9 @@ export const fallbackTicker: TickerResponse = {
     {
       id: "ticker-01",
       label: "USD/THB",
-      value: "35.72",
-      delta: "+0.18",
-      tone: "down",
+      value: "32.28",
+      delta: "+0.05",
+      tone: "up",
     },
     {
       id: "ticker-02",

@@ -14,13 +14,17 @@ function isTickerResponse(value: unknown): value is TickerResponse {
   );
 }
 
-export default function SignalTicker() {
+export default function SignalTicker({
+  endpoint = "/api/ticker",
+}: {
+  endpoint?: string;
+}) {
   const [ticker, setTicker] = useState<TickerResponse>(fallbackTicker);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch("/api/ticker");
+        const response = await fetch(endpoint, { cache: "no-store" });
         const payload: unknown = await response.json();
 
         if (isTickerResponse(payload)) {
@@ -34,7 +38,7 @@ export default function SignalTicker() {
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [endpoint]);
 
   return (
     <div className="flex items-center gap-0 animate-marquee whitespace-nowrap">
