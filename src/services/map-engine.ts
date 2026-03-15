@@ -71,6 +71,34 @@ interface TileDataRequest {
   url?: string | null;
 }
 
+interface DistanceGridBounds {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}
+
+interface DistanceGridFeature {
+  type: "Feature";
+  geometry: {
+    type: "LineString";
+    coordinates: [number, number][];
+  };
+  properties: {
+    axis: "vertical" | "horizontal";
+    major: boolean;
+  };
+}
+
+interface DistanceGridFeatureCollection {
+  type: "FeatureCollection";
+  features: DistanceGridFeature[];
+}
+
+const KM_PER_DEGREE_LATITUDE = 110.574;
+const MAJOR_GRID_INTERVAL_KM = 5;
+const MAX_GRID_LINES_PER_AXIS = 180;
+
 function extractTileBounds(tile: unknown): TileBounds["bbox"] | null {
   if (typeof tile !== "object" || tile === null || !("bbox" in tile)) {
     return null;
@@ -192,6 +220,111 @@ export function createRasterOverlayLayer(
     opacity,
     onTileError: (error: unknown) => {
       console.warn(`${overlay.label} tile load failed`, error);
+    },
+  });
+}
+
+function getKilometersPerDegreeLongitude(latitude: number) {
+  return Math.max(111.320 * Math.cos((latitude * Math.PI) / 180), 0.01);
+}
+
+function buildKilometerGridCollection(
+  bounds: DistanceGridBounds,
+  cellSizeKm = 1,
+): DistanceGridFeatureCollection | null {
+  const centerLatitude = (bounds.south + bounds.north) / 2;
+  const latStep = cellSizeKm / KM_PER_DEGREE_LATITUDE;
+  // Longitude distance changes with latitude, so anchor the 1 km spacing
+  // against the center of the current viewport.
+  const lonStep = cellSizeKm / getKilometersPerDegreeLongitude(centerLatitude);
+
+  if (!Number.isFinite(latStep) || !Number.isFinite(lonStep)) {
+    return null;
+  }
+
+  const lonStartIndex = Math.floor(bounds.west / lonStep);
+  const lonEndIndex = Math.ceil(bounds.east / lonStep);
+  const latStartIndex = Math.floor(bounds.south / latStep);
+  const latEndIndex = Math.ceil(bounds.north / latStep);
+
+  const verticalLineCount = lonEndIndex - lonStartIndex + 1;
+  const horizontalLineCount = latEndIndex - latStartIndex + 1;
+
+  if (
+    verticalLineCount > MAX_GRID_LINES_PER_AXIS ||
+    horizontalLineCount > MAX_GRID_LINES_PER_AXIS
+  ) {
+    return null;
+  }
+
+  const features: DistanceGridFeature[] = [];
+
+  for (let index = lonStartIndex; index <= lonEndIndex; index += 1) {
+    const longitude = index * lonStep;
+    features.push({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [longitude, bounds.south],
+          [longitude, bounds.north],
+        ],
+      },
+      properties: {
+        axis: "vertical",
+        major: index % MAJOR_GRID_INTERVAL_KM === 0,
+      },
+    });
+  }
+
+  for (let index = latStartIndex; index <= latEndIndex; index += 1) {
+    const latitude = index * latStep;
+    features.push({
+      type: "Feature",
+      geometry: {
+        type: "LineString",
+        coordinates: [
+          [bounds.west, latitude],
+          [bounds.east, latitude],
+        ],
+      },
+      properties: {
+        axis: "horizontal",
+        major: index % MAJOR_GRID_INTERVAL_KM === 0,
+      },
+    });
+  }
+
+  return {
+    type: "FeatureCollection",
+    features,
+  };
+}
+
+export function createKilometerGridLayer(bounds: DistanceGridBounds) {
+  const gridCollection = buildKilometerGridCollection(bounds);
+
+  if (!gridCollection || gridCollection.features.length === 0) {
+    return null;
+  }
+
+  return new GeoJsonLayer({
+    id: "distance-grid-1km",
+    data: gridCollection as never,
+    pickable: false,
+    stroked: true,
+    filled: false,
+    lineWidthUnits: "pixels",
+    lineWidthMinPixels: 1,
+    lineWidthMaxPixels: 2,
+    getLineColor: (feature) =>
+      (feature as DistanceGridFeature).properties.major
+        ? [226, 232, 240, 96]
+        : [148, 163, 184, 58],
+    getLineWidth: (feature) =>
+      (feature as DistanceGridFeature).properties.major ? 1.4 : 1,
+    parameters: {
+      depthTest: false,
     },
   });
 }
