@@ -7,7 +7,7 @@ import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
-import FinePrint from "../components/Intelligence/FinePrint";
+import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
 import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
@@ -121,8 +121,8 @@ export default function BorderDashboard() {
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
-        {/* ROW 5: FINE PRINT */}
-        <FinePrint />
+        {/* ROW 5: BORDER STATUS STRIP */}
+        <BorderStatusStrip brief={brief} />
       </div>
 
       {/* MODALS */}
