@@ -26,6 +26,7 @@ export type ExternalProviderCategory =
   | "Mobility"
   | "Markets"
   | "Mapping & Media"
+  | "Satellite Imagery"
   | "Optional";
 
 export interface ArchitectureSection {
@@ -251,7 +252,7 @@ export const architectureFlowSteps: ArchitectureFlowStep[] = [
 
 export const resiliencePatterns = [
   "Every external fetch path is wrapped with a timeout and a fallback branch.",
-  "Mapbox is optional. The map can still run with NASA GIBS, ESRI, OSM, and gradient fallback backgrounds.",
+  "Mapbox is optional. The map uses a 7-level basemap fallback chain (Mapbox → OSM → LongDo → ESRI → CartoDB → Stadia → gradient) from the DrNon Global Satellite Toolkit.",
   "Intelligence and convergence can serve cached or synthesized payloads when feeds fail.",
   "Database-backed routes degrade to mock snapshots instead of returning empty screens.",
   "Overlay metadata is generated locally, so control surfaces stay usable even when imagery providers are slow.",
@@ -559,6 +560,7 @@ export const externalProviderCategoryOrder: ExternalProviderCategory[] = [
   "Mobility",
   "Markets",
   "Mapping & Media",
+  "Satellite Imagery",
   "Optional",
 ];
 
@@ -770,6 +772,88 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     description: "Regional live TV embeds used in the intelligence rail.",
     surfaces: ["Live TV panel"],
     endpoints: ["https://www.youtube.com/embed/..."],
+  },
+  {
+    id: "drnon-satellite-toolkit",
+    label: "DrNon Global Satellite Toolkit",
+    category: "Satellite Imagery",
+    description:
+      "Open-source satellite imagery integration toolkit providing basemap fallback chains, overlay catalogs, distance grids, and a registry of 22 satellite APIs across 80+ countries. Powers the dashboard's multi-provider resilience architecture.",
+    surfaces: ["Base maps", "data overlays", "distance grid", "fallback chain"],
+    endpoints: ["https://github.com/Nonarkara/DrNon-Global-Satellite-Toolkit"],
+  },
+  {
+    id: "eox-sentinel2-cloudless",
+    label: "EOX Sentinel-2 Cloudless",
+    category: "Satellite Imagery",
+    description:
+      "High-resolution 10m cloud-free Sentinel-2 mosaic from EOX. Sharper baseline imagery than GIBS for detailed area inspection.",
+    surfaces: ["High-res baselines overlay"],
+    endpoints: ["https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg"],
+  },
+  {
+    id: "jrc-surface-water",
+    label: "JRC Global Surface Water",
+    category: "Satellite Imagery",
+    description:
+      "38-year surface water occurrence and change maps from JRC/Google. Used for border river monitoring and flood risk assessment.",
+    surfaces: ["Hydro & terrain overlay"],
+    endpoints: [
+      "https://storage.googleapis.com/global-surface-water/tiles2021/occurrence/{z}/{x}/{y}.png",
+      "https://storage.googleapis.com/global-surface-water/tiles2021/change/{z}/{x}/{y}.png",
+    ],
+  },
+  {
+    id: "emodnet-bathymetry",
+    label: "EMODnet/GEBCO Bathymetry",
+    category: "Satellite Imagery",
+    description:
+      "Ocean depth and seafloor terrain tiles for maritime border context along the Andaman Sea and Gulf of Thailand.",
+    surfaces: ["Hydro & terrain overlay"],
+    endpoints: ["https://tiles.emodnet-bathymetry.eu/v12/mean_atlas_land_latest/web_mercator/{z}/{x}/{y}.png"],
+  },
+  {
+    id: "gibs-himawari",
+    label: "JAXA Himawari-9 via GIBS",
+    category: "Satellite Imagery",
+    description:
+      "Geostationary 10-minute visible imagery from JAXA Himawari-9 satellite, served through NASA GIBS. Covers all of Thailand and Southeast Asia.",
+    surfaces: ["Geostationary overlay"],
+    endpoints: ["https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Himawari_AHI_Band3_Red_Visible_1km/..."],
+  },
+  {
+    id: "gibs-geo-ring",
+    label: "EUMETSAT/NOAA Geo Ring via GIBS",
+    category: "Satellite Imagery",
+    description:
+      "5-satellite global geostationary mosaic composites: natural color, infrared, and airmass RGB from EUMETSAT, JAXA, and NOAA via GIBS.",
+    surfaces: ["Geostationary overlay"],
+    endpoints: [
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Geostationary_Ring_Natural_Color/...",
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Geostationary_Ring_Infrared_Longwave_Window/...",
+      "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/Geostationary_Ring_Airmass_RGB/...",
+    ],
+  },
+  {
+    id: "carto-basemaps",
+    label: "CartoDB Basemaps",
+    category: "Satellite Imagery",
+    description:
+      "Clean minimal base maps (Positron light and Dark Matter) ideal for data-heavy overlay dashboards. Token-free.",
+    surfaces: ["Base map selection"],
+    endpoints: [
+      "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
+      "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+    ],
+  },
+  {
+    id: "esri-world-topo",
+    label: "ESRI World Topographic",
+    category: "Satellite Imagery",
+    description:
+      "Topographic map with terrain, boundaries, and labels. Token-free fallback in the basemap chain.",
+    surfaces: ["Base map selection"],
+    endpoints: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
   },
   {
     id: "mapbox",
