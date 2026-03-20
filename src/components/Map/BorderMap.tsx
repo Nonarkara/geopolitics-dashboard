@@ -5,10 +5,10 @@ import type { MapViewState } from "@deck.gl/core";
 import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
 import {
-  Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check
+  Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check, Grid3x3
 } from "lucide-react";
 import {
-  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterOverlayLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer
+  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer, createKilometerGridLayer
 } from "../../services/map-engine";
 import type {
   FireEvent, IncidentFeature, ProvinceSelection, FlightData, RefugeeMovement, ConflictZoneCollection
@@ -46,7 +46,9 @@ function clampViewState(viewState: MapViewState): MapViewState {
 // NASA GIBS only serves imagery up to the current real-world date.
 const NASA_GIBS_SAFE_DATE = "2024-03-01";
 
-// ─── Base Map Configs (mutually exclusive) ──────────────────────────
+// ─── Base Map Catalog (from DrNon Global Satellite Toolkit) ─────────
+// Fallback architecture: ESRI aerial always renders underneath.
+// Base maps are mutually exclusive — user selects one at a time.
 interface BaseMapConfig {
   id: string;
   label: string;
@@ -56,26 +58,50 @@ interface BaseMapConfig {
   gibsFormat?: "jpg" | "png";
   maxZoom: number;
   useDefaultDate?: boolean;
+  /** Mapbox style URL — rendered via react-map-gl instead of deck.gl tiles */
+  mapboxStyle?: string;
 }
 
 const BASE_MAPS: BaseMapConfig[] = [
+  // Priority 4: ESRI — always-available free aerial (also serves as fallback)
   { id: "ESRI", label: "ESRI", name: "Aerial Imagery", maxZoom: 19,
     tileUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}" },
+  // EOX Sentinel-2 Cloudless — highest res free imagery (10m)
   { id: "S2C", label: "S2C", name: "Sentinel-2 Cloudless", maxZoom: 15,
     tileUrl: "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2021_3857/default/g/{z}/{y}/{x}.jpg" },
+  // Priority 2: OpenStreetMap — universal free street map
+  { id: "OSM", label: "OSM", name: "OpenStreetMap", maxZoom: 19,
+    tileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png" },
+  // Priority 4: ESRI World Topographic
+  { id: "TOPO", label: "TOPO", name: "ESRI Topographic", maxZoom: 19,
+    tileUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}" },
+  // Priority 5: CartoDB Positron — clean light base for data overlays
+  { id: "LITE", label: "LITE", name: "CartoDB Positron", maxZoom: 20,
+    tileUrl: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png" },
+  // Priority 5: CartoDB Dark Matter — dark ops base
+  { id: "DARK", label: "DARK", name: "CartoDB Dark", maxZoom: 20,
+    tileUrl: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png" },
+  // NASA GIBS — VIIRS Natural Color
   { id: "VRS", label: "VRS", name: "VIIRS Natural Color", maxZoom: 9,
     gibsLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor", gibsFormat: "jpg" },
+  // NASA GIBS — MODIS Aqua
   { id: "AQU", label: "AQU", name: "Aqua True Color", maxZoom: 9,
     gibsLayer: "MODIS_Aqua_CorrectedReflectance_TrueColor", gibsFormat: "jpg" },
+  // NASA GIBS — MODIS Terra
   { id: "TER", label: "TER", name: "Terra True Color", maxZoom: 9,
     gibsLayer: "MODIS_Terra_CorrectedReflectance_TrueColor", gibsFormat: "jpg" },
+  // NASA GIBS — Blue Marble terrain relief
+  { id: "BLU", label: "BLU", name: "Blue Marble Relief", maxZoom: 8,
+    gibsLayer: "BlueMarble_ShadedRelief", gibsFormat: "jpg", useDefaultDate: true },
+  // NASA GIBS — Himawari-9 geostationary
   { id: "HIM", label: "HIM", name: "Himawari-9 Visible", maxZoom: 8,
     gibsLayer: "Himawari_AHI_Band3_Red_Visible_1km", gibsFormat: "png", useDefaultDate: true },
+  // NASA GIBS — Geo Ring Natural Color composite
   { id: "GRN", label: "GRN", name: "Geo Ring Natural", maxZoom: 7,
     gibsLayer: "Geostationary_Ring_Natural_Color_RGB", gibsFormat: "jpg", useDefaultDate: true },
 ];
 
-// ─── Data Overlay Configs (stackable) ───────────────────────────────
+// ─── Data Overlay Catalog (stackable, from DrNon Toolkit) ───────────
 interface OverlayConfig {
   id: string;
   label: string;
@@ -99,18 +125,21 @@ const DATA_OVERLAYS: OverlayConfig[] = [
     gibsLayer: "MODIS_Terra_SurfaceReflectance_Bands721", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.55 },
   // Atmospheric
   { id: "AOD", label: "AOD", name: "Aerosol Density", category: "ATMOSPHERE",
-    gibsLayer: "MODIS_Terra_Aerosol_Optical_Depth_Land_Ocean", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
-  { id: "LST", label: "LST", name: "Surface Temperature", category: "ATMOSPHERE",
+    gibsLayer: "MODIS_Combined_Value_Added_AOD", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
+  { id: "LST", label: "LST", name: "Surface Temp", category: "ATMOSPHERE",
     gibsLayer: "MODIS_Terra_LST_Day", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.5 },
   { id: "CO", label: "CO", name: "Carbon Monoxide", category: "ATMOSPHERE",
     gibsLayer: "MOPITT_Carbon_Monoxide_Total_Column_Day", gibsFormat: "png", maxZoom: 5, defaultOpacity: 0.45 },
-  { id: "RNF", label: "RNF", name: "Precipitation Rate", category: "ATMOSPHERE",
+  { id: "RNF", label: "RNF", name: "Precipitation", category: "ATMOSPHERE",
     gibsLayer: "IMERG_Precipitation_Rate", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
+  // Vegetation
+  { id: "EVI", label: "EVI", name: "Vegetation Index", category: "VEGETATION",
+    gibsLayer: "MODIS_Terra_EVI_8Day", gibsFormat: "png", maxZoom: 9, defaultOpacity: 0.46, useDefaultDate: true },
   // Nighttime & Infrastructure
   { id: "NGT", label: "NGT", name: "Night Lights", category: "INFRASTRUCTURE",
-    gibsLayer: "VIIRS_SNPP_DayNightBand_AtSensor_M15", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.6 },
+    gibsLayer: "VIIRS_SNPP_DayNightBand_AtSensor_M15", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.6, useDefaultDate: true },
   // Geostationary Analysis
-  { id: "GRI", label: "GRI", name: "Geo Ring Infrared", category: "GEOSTATIONARY",
+  { id: "GRI", label: "GRI", name: "Geo Ring IR", category: "GEOSTATIONARY",
     gibsLayer: "Geostationary_Ring_IR108", gibsFormat: "jpg", maxZoom: 7, defaultOpacity: 0.55, useDefaultDate: true },
   { id: "GRA", label: "GRA", name: "Geo Ring Airmass", category: "GEOSTATIONARY",
     gibsLayer: "Geostationary_Ring_Airmass_RGB", gibsFormat: "jpg", maxZoom: 7, defaultOpacity: 0.55, useDefaultDate: true },
@@ -152,6 +181,7 @@ export default function BorderMap({
   const [showRefugees, setShowRefugees] = useState(true);
   const [showZones, setShowZones] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
+  const [showGrid, setShowGrid] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
@@ -200,9 +230,10 @@ export default function BorderMap({
   const activeBase = useMemo(() => BASE_MAPS.find(b => b.id === activeBaseId) || BASE_MAPS[0], [activeBaseId]);
 
   const layers = useMemo(() => {
-    const result: (ReturnType<typeof createRasterTileLayer> | ReturnType<typeof createFireLayer> | ReturnType<typeof createProvinceLabelsLayer> | ReturnType<typeof createConflictZonesLayer> | ReturnType<typeof createHeatmapLayer> | ReturnType<typeof createIncidentLayer> | ReturnType<typeof createRefugeeLayer> | ReturnType<typeof createFlightPathsLayer> | null)[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
 
-    // 1. ESRI aerial always at bottom as fallback
+    // 1. ESRI aerial always at bottom as fallback (toolkit fallback chain)
     if (activeBase.id !== "ESRI") {
       result.push(createRasterTileLayer({
         id: "esri-fallback",
@@ -216,7 +247,7 @@ export default function BorderMap({
     const baseLayer = buildTileLayer(activeBase, baseMapOpacity / 100);
     if (baseLayer) result.push(baseLayer);
 
-    // 3. Active data overlays
+    // 3. Active data overlays (stackable)
     for (const overlay of DATA_OVERLAYS) {
       if (activeOverlayIds.has(overlay.id)) {
         const layer = buildTileLayer(overlay, overlay.defaultOpacity);
@@ -224,7 +255,19 @@ export default function BorderMap({
       }
     }
 
-    // 4. Intelligence layers
+    // 4. Distance grid (from DrNon Toolkit)
+    if (showGrid) {
+      const gridBounds = {
+        west: viewState.longitude - 6,
+        east: viewState.longitude + 6,
+        south: viewState.latitude - 4,
+        north: viewState.latitude + 4,
+      };
+      const gridLayer = createKilometerGridLayer(gridBounds);
+      if (gridLayer) result.push(gridLayer);
+    }
+
+    // 5. Intelligence layers
     if (showZones && zones) result.push(createConflictZonesLayer(zones));
     result.push(showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents, onProvinceSelect));
     if (showFires) result.push(createFireLayer(fires));
@@ -233,9 +276,9 @@ export default function BorderMap({
     if (showLabels) result.push(createProvinceLabelsLayer());
 
     return result.flat().filter(Boolean);
-  }, [activeBase, baseMapOpacity, activeOverlayIds, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showLabels]);
+  }, [activeBase, baseMapOpacity, activeOverlayIds, showGrid, viewState.longitude, viewState.latitude, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showLabels]);
 
-  const activeLayersCount = [showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels].filter(Boolean).length;
+  const activeLayersCount = [showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
@@ -245,6 +288,7 @@ export default function BorderMap({
     setShowRefugees(false);
     setShowZones(false);
     setShowLabels(false);
+    setShowGrid(false);
     setActiveOverlayIds(new Set());
     setActiveBaseId("ESRI");
   };
@@ -288,7 +332,7 @@ export default function BorderMap({
             Myanmar / Cambodia / Malaysia
           </div>
           <div className="mt-1">
-            Strategic lens, movement arcs, and incident density stay readable even when external imagery degrades.
+            Powered by DrNon Global Satellite Toolkit — {BASE_MAPS.length} basemaps, {DATA_OVERLAYS.length} overlays.
           </div>
         </div>
       </div>
@@ -319,7 +363,7 @@ export default function BorderMap({
       {/* ── Layer Control Panel ─────────────────────────────── */}
       <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 w-72">
 
-        {/* ── BASE MAP ── */}
+        {/* ── BASE MAP (radio — choose one) ── */}
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
             <Globe size={11} className="text-[var(--accent)]" />
@@ -331,16 +375,16 @@ export default function BorderMap({
               <button
                 key={bm.id}
                 onClick={() => setActiveBaseId(bm.id)}
-                className={`py-2 px-1 flex flex-col items-center gap-1 transition-all ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
               >
-                <span className="text-[10px] font-black tracking-widest leading-none">{bm.label}</span>
-                <span className="text-[6px] font-medium opacity-40 uppercase leading-tight text-center">{bm.name}</span>
+                <span className="text-[9px] font-black tracking-wider leading-none">{bm.label}</span>
+                <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center">{bm.name}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* ── DATA OVERLAYS ── */}
+        {/* ── DATA OVERLAYS (checkbox — stackable) ── */}
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
             <Layers size={11} className="text-[var(--accent)]" />
@@ -349,10 +393,10 @@ export default function BorderMap({
               <span className="text-[9px] font-black tabular-nums ml-auto bg-[var(--accent)] text-white w-5 h-5 flex items-center justify-center">{activeOverlayCount}</span>
             )}
           </div>
-          <div className="max-h-[260px] overflow-y-auto no-scrollbar">
+          <div className="max-h-[240px] overflow-y-auto no-scrollbar">
             {Object.entries(overlaysByCategory).map(([cat, overlays]) => (
               <div key={cat} className="border-b border-black/10 last:border-0">
-                <div className="px-3 py-1.5 text-[8px] font-black uppercase tracking-[0.3em] opacity-30 bg-gray-50">{cat}</div>
+                <div className="px-3 py-1 text-[7px] font-black uppercase tracking-[0.3em] opacity-30 bg-gray-50">{cat}</div>
                 <div className="grid grid-cols-3 gap-[1px] bg-black/5 px-[1px] pb-[1px]">
                   {overlays.map(ov => {
                     const active = activeOverlayIds.has(ov.id);
@@ -365,7 +409,7 @@ export default function BorderMap({
                         {active && <Check size={8} strokeWidth={4} />}
                         <div className="min-w-0">
                           <div className="text-[9px] font-black tracking-wider leading-none">{ov.label}</div>
-                          <div className="text-[6px] font-medium opacity-40 uppercase truncate leading-tight mt-0.5">{ov.name}</div>
+                          <div className="text-[5.5px] font-medium opacity-40 uppercase truncate leading-tight mt-0.5">{ov.name}</div>
                         </div>
                       </button>
                     );
@@ -385,10 +429,11 @@ export default function BorderMap({
             { active: showRefugees, set: setShowRefugees, label: "FLOW", icon: Users },
             { active: showZones, set: setShowZones, label: "ZONE", icon: Target },
             { active: showLabels, set: setShowLabels, label: "LBL", icon: Globe },
+            { active: showGrid, set: setShowGrid, label: "GRID", icon: Grid3x3 },
           ].map((t, i) => (
-            <button key={i} onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1.5 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
+            <button key={i} onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
               <t.icon size={9} />
-              <span className="text-[7px] font-black tracking-widest">{t.label}</span>
+              <span className="text-[6.5px] font-black tracking-wider">{t.label}</span>
             </button>
           ))}
         </div>
