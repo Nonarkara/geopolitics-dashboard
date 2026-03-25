@@ -1,8 +1,15 @@
+databases:
+  - name: geopolitics-dashboard-db
+    databaseName: geopolitics_dashboard
+    user: geopolitics_dashboard
+    plan: basic-256mb
+    region: oregon
+
 services:
   - type: web
     name: geopolitics-dashboard
     runtime: node
-    plan: free
+    plan: starter
     region: oregon
     branch: main
     autoDeploy: true
@@ -12,13 +19,161 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
       - key: NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN
         sync: false
-      - key: DATABASE_URL
+      - key: REFERENCE_DASHBOARD_URL
+        value: https://geopolitics-dashboard.onrender.com
+      - key: OPENAI_API_KEY
         sync: false
+      - key: NEXT_PUBLIC_ENABLE_DATA_EXPLORER
+        value: "false"
+      - key: DATA_EXPLORER_ENABLED
+        value: "false"
+      - key: DATA_EXPLORER_TOKEN
+        generateValue: true
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
       - key: FIRMS_KEY
         sync: false
-      - key: ACLED_KEY
+      - key: ACLED_USERNAME
+        sync: false
+      - key: ACLED_PASSWORD
         sync: false
       - key: ACLED_EMAIL
         sync: false
+      - key: ACLED_KEY
+        sync: false
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://qbatksnulitgrhigzbta.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+
+  - type: cron
+    name: geopolitics-acled-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "0 */6 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/acled_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ACLED_USERNAME
+        sync: false
+      - key: ACLED_PASSWORD
+        sync: false
+      - key: ACLED_EMAIL
+        sync: false
+      - key: ACLED_KEY
+        sync: false
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-firms-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "20 */3 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/firms_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: FIRMS_KEY
+        sync: false
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-rainfall-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "15 */6 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/rainfall_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-air-quality-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "10 */6 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/air_quality_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-market-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "45 2 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/hdx_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-refugee-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "0 4 * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/refugee_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
