@@ -5,6 +5,7 @@ import { BookOpen, Clock3, Database, Shield } from "lucide-react";
 import DashboardVersionBadge from "../Common/DashboardVersionBadge";
 import CommandTooltip from "../Common/CommandTooltip";
 import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
+import LogoStrip from "../Identity/LogoStrip";
 import type { BorderCommandBrief } from "../../types/dashboard";
 
 function formatTime(value: Date) {
@@ -57,7 +58,7 @@ export default function TopBar({
         <div>
           <div className="flex items-center gap-2">
             <div className="text-[12px] font-black tracking-tight leading-none">
-              THAILAND TRI-BORDER COMMAND
+              THAILAND GEOPOLITICAL WATCH
             </div>
             <DashboardVersionBadge className="border-black text-black" />
           </div>
@@ -65,6 +66,8 @@ export default function TopBar({
             Myanmar / Cambodia / Malaysia
           </div>
         </div>
+        <div className="h-10 w-px bg-black/10 shrink-0" />
+        <LogoStrip />
       </div>
 
       <div className="flex min-w-0 flex-1 items-center gap-3 px-5">
