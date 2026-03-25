@@ -143,12 +143,16 @@ export function classifyCountries(text: string): string[] {
  * Uses ON CONFLICT to deduplicate by (source_provider, external_id).
  */
 export async function archiveSignal(signal: ArchiveSignal): Promise<void> {
-  if (!isDatabaseConfigured) return;
-
   const text = `${signal.title} ${signal.summary ?? ""}`;
   const region = signal.region ?? classifyRegion(text, signal.lat && signal.lng ? { lat: signal.lat, lng: signal.lng } : undefined);
   const keywords = signal.keywords ?? extractKeywords(signal.title, signal.summary);
   const countryFocus = signal.country_focus ?? classifyCountries(text);
+
+  // Always mirror to Supabase (non-blocking, works without PostgreSQL)
+  void mirrorToSupabase(signal, region, keywords, countryFocus);
+
+  // PostgreSQL archival (requires DATABASE_URL)
+  if (!isDatabaseConfigured) return;
 
   try {
     await query(
@@ -194,16 +198,13 @@ export async function archiveSignal(signal: ArchiveSignal): Promise<void> {
   } catch {
     // Non-critical: don't break the dashboard if archiving fails
   }
-
-  // Mirror to Supabase (non-blocking)
-  void mirrorToSupabase(signal, region, keywords, countryFocus);
 }
 
 /**
  * Archive a batch of signals efficiently.
  */
 export async function archiveSignalBatch(signals: ArchiveSignal[]): Promise<void> {
-  if (!isDatabaseConfigured || signals.length === 0) return;
+  if (signals.length === 0) return;
 
   // Process in parallel with concurrency limit
   const BATCH_SIZE = 10;
@@ -223,27 +224,30 @@ async function mirrorToSupabase(
   const sb = getSupabase();
   if (!sb) return;
   try {
-    await sb.from("signal_archive").upsert(
-      {
-        external_id: signal.external_id ?? null,
-        signal_type: signal.signal_type,
-        source_provider: signal.source_provider,
-        source_url: signal.source_url ?? null,
-        title: signal.title,
-        summary: signal.summary ?? null,
-        url: signal.url ?? null,
-        published_at: signal.published_at,
-        region,
-        country_focus: countryFocus,
-        severity: signal.severity ?? null,
-        score: signal.score ?? null,
-        fatalities: signal.fatalities ?? null,
-        keywords,
-        tags: signal.tags ?? [],
-        payload: signal.payload ?? null,
-      },
-      { onConflict: "source_provider,external_id" },
-    );
+    const row = {
+      external_id: signal.external_id ?? null,
+      signal_type: signal.signal_type,
+      source_provider: signal.source_provider,
+      source_url: signal.source_url ?? null,
+      title: signal.title,
+      summary: signal.summary ?? null,
+      url: signal.url ?? null,
+      published_at: signal.published_at,
+      region,
+      country_focus: countryFocus,
+      severity: signal.severity ?? null,
+      score: signal.score ?? null,
+      fatalities: signal.fatalities ?? null,
+      keywords,
+      tags: signal.tags ?? [],
+      payload: signal.payload ?? null,
+    };
+
+    // Plain insert — duplicates will fail on the unique index and that's fine
+    const { error } = await sb.from("signal_archive").insert(row);
+    if (error && !error.message.includes("duplicate")) {
+      // Unexpected error — log but don't break the dashboard
+    }
   } catch {
     /* non-critical */
   }
