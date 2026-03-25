@@ -184,11 +184,13 @@ export const architectureLayers: ArchitectureLayer[] = [
     title: "Storage and Cache Layer",
     tone: "storage",
     summary:
-      "The app uses Postgres when available and falls back to in-memory or curated static data when it is not.",
+      "Dual-storage architecture: PostgreSQL for analytical tables, Supabase for real-time news persistence and feed health telemetry.",
     bullets: [
       "Operational tables include `events`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
+      "Supabase stores `news_items`, `feed_health`, and `data_snapshots` with Realtime subscriptions for instant UI updates.",
       "Intelligence and convergence use memory or hybrid cache paths to avoid hard failures during upstream outages.",
       "Static assets include regional GeoJSON, manual screenshots, and deterministic overlay catalogs.",
+      "Graceful degradation: dashboard operates identically when Supabase env vars are not configured.",
     ],
   },
   {
@@ -256,14 +258,18 @@ export const resiliencePatterns = [
   "Intelligence and convergence can serve cached or synthesized payloads when feeds fail.",
   "Database-backed routes degrade to mock snapshots instead of returning empty screens.",
   "Overlay metadata is generated locally, so control surfaces stay usable even when imagery providers are slow.",
+  "V5.0 real-time refresh: shared useFetch hook exposes isRefreshing, lastRefreshed, and manual refresh. Bottom strip shows live feed health with per-source status dots.",
+  "Supabase is optional: all Supabase calls no-op gracefully when env vars are not configured. Dashboard works identically without it.",
 ];
 
 export const storageNotes = [
-  "Primary operational storage: Postgres via `query()` in `src/lib/db.ts`.",
+  "Primary analytical storage: Postgres via `query()` in `src/lib/db.ts`.",
   "Primary operational tables: `events`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
+  "Supplementary real-time storage: Supabase for `news_items`, `feed_health`, `data_snapshots` with Realtime subscriptions.",
   "Hybrid caches: intelligence cache and area convergence snapshots.",
   "Static assets: `public/data/*.geojson`, `public/manual/*`, and generated overlay catalog metadata.",
   "Runtime feature gates: `DATABASE_URL`, `REFERENCE_DASHBOARD_URL`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `OPENAI_API_KEY`.",
+  "Optional Supabase gates: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.",
 ];
 
 export const internalApiCategoryOrder: InternalApiCategory[] = [
@@ -553,6 +559,57 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     fallback: "Serves cached or monitor-state snapshots when fresh corroboration is weak or delayed.",
   },
 ];
+
+export const borderFeedApis: InternalApiDescriptor[] = [
+  {
+    path: "/api/border/traffic",
+    category: "Operations",
+    purpose:
+      "Returns Longdo Traffic incidents (accidents, jams, road closures) near Thai borders. Refreshes every 2 minutes.",
+    consumers: ["Bottom status strip", "border command"],
+    upstreams: ["Longdo Traffic API"],
+    fallback: "Returns empty array when Longdo API is unreachable.",
+  },
+  {
+    path: "/api/border/earthquakes",
+    category: "Environment",
+    purpose:
+      "Fetches USGS seismic events within 30 days for Southeast Asia. Refreshes every 5 minutes.",
+    consumers: ["Bottom status strip", "convergence scoring"],
+    upstreams: ["USGS Earthquake Hazards API"],
+    fallback: "Returns empty array on API failure.",
+  },
+  {
+    path: "/api/border/flood-risk",
+    category: "Environment",
+    purpose:
+      "Returns river discharge levels and flood risk assessments from Open-Meteo. Refreshes every 30 minutes.",
+    consumers: ["Bottom status strip", "convergence scoring"],
+    upstreams: ["Open-Meteo River Discharge API"],
+    fallback: "Returns empty array on API failure.",
+  },
+  {
+    path: "/api/border/disasters",
+    category: "Operations",
+    purpose:
+      "Returns GDACS active disaster alerts for the ASEAN region. Refreshes every 10 minutes.",
+    consumers: ["Bottom status strip", "convergence scoring"],
+    upstreams: ["GDACS RSS/GeoJSON feed"],
+    fallback: "Returns empty array on API failure.",
+  },
+  {
+    path: "/api/border/commodities",
+    category: "Analytics",
+    purpose:
+      "Returns Thai agricultural commodity prices from NABC. Refreshes every hour.",
+    consumers: ["Bottom status strip"],
+    upstreams: ["NABC Thai Agricultural API"],
+    fallback: "Returns empty array on API failure.",
+  },
+];
+
+// Merge border feed APIs into main catalog for counting
+export const fullInternalApiCatalog = [...internalApiCatalog, ...borderFeedApis];
 
 export const externalProviderCategoryOrder: ExternalProviderCategory[] = [
   "News",
@@ -856,6 +913,61 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     endpoints: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
   },
   {
+    id: "supabase",
+    label: "Supabase (Realtime + Storage)",
+    category: "Optional",
+    description:
+      "Optional real-time persistence layer for news items, feed health telemetry, and data snapshots. Enables Supabase Realtime subscriptions for instant dashboard updates.",
+    surfaces: ["News desk (Realtime)", "bottom status strip (feed health)", "data persistence"],
+    endpoints: ["NEXT_PUBLIC_SUPABASE_URL (configured per deployment)"],
+    optional: true,
+  },
+  {
+    id: "longdo-traffic",
+    label: "Longdo Traffic API",
+    category: "Mobility",
+    description:
+      "Thai traffic incident feed providing real-time accidents, traffic jams, and road closures near border crossings.",
+    surfaces: ["Bottom status strip"],
+    endpoints: ["https://api.longdo.com/traffic/..."],
+  },
+  {
+    id: "nabc-agriculture",
+    label: "NABC Thai Agricultural Commodities",
+    category: "Markets",
+    description:
+      "Thai National Agricultural Big Data Center commodity pricing for rice, rubber, cassava, and other local agricultural products.",
+    surfaces: ["Bottom status strip", "market context"],
+    endpoints: ["https://www.nabc.go.th/api/..."],
+  },
+  {
+    id: "usgs-earthquakes",
+    label: "USGS Earthquake Hazards",
+    category: "Environmental",
+    description:
+      "Real-time seismic event feed for Southeast Asia from the USGS Earthquake Hazards Program. Shows magnitude, depth, and location.",
+    surfaces: ["Bottom status strip", "convergence scoring"],
+    endpoints: ["https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&..."],
+  },
+  {
+    id: "gdacs-disasters",
+    label: "GDACS Active Disasters",
+    category: "Environmental",
+    description:
+      "Global Disaster Alerting and Coordination System providing active disaster alerts (earthquakes, floods, cyclones) for the ASEAN region.",
+    surfaces: ["Bottom status strip", "convergence scoring"],
+    endpoints: ["https://www.gdacs.org/gdacsapi/api/events/..."],
+  },
+  {
+    id: "open-meteo-river",
+    label: "Open-Meteo River Discharge",
+    category: "Environmental",
+    description:
+      "River discharge forecasts and flood risk levels for major rivers along Thai border crossings.",
+    surfaces: ["Bottom status strip", "convergence scoring"],
+    endpoints: ["https://flood-api.open-meteo.com/v1/flood?..."],
+  },
+  {
     id: "mapbox",
     label: "Mapbox Styles API",
     category: "Optional",
@@ -916,7 +1028,7 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
 ];
 
 export const architectureSummary = {
-  internalApiCount: internalApiCatalog.length,
+  internalApiCount: fullInternalApiCatalog.length,
   externalProviderCount: externalProviderCatalog.length,
   uiSurfaceCount: dashboardSurfaces.length,
   architectureLayerCount: architectureLayers.length,

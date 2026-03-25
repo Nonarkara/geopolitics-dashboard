@@ -102,6 +102,7 @@ export const dashboardManualPages: ManualPage[] = [
     bullets: [
       "Start with the detailed basemap or satellite option that best supports the question you are asking.",
       "Turn on one additional overlay at a time so you can see what changes rather than blending several signals into noise.",
+      "Hover any control to see a tooltip explaining what it does, what data it shows, why it matters, and where the data comes from.",
       "Use rainfall, thermal, movement, and signal layers to confirm or challenge the story suggested by headlines and briefings.",
     ],
     callouts: [
@@ -207,6 +208,78 @@ export const dashboardManualPages: ManualPage[] = [
         label: "Selected place popup",
         description:
           "This card summarizes immediate conditions, event timing, and what to verify next before you escalate the finding.",
+      },
+    ],
+  },
+  {
+    id: "realtime-data",
+    title: "Real-Time Data & Sources",
+    subtitle:
+      "Every data point refreshes automatically and shows its upstream source. V5.0 makes the data pipeline visible.",
+    imageSrc: "/manual/08-realtime-data.png",
+    imageAlt:
+      "Annotated bottom status strip showing refresh indicator, feed health dots, source attribution labels, and manual refresh button.",
+    bullets: [
+      "The bottom status strip refreshes 5 live feeds automatically: traffic (2 min), earthquakes (5 min), rivers (30 min), disasters (10 min), commodities (1 hr).",
+      "Every metric shows a tiny source label (USGS, NABC, GDACS, etc.) that links to the upstream provider.",
+      "Use the manual refresh button (right side) to force an immediate sync of all feeds when you need the latest data.",
+    ],
+    callouts: [
+      {
+        label: "Feed health dots",
+        description:
+          "Five colored dots show which feeds are connected (green) or waiting (dim). A quick visual check before trusting any metric.",
+      },
+      {
+        label: "Sync indicator",
+        description:
+          "A pulsing green dot appears during active refresh. The relative time (e.g., '12s ago') shows data freshness at a glance.",
+      },
+      {
+        label: "Source attribution",
+        description:
+          "Every metric displays its upstream source as a clickable label. Click to visit the provider and verify raw data.",
+      },
+      {
+        label: "Manual refresh",
+        description:
+          "The refresh button triggers an immediate re-fetch of all five feeds. Use it when entering a briefing or after an alert.",
+      },
+    ],
+  },
+  {
+    id: "map-tooltips",
+    title: "Map Control Tooltips",
+    subtitle:
+      "Hover any map control to see what it does, what data it shows, why it matters, and where the data comes from.",
+    imageSrc: "/manual/09-tooltips.png",
+    imageAlt:
+      "Annotated map panel showing hover tooltip on a base map button with four sections: Function, Shows, Importance, Source.",
+    bullets: [
+      "Every base map (12), data overlay (14), and intelligence toggle (7) has a structured tooltip with four sections.",
+      "Tooltips explain the function, what data is displayed, why the layer is operationally important, and the upstream data source with a link.",
+      "Hover the top-bar buttons (APIs, Data, Docs) for quick descriptions of what each modal contains.",
+    ],
+    callouts: [
+      {
+        label: "Function",
+        description:
+          "What this control does when activated — a clear one-line explanation of the action.",
+      },
+      {
+        label: "Shows",
+        description:
+          "What data or imagery appears on the map when this control is enabled.",
+      },
+      {
+        label: "Importance",
+        description:
+          "Why this layer matters operationally — the intelligence value for border monitoring.",
+      },
+      {
+        label: "Source",
+        description:
+          "The upstream data provider with a clickable link. Verify the raw source when findings are critical.",
       },
     ],
   },

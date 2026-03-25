@@ -1,6 +1,6 @@
 {
   "name": "geopolitics-dashboard",
-  "version": "4.4.0",
+  "version": "5.0.0",
   "private": true,
   "engines": {
     "node": "20.x"
@@ -10,7 +10,10 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
-    "test:ui": "playwright test"
+    "test:ui": "playwright test",
+    "ingest:all": "python3 ingestion/run_all.py",
+    "ingest:list": "python3 ingestion/run_all.py --list",
+    "bootstrap:production": "bash scripts/bootstrap-production.sh"
   },
   "dependencies": {
     "@deck.gl/aggregation-layers": "^9.2.11",
@@ -22,21 +25,16 @@
     "@luma.gl/core": "9.2.6",
     "@luma.gl/engine": "9.2.6",
     "@luma.gl/webgl": "9.2.6",
+    "@supabase/supabase-js": "^2.100.0",
     "@tailwindcss/postcss": "^4.2.1",
-    "@types/mapbox-gl": "^3.4.1",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
     "axios": "^1.13.6",
     "chart.js": "^4.5.1",
     "clsx": "^2.1.1",
     "deck.gl": "^9.2.11",
-    "eslint": "^9",
-    "eslint-config-next": "16.1.6",
     "framer-motion": "^12.35.2",
     "lucide-react": "^0.577.0",
     "mapbox-gl": "^3.19.1",
-    "next": "16.1.6",
+    "next": "16.2.1",
     "pg": "^8.20.0",
     "postcss": "^8.5.8",
     "react": "19.2.3",
@@ -45,10 +43,20 @@
     "react-map-gl": "^8.1.0",
     "redis": "^5.11.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "tailwindcss": "^4"
   },
   "devDependencies": {
-    "@playwright/test": "^1.58.2"
+    "@playwright/test": "^1.58.2",
+    "@types/mapbox-gl": "^3.4.1",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.1",
+    "typescript": "^5"
+  },
+  "overrides": {
+    "fast-xml-parser": "5.5.9",
+    "flatted": "3.4.2"
   }
 }

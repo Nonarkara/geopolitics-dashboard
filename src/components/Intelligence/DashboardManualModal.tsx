@@ -32,13 +32,13 @@ function renderPageNumber(index: number) {
 function ManualTextPanel({ page }: { page: ManualPage }) {
   return (
     <div className="flex min-h-0 flex-col gap-4">
-      <section className="dashboard-panel rounded-2xl p-4 sm:p-5">
+      <section className="dashboard-panel rounded-sm p-4 sm:p-5">
         <div className="eyebrow">How To Read This Page</div>
         <ul className="mt-3 space-y-3 text-[12px] leading-5 text-[var(--ink)] sm:text-[13px]">
           {page.bullets.map((bullet) => (
             <li
               key={bullet}
-              className="rounded-xl border border-[var(--line)] bg-[var(--bg-surface)] px-3 py-2.5"
+              className="rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-3 py-2.5"
             >
               {bullet}
             </li>
@@ -46,16 +46,16 @@ function ManualTextPanel({ page }: { page: ManualPage }) {
         </ul>
       </section>
 
-      <section className="dashboard-panel rounded-2xl p-4 sm:p-5">
+      <section className="dashboard-panel rounded-sm p-4 sm:p-5">
         <div className="eyebrow">Callouts</div>
         <div className="mt-3 space-y-3">
           {page.callouts.map((callout, index) => (
             <article
               key={`${page.id}-${callout.label}`}
-              className="rounded-xl border border-[var(--line)] bg-[var(--bg-surface)] px-3 py-3"
+              className="rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-3 py-3"
             >
               <div className="flex items-center gap-2">
-                <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] text-[11px] font-bold text-[var(--cool)]">
+                <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--line-bright)] text-[11px] font-bold text-[var(--cool)]">
                   {index + 1}
                 </span>
                 <h3 className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
@@ -219,14 +219,14 @@ export default function DashboardManualModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
               Page {renderPageNumber(activePage)} / {renderPageNumber(lastIndex)}
             </div>
             <button
               ref={closeButtonRef}
               type="button"
               onClick={handleClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
               aria-label="Close dashboard manual"
             >
               <X size={16} />
@@ -248,7 +248,7 @@ export default function DashboardManualModal({
                   type="button"
                   onClick={() => setActivePage(index)}
                   aria-current={isActive ? "page" : undefined}
-                  className={`min-w-[220px] rounded-2xl border px-4 py-3 text-left transition-colors lg:min-w-0 ${
+                  className={`min-w-[220px] rounded-sm border px-4 py-3 text-left transition-colors lg:min-w-0 ${
                     isActive
                       ? "border-[var(--cool)] bg-[var(--line-bright)]"
                       : "border-[var(--line)] bg-[var(--bg-surface)] hover:border-[var(--line-bright)]"
@@ -295,7 +295,7 @@ export default function DashboardManualModal({
             type="button"
             onClick={() => setActivePage((current) => Math.max(current - 1, 0))}
             disabled={activePage === 0}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             <ChevronLeft size={14} />
             Previous
@@ -314,7 +314,7 @@ export default function DashboardManualModal({
             type="button"
             onClick={() => setActivePage((current) => Math.min(current + 1, lastIndex))}
             disabled={activePage === lastIndex}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
             <ChevronRight size={14} />

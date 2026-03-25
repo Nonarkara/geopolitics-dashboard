@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logFeedHealth } from "../../../../lib/supabase";
 
 export const revalidate = 300;
 
@@ -41,6 +42,7 @@ const SE_ASIA_BOUNDS = {
 const FALLBACK: SeismicEvent[] = [];
 
 export async function GET() {
+  const t0 = Date.now();
   try {
     const params = new URLSearchParams({
       format: "geojson",
@@ -59,7 +61,10 @@ export async function GET() {
       { next: { revalidate: 300 } }
     );
 
-    if (!res.ok) return NextResponse.json(FALLBACK);
+    if (!res.ok) {
+      void logFeedHealth({ feed_id: "earthquakes", status: "error", response_time_ms: Date.now() - t0, message: `HTTP ${res.status}` });
+      return NextResponse.json(FALLBACK);
+    }
 
     const json: USGSResponse = await res.json();
 
@@ -74,8 +79,10 @@ export async function GET() {
       url: f.properties.url,
     }));
 
+    void logFeedHealth({ feed_id: "earthquakes", status: "ok", response_time_ms: Date.now() - t0, message: null });
     return NextResponse.json(events);
   } catch {
+    void logFeedHealth({ feed_id: "earthquakes", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });
     return NextResponse.json(FALLBACK);
   }
 }

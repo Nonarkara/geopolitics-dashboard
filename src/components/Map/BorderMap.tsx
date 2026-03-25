@@ -7,11 +7,20 @@ import dynamic from "next/dynamic";
 import {
   Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check, Grid3x3
 } from "lucide-react";
+import CommandTooltip from "../Common/CommandTooltip";
+import { BASE_MAP_TOOLTIPS, OVERLAY_TOOLTIPS, INTEL_TOGGLE_TOOLTIPS } from "../../lib/tooltip-catalog";
 import {
   createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer, createKilometerGridLayer
 } from "../../services/map-engine";
 import type {
-  FireEvent, IncidentFeature, ProvinceSelection, FlightData, RefugeeMovement, ConflictZoneCollection
+  DashboardDatasetStatus,
+  DashboardStatusPayload,
+  FireEvent,
+  IncidentFeature,
+  ProvinceSelection,
+  FlightData,
+  RefugeeMovement,
+  ConflictZoneCollection,
 } from "../../types/dashboard";
 import { getUsableMapboxToken } from "../../lib/mapbox";
 
@@ -41,6 +50,66 @@ function clampViewState(viewState: MapViewState): MapViewState {
     zoom: clamp(viewState.zoom, MIN_BORDER_ZOOM, MAX_BORDER_ZOOM),
     pitch: clamp(viewState.pitch ?? INITIAL_VIEW_STATE.pitch ?? 0, 0, 60),
   };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isDashboardDatasetStatus(value: unknown): value is DashboardDatasetStatus {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    typeof value.details === "string" &&
+    typeof value.state === "string" &&
+    (value.criticality === "core" || value.criticality === "optional")
+  );
+}
+
+function isDashboardStatusPayload(value: unknown): value is DashboardStatusPayload {
+  return (
+    isRecord(value) &&
+    typeof value.status === "string" &&
+    Array.isArray(value.datasets) &&
+    value.datasets.every(isDashboardDatasetStatus)
+  );
+}
+
+interface FeedAlert {
+  id: string;
+  label: string;
+  state: DashboardDatasetStatus["state"];
+  details: string;
+}
+
+function buildFeedAlerts(
+  payload: DashboardStatusPayload | null,
+  datasetIds: string[],
+): FeedAlert[] {
+  if (!payload) {
+    return [];
+  }
+
+  return datasetIds
+    .map((datasetId) =>
+      payload.datasets.find((dataset) => dataset.id === datasetId),
+    )
+    .filter(
+      (dataset): dataset is DashboardDatasetStatus =>
+        Boolean(
+          dataset &&
+            (dataset.state === "stale" ||
+              dataset.state === "fallback" ||
+              dataset.state === "disabled"),
+        ),
+    )
+    .map((dataset) => ({
+      id: dataset.id,
+      label: dataset.label,
+      state: dataset.state,
+      details: dataset.details,
+    }));
 }
 
 // NASA GIBS only serves imagery up to the current real-world date.
@@ -191,24 +260,32 @@ export default function BorderMap({
   const [flights, setFlights] = useState<FlightData[]>([]);
   const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
   const [zones, setZones] = useState<ConflictZoneCollection | null>(null);
+  const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
 
   const hasMapboxToken = MAPBOX_TOKEN.length > 0;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [inc, fir, flt, ref, zn] = await Promise.all([
+        const [inc, fir, flt, ref, zn, runtimeStatus] = await Promise.all([
           fetch("/api/border/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/fires", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/flights", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/border/movements", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/map/overlays", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
+          fetch("/api/status", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
         ]);
         setIncidents(inc || []);
         setFires(fir || []);
         setFlights(flt || []);
         setRefugees(ref || []);
         setZones(zn || null);
+        setFeedAlerts(
+          buildFeedAlerts(
+            isDashboardStatusPayload(runtimeStatus) ? runtimeStatus : null,
+            ["conflict_events", "fires"],
+          ),
+        );
       } catch (e) {
         console.error("Map data load error:", e);
       }
@@ -371,16 +448,20 @@ export default function BorderMap({
             <span className="text-[8px] font-mono opacity-40 ml-auto">{activeBase.label}</span>
           </div>
           <div className="grid grid-cols-4 gap-[1px] bg-black/10 p-[1px]">
-            {BASE_MAPS.map(bm => (
-              <button
-                key={bm.id}
-                onClick={() => setActiveBaseId(bm.id)}
-                className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
-              >
-                <span className="text-[9px] font-black tracking-wider leading-none">{bm.label}</span>
-                <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center">{bm.name}</span>
-              </button>
-            ))}
+            {BASE_MAPS.map(bm => {
+              const tip = BASE_MAP_TOOLTIPS[bm.id];
+              const btn = (
+                <button
+                  key={bm.id}
+                  onClick={() => setActiveBaseId(bm.id)}
+                  className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all w-full ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                >
+                  <span className="text-[9px] font-black tracking-wider leading-none">{bm.label}</span>
+                  <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center">{bm.name}</span>
+                </button>
+              );
+              return tip ? <CommandTooltip key={bm.id} content={tip} position="right">{btn}</CommandTooltip> : btn;
+            })}
           </div>
         </div>
 
@@ -400,11 +481,11 @@ export default function BorderMap({
                 <div className="grid grid-cols-3 gap-[1px] bg-black/5 px-[1px] pb-[1px]">
                   {overlays.map(ov => {
                     const active = activeOverlayIds.has(ov.id);
-                    return (
+                    const tip = OVERLAY_TOOLTIPS[ov.id];
+                    const btn = (
                       <button
-                        key={ov.id}
                         onClick={() => toggleOverlay(ov.id)}
-                        className={`py-1.5 px-2 flex items-center gap-1.5 transition-all ${active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                        className={`py-1.5 px-2 flex items-center gap-1.5 transition-all w-full ${active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                       >
                         {active && <Check size={8} strokeWidth={4} />}
                         <div className="min-w-0">
@@ -413,6 +494,7 @@ export default function BorderMap({
                         </div>
                       </button>
                     );
+                    return tip ? <CommandTooltip key={ov.id} content={tip} position="right">{btn}</CommandTooltip> : <div key={ov.id}>{btn}</div>;
                   })}
                 </div>
               </div>
@@ -430,12 +512,16 @@ export default function BorderMap({
             { active: showZones, set: setShowZones, label: "ZONE", icon: Target },
             { active: showLabels, set: setShowLabels, label: "LBL", icon: Globe },
             { active: showGrid, set: setShowGrid, label: "GRID", icon: Grid3x3 },
-          ].map((t, i) => (
-            <button key={i} onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
-              <t.icon size={9} />
-              <span className="text-[6.5px] font-black tracking-wider">{t.label}</span>
-            </button>
-          ))}
+          ].map((t) => {
+            const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
+            const btn = (
+              <button onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
+                <t.icon size={9} />
+                <span className="text-[6.5px] font-black tracking-wider">{t.label}</span>
+              </button>
+            );
+            return tip ? <CommandTooltip key={t.label} content={tip} position="bottom">{btn}</CommandTooltip> : <div key={t.label}>{btn}</div>;
+          })}
         </div>
 
         {/* ── Status bar ── */}
@@ -446,6 +532,23 @@ export default function BorderMap({
           </div>
           <button onClick={handleClearAll} className="text-[8px] font-black underline uppercase opacity-40 hover:opacity-100 transition-all">Reset</button>
         </div>
+
+        {feedAlerts.length > 0 && (
+          <div className="border border-black bg-[#fff7ed] px-3 py-2 text-[#9a3412]">
+            <div className="text-[8px] font-black uppercase tracking-[0.22em]">Feed Integrity</div>
+            <div className="mt-1 flex flex-wrap gap-1.5">
+              {feedAlerts.map((alert) => (
+                <span
+                  key={alert.id}
+                  title={alert.details}
+                  className="border border-[#f59e0b]/40 bg-white px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]"
+                >
+                  {alert.label} {alert.state}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Opacity slider ── */}
         <div className="flex bg-white h-7 items-center border border-black px-3 gap-2">

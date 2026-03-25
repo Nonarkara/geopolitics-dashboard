@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { BookOpen, Clock3, Database, Shield } from "lucide-react";
 import DashboardVersionBadge from "../Common/DashboardVersionBadge";
+import CommandTooltip from "../Common/CommandTooltip";
+import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
 import type { BorderCommandBrief } from "../../types/dashboard";
 
 function formatTime(value: Date) {
@@ -130,29 +132,35 @@ export default function TopBar({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenArchitecture}
-            className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
-          >
-            <Shield size={10} strokeWidth={3} />
-            APIs
-          </button>
-          {onOpenDataExplorer && (
+          <CommandTooltip content={TOPBAR_TOOLTIPS.apis} position="bottom">
             <button
-              onClick={onOpenDataExplorer}
+              onClick={onOpenArchitecture}
               className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
             >
-              <Database size={10} strokeWidth={3} />
-              Data
+              <Shield size={10} strokeWidth={3} />
+              APIs
             </button>
+          </CommandTooltip>
+          {onOpenDataExplorer && (
+            <CommandTooltip content={TOPBAR_TOOLTIPS.data} position="bottom">
+              <button
+                onClick={onOpenDataExplorer}
+                className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
+              >
+                <Database size={10} strokeWidth={3} />
+                Data
+              </button>
+            </CommandTooltip>
           )}
-          <button
-            onClick={onOpenManual}
-            className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
-          >
-            <BookOpen size={10} strokeWidth={3} />
-            Docs
-          </button>
+          <CommandTooltip content={TOPBAR_TOOLTIPS.docs} position="bottom">
+            <button
+              onClick={onOpenManual}
+              className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
+            >
+              <BookOpen size={10} strokeWidth={3} />
+              Docs
+            </button>
+          </CommandTooltip>
         </div>
       </div>
     </header>

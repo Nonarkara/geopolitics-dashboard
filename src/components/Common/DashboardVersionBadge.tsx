@@ -52,7 +52,7 @@ export default function DashboardVersionBadge({
   return (
     <span
       data-testid="dashboard-version-badge"
-      className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.18em] ${className}`.trim()}
+      className={`inline-flex items-center border px-2 py-0.5 text-[9px] font-mono uppercase tracking-[0.18em] ${className}`.trim()}
     >
       {formatDashboardVersion(version)}
     </span>

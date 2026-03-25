@@ -29,6 +29,8 @@ interface DatabaseExplorerModalProps {
 }
 
 const PREVIEW_LIMIT_OPTIONS = [25, 50, 100] as const;
+const TOKEN_STORAGE_KEY = "data-explorer-token";
+type ExportFormat = "csv" | "json";
 
 function getFocusableElements(container: HTMLElement | null): HTMLElement[] {
   if (!container) {
@@ -127,7 +129,7 @@ function StatCard({
   helper: string;
 }) {
   return (
-    <article className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
+    <article className="rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
       <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
         {label}
       </div>
@@ -149,6 +151,10 @@ export default function DatabaseExplorerModal({
   const [previewLimit, setPreviewLimit] = useState<number>(50);
   const [loadingCatalog, setLoadingCatalog] = useState(false);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [authToken, setAuthToken] = useState("");
+  const [tokenDraft, setTokenDraft] = useState("");
+  const [authRequired, setAuthRequired] = useState(false);
+  const [downloadingFormat, setDownloadingFormat] = useState<ExportFormat | null>(null);
   const [error, setError] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
@@ -158,19 +164,49 @@ export default function DatabaseExplorerModal({
 
   const selectedTable =
     catalog?.tables.find((table) => table.id === selectedTableId) ?? null;
+  const databaseConfigured = catalog?.databaseConfigured ?? null;
 
-  const loadCatalog = useCallback(async () => {
+  const buildAuthHeaders = useCallback((token: string) => {
+    const headers: Record<string, string> = {};
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    return headers;
+  }, []);
+
+  const loadCatalog = useCallback(async (tokenOverride?: string) => {
     setLoadingCatalog(true);
     setError(null);
+    const effectiveToken = tokenOverride ?? authToken;
 
     try {
-      const response = await fetch("/api/data/catalog", { cache: "no-store" });
+      const response = await fetch("/api/data/catalog", {
+        cache: "no-store",
+        headers: buildAuthHeaders(effectiveToken),
+      });
+
+      if (response.status === 401) {
+        setAuthRequired(true);
+        setCatalog(null);
+        setPreview(null);
+        throw new Error("Authentication required");
+      }
+
+      if (response.status === 403) {
+        setCatalog(null);
+        setPreview(null);
+        throw new Error("Data explorer is disabled for this deployment.");
+      }
+
       const payload: unknown = await response.json();
 
       if (!isDatabaseCatalogResponse(payload)) {
         throw new Error("Database catalog payload was not recognized");
       }
 
+      setAuthRequired(false);
       setCatalog(payload);
       setSelectedTableId((current) => {
         const existing = current
@@ -187,18 +223,23 @@ export default function DatabaseExplorerModal({
           null
         );
       });
-    } catch {
+    } catch (caught) {
       setCatalog(null);
       setPreview(null);
-      setError("Unable to load the database catalog.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to load the database catalog.",
+      );
     } finally {
       setLoadingCatalog(false);
     }
-  }, []);
+  }, [authToken, buildAuthHeaders]);
 
-  const loadPreview = useCallback(async (tableId: string, limit: number) => {
+  const loadPreview = useCallback(async (tableId: string, limit: number, tokenOverride?: string) => {
     setLoadingPreview(true);
     setError(null);
+    const effectiveToken = tokenOverride ?? authToken;
 
     try {
       const params = new URLSearchParams({
@@ -207,20 +248,123 @@ export default function DatabaseExplorerModal({
       });
       const response = await fetch(`/api/data/table?${params.toString()}`, {
         cache: "no-store",
+        headers: buildAuthHeaders(effectiveToken),
       });
+
+      if (response.status === 401) {
+        setAuthRequired(true);
+        setPreview(null);
+        throw new Error("Authentication required");
+      }
+
+      if (response.status === 403) {
+        setPreview(null);
+        throw new Error("Data explorer is disabled for this deployment.");
+      }
+
       const payload: unknown = await response.json();
 
       if (!response.ok || !isDatabaseTablePreviewResponse(payload)) {
         throw new Error("Database preview payload was not recognized");
       }
 
+      setAuthRequired(false);
       setPreview(payload);
-    } catch {
+    } catch (caught) {
       setPreview(null);
-      setError("Unable to load the selected table preview.");
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Unable to load the selected table preview.",
+      );
     } finally {
       setLoadingPreview(false);
     }
+  }, [authToken, buildAuthHeaders]);
+
+  const downloadExport = useCallback(
+    async (format: ExportFormat) => {
+      if (!selectedTableId || databaseConfigured !== true) {
+        return;
+      }
+
+      setDownloadingFormat(format);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `/api/data/export?table=${encodeURIComponent(selectedTableId)}&format=${format}`,
+          {
+            headers: buildAuthHeaders(authToken),
+          },
+        );
+
+        if (response.status === 401) {
+          setAuthRequired(true);
+          throw new Error("Authentication required");
+        }
+
+        if (response.status === 403) {
+          throw new Error("Data explorer is disabled for this deployment.");
+        }
+
+        if (!response.ok) {
+          throw new Error(`Export failed with ${response.status}`);
+        }
+
+        const blob = await response.blob();
+        const downloadUrl = URL.createObjectURL(blob);
+        const disposition = response.headers.get("content-disposition") ?? "";
+        const filenameMatch = disposition.match(/filename="([^"]+)"/);
+        const filename =
+          filenameMatch?.[1] ?? `${selectedTableId}.${format === "csv" ? "csv" : "json"}`;
+        const anchor = document.createElement("a");
+        anchor.href = downloadUrl;
+        anchor.download = filename;
+        document.body.append(anchor);
+        anchor.click();
+        anchor.remove();
+        URL.revokeObjectURL(downloadUrl);
+        setAuthRequired(false);
+      } catch (caught) {
+        setError(
+          caught instanceof Error
+            ? caught.message
+            : "Unable to export the selected table.",
+        );
+      } finally {
+        setDownloadingFormat(null);
+      }
+    },
+    [authToken, buildAuthHeaders, databaseConfigured, selectedTableId],
+  );
+
+  const submitToken = useCallback(() => {
+    const nextToken = tokenDraft.trim();
+
+    if (!nextToken) {
+      setError("Enter the admin token to unlock the data explorer.");
+      return;
+    }
+
+    window.sessionStorage.setItem(TOKEN_STORAGE_KEY, nextToken);
+    setAuthToken(nextToken);
+    setAuthRequired(false);
+    setError(null);
+    void loadCatalog(nextToken);
+    if (selectedTableId) {
+      void loadPreview(selectedTableId, previewLimit, nextToken);
+    }
+  }, [loadCatalog, loadPreview, previewLimit, selectedTableId, tokenDraft]);
+
+  const clearToken = useCallback(() => {
+    window.sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+    setAuthToken("");
+    setTokenDraft("");
+    setAuthRequired(true);
+    setCatalog(null);
+    setPreview(null);
+    setError("Admin token cleared.");
   }, []);
 
   const handleClose = () => {
@@ -235,6 +379,10 @@ export default function DatabaseExplorerModal({
     if (!isOpen) {
       return;
     }
+
+    const storedToken = window.sessionStorage.getItem(TOKEN_STORAGE_KEY) ?? "";
+    setAuthToken(storedToken);
+    setTokenDraft(storedToken);
 
     previousFocusRef.current =
       document.activeElement instanceof HTMLElement
@@ -323,11 +471,6 @@ export default function DatabaseExplorerModal({
     return null;
   }
 
-  const databaseConfigured = catalog?.databaseConfigured ?? null;
-  const exportBase = selectedTableId
-    ? `/api/data/export?table=${encodeURIComponent(selectedTableId)}`
-    : null;
-
   return (
     <div
       className="fixed inset-0 z-[125] flex items-end justify-center bg-[rgba(2,6,23,0.82)] p-0 sm:items-center sm:p-6"
@@ -368,7 +511,16 @@ export default function DatabaseExplorerModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+            {authToken ? (
+              <button
+                type="button"
+                onClick={clearToken}
+                className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)] transition-colors hover:text-[var(--cool)]"
+              >
+                Clear token
+              </button>
+            ) : null}
+            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
               {databaseConfigured === null
                 ? "Checking database"
                 : databaseConfigured
@@ -383,7 +535,7 @@ export default function DatabaseExplorerModal({
                   void loadPreview(selectedTableId, previewLimit);
                 }
               }}
-              className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+              className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
             >
               <RefreshCw
                 size={14}
@@ -395,7 +547,7 @@ export default function DatabaseExplorerModal({
               ref={closeButtonRef}
               type="button"
               onClick={handleClose}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
               aria-label="Close data explorer"
             >
               <X size={16} />
@@ -435,7 +587,7 @@ export default function DatabaseExplorerModal({
               />
             </div>
 
-            <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
+            <div className="mt-4 rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="eyebrow">Tables</div>
@@ -458,7 +610,7 @@ export default function DatabaseExplorerModal({
                       key={table.id}
                       type="button"
                       onClick={() => setSelectedTableId(table.id)}
-                      className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                      className={`w-full rounded-sm border px-4 py-3 text-left transition-colors ${
                         isActive
                           ? "border-[var(--cool)] bg-[var(--line-bright)]"
                           : "border-[var(--line)] bg-[var(--bg-surface)] hover:border-[var(--line-bright)]"
@@ -490,13 +642,43 @@ export default function DatabaseExplorerModal({
 
           <main className="min-h-0 overflow-y-auto">
             {error && (
-              <div className="mb-4 rounded-2xl border border-[#ef4444] bg-[rgba(127,29,29,0.22)] px-4 py-3 text-[12px] text-[#fecaca]">
+              <div className="mb-4 rounded-sm border border-[#ef4444] bg-[rgba(127,29,29,0.22)] px-4 py-3 text-[12px] text-[#fecaca]">
                 {error}
               </div>
             )}
 
+            {authRequired && (
+              <section className="mb-4 rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4 sm:p-5">
+                <div className="eyebrow">Admin Auth</div>
+                <h3 className="mt-2 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                  Enter the data explorer token
+                </h3>
+                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[var(--muted)]">
+                  This deployment protects preview and export endpoints with a
+                  server-side bearer token. The token is stored only in this browser
+                  session.
+                </p>
+                <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                  <input
+                    type="password"
+                    value={tokenDraft}
+                    onChange={(event) => setTokenDraft(event.target.value)}
+                    placeholder="Paste admin token"
+                    className="min-w-0 flex-1 rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-4 py-3 text-[13px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--dim)] focus:border-[var(--cool)]"
+                  />
+                  <button
+                    type="button"
+                    onClick={submitToken}
+                    className="inline-flex items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-3 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:text-[var(--cool)]"
+                  >
+                    Unlock
+                  </button>
+                </div>
+              </section>
+            )}
+
             {databaseConfigured === false && (
-              <section className="dashboard-panel rounded-2xl p-5">
+              <section className="dashboard-panel rounded-sm p-5">
                 <div className="eyebrow">Database Required</div>
                 <h3 className="mt-2 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                   Connect Postgres to unlock previews and exports
@@ -511,7 +693,7 @@ export default function DatabaseExplorerModal({
             )}
 
             {selectedTable && (
-              <section className="dashboard-panel rounded-2xl p-4 sm:p-5">
+              <section className="dashboard-panel rounded-sm p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
@@ -534,7 +716,7 @@ export default function DatabaseExplorerModal({
                         key={option}
                         type="button"
                         onClick={() => setPreviewLimit(option)}
-                        className={`rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
+                        className={`rounded-sm border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
                           previewLimit === option
                             ? "border-[var(--cool)] bg-[var(--line-bright)] text-[var(--ink)]"
                             : "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--muted)] hover:text-[var(--ink)]"
@@ -543,28 +725,32 @@ export default function DatabaseExplorerModal({
                         {option} rows
                       </button>
                     ))}
-                    <a
-                      href={exportBase ? `${exportBase}&format=csv` : "#"}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[12px] font-semibold transition-colors ${
-                        exportBase && databaseConfigured === true
+                    <button
+                      type="button"
+                      onClick={() => void downloadExport("csv")}
+                      disabled={!selectedTableId || databaseConfigured !== true || downloadingFormat !== null}
+                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[12px] font-semibold transition-colors ${
+                        selectedTableId && databaseConfigured === true && downloadingFormat === null
                           ? "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--cool)]"
                           : "pointer-events-none border-[var(--line)] bg-[var(--bg-surface)] text-[var(--dim)] opacity-50"
                       }`}
                     >
                       <FileSpreadsheet size={14} />
                       CSV
-                    </a>
-                    <a
-                      href={exportBase ? `${exportBase}&format=json` : "#"}
-                      className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-[12px] font-semibold transition-colors ${
-                        exportBase && databaseConfigured === true
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void downloadExport("json")}
+                      disabled={!selectedTableId || databaseConfigured !== true || downloadingFormat !== null}
+                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[12px] font-semibold transition-colors ${
+                        selectedTableId && databaseConfigured === true && downloadingFormat === null
                           ? "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--cool)]"
                           : "pointer-events-none border-[var(--line)] bg-[var(--bg-surface)] text-[var(--dim)] opacity-50"
                       }`}
                     >
                       <FileJson size={14} />
                       JSON
-                    </a>
+                    </button>
                   </div>
                 </div>
 
@@ -586,7 +772,7 @@ export default function DatabaseExplorerModal({
                   />
                 </div>
 
-                <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
+                <div className="mt-4 rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="eyebrow">Preview</div>
@@ -604,14 +790,14 @@ export default function DatabaseExplorerModal({
                     {selectedTable.columns.map((column) => (
                       <span
                         key={`${selectedTable.id}-${column}`}
-                        className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--ink)]"
+                        className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--ink)]"
                       >
                         {column}
                       </span>
                     ))}
                   </div>
 
-                  <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)]">
+                  <div className="mt-4 overflow-hidden rounded-sm border border-[var(--line)]">
                     <div className="max-h-[520px] overflow-auto">
                       <table className="min-w-full border-collapse text-left text-[12px]">
                         <thead className="sticky top-0 bg-[rgba(10,15,26,0.94)]">

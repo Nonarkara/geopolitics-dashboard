@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { RefreshCw } from "lucide-react";
 import type { BorderCommandBrief } from "../../types/dashboard";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
 import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
+import { useFetch } from "../../hooks/useFetch";
+import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
 
 function postureColor(posture: string) {
   switch (posture) {
@@ -17,24 +20,6 @@ function postureColor(posture: string) {
     default:
       return "var(--safe, #22c55e)";
   }
-}
-
-function useFetch<T>(url: string, interval: number): T | null {
-  const [data, setData] = useState<T | null>(null);
-  useEffect(() => {
-    let active = true;
-    const load = async () => {
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        const json = await res.json() as T;
-        if (active) setData(json);
-      } catch { /* keep last */ }
-    };
-    void load();
-    const id = setInterval(() => void load(), interval);
-    return () => { active = false; clearInterval(id); };
-  }, [url, interval]);
-  return data;
 }
 
 function ScoreBar({ label, counterpart, score, posture }: {
@@ -71,12 +56,29 @@ function ScoreBar({ label, counterpart, score, posture }: {
   );
 }
 
-function Metric({ label, value, sub, color }: { label: string; value: string | number; sub?: string; color?: string }) {
+function Metric({ label, value, sub, color, sourceId }: {
+  label: string;
+  value: string | number;
+  sub?: string;
+  color?: string;
+  sourceId?: string;
+}) {
+  const source = sourceId ? DATA_SOURCE_CATALOG[sourceId] : undefined;
   return (
     <div className="text-center px-1.5">
       <div className="text-[7px] font-black uppercase tracking-wider opacity-40 leading-none mb-0.5">{label}</div>
       <div className="text-[13px] font-black tabular-nums leading-none" style={color ? { color } : undefined}>{value}</div>
       {sub && <div className="text-[7px] opacity-30 leading-none mt-0.5">{sub}</div>}
+      {source && (
+        <a
+          href={source.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[5px] uppercase tracking-wider opacity-20 hover:opacity-50 underline transition-opacity leading-none mt-0.5 block"
+        >
+          {source.shortLabel}
+        </a>
+      )}
     </div>
   );
 }
@@ -94,12 +96,69 @@ function riskColorHex(level: string) {
   }
 }
 
+/** Format seconds ago as a short relative string */
+function timeAgo(date: Date | null): string {
+  if (!date) return "--";
+  const sec = Math.round((Date.now() - date.getTime()) / 1000);
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.round(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  return `${Math.round(min / 60)}h ago`;
+}
+
+/** Micro feed-health dot */
+function FeedDot({ ok, label }: { ok: boolean; label: string }) {
+  return (
+    <div className="flex items-center gap-1" title={`${label}: ${ok ? "connected" : "waiting"}`}>
+      <div className={`w-[5px] h-[5px] rounded-full ${ok ? "bg-[var(--safe,#22c55e)]" : "bg-white/15"}`} />
+      <span className="text-[5px] font-black uppercase tracking-wider opacity-30">{label}</span>
+    </div>
+  );
+}
+
 export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief | null }) {
-  const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
-  const rivers = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
-  const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
-  const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
-  const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+  const commoditiesFetch = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
+  const riversFetch = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
+  const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
+  const trafficFetch = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
+  const disastersFetch = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+
+  const commodities = commoditiesFetch.data;
+  const rivers = riversFetch.data;
+  const quakes = quakesFetch.data;
+  const traffic = trafficFetch.data;
+  const disasters = disastersFetch.data;
+
+  // Track aggregate refresh state
+  const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing;
+
+  // Most recent refresh across all feeds
+  const allRefreshTimes = [
+    commoditiesFetch.lastRefreshed,
+    riversFetch.lastRefreshed,
+    quakesFetch.lastRefreshed,
+    trafficFetch.lastRefreshed,
+    disastersFetch.lastRefreshed,
+  ].filter(Boolean) as Date[];
+  const latestRefresh = allRefreshTimes.length > 0
+    ? new Date(Math.max(...allRefreshTimes.map(d => d.getTime())))
+    : null;
+
+  // Refresh all feeds manually
+  const refreshAll = useCallback(() => {
+    commoditiesFetch.refresh();
+    riversFetch.refresh();
+    quakesFetch.refresh();
+    trafficFetch.refresh();
+    disastersFetch.refresh();
+  }, [commoditiesFetch, riversFetch, quakesFetch, trafficFetch, disastersFetch]);
+
+  // Relative time ticker
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
 
   if (!brief) {
     return (
@@ -116,7 +175,6 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const totalVerified = brief.areas.reduce((s, a) => s + a.verifiedCameras, 0);
   const totalCandidates = brief.areas.reduce((s, a) => s + a.candidateCameras, 0);
 
-  // River flood: find highest risk
   const highestRiskRiver = rivers
     ?.slice()
     .sort((a, b) => {
@@ -124,23 +182,22 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
       return rank(b.riskLevel) - rank(a.riskLevel);
     })[0];
 
-  // Earthquake: strongest recent
   const strongestQuake = quakes?.slice().sort((a, b) => b.magnitude - a.magnitude)[0];
 
-  // Traffic: count by category
   const trafficAccidents = traffic?.filter(t => t.category === "accident").length ?? 0;
   const trafficJams = traffic?.filter(t => t.category === "trafficjam").length ?? 0;
 
-  // Disasters: count by alert level
   const redAlerts = disasters?.filter(d => d.alertLevel === "Red").length ?? 0;
   const orangeAlerts = disasters?.filter(d => d.alertLevel === "Orange").length ?? 0;
 
-  // Commodities: pick top 3 for display
   const topCommodities = commodities?.slice(0, 3) ?? [];
+
+  // Count active feeds
+  const activeFeedCount = [commodities, rivers, quakes, traffic, disasters].filter(Boolean).length;
 
   return (
     <section className="bg-[var(--bg)] border-t border-black shrink-0 px-4 py-2 relative z-40">
-      <div className="max-w-[1800px] mx-auto flex items-center gap-4">
+      <div className="max-w-[2200px] mx-auto flex items-center gap-3 overflow-x-auto no-scrollbar">
 
         {/* Overall posture badge */}
         <div className="shrink-0 flex flex-col items-center gap-0.5">
@@ -182,43 +239,31 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
         {/* Command metrics */}
         <div className="flex items-center gap-0 shrink-0">
-          <Metric label="Incidents" value={totalIncidents} sub="matched" />
-          <Metric label="Fatalities" value={totalFatalities} sub="reported" />
+          <Metric label="Incidents" value={totalIncidents} sub="matched" sourceId="acled" />
+          <Metric label="Fatalities" value={totalFatalities} sub="reported" sourceId="acled" />
           <Metric label="Cameras" value={totalVerified} sub={`+${totalCandidates} scout`} />
         </div>
 
         <Divider />
 
-        {/* Traffic (Longdo) */}
-        <div className="flex items-center gap-0 shrink-0 hidden xl:flex">
-          <Metric
-            label="Traffic"
-            value={traffic?.length ?? "--"}
-            sub="incidents"
-          />
-          <Metric
-            label="Accidents"
-            value={trafficAccidents}
-            sub="active"
-            color={trafficAccidents > 0 ? "var(--accent)" : undefined}
-          />
-          <Metric
-            label="Jams"
-            value={trafficJams}
-            sub="reported"
-          />
+        {/* Traffic (Longdo) — always visible, compressed on smaller screens */}
+        <div className="flex items-center gap-0 shrink-0">
+          <Metric label="Traffic" value={traffic?.length ?? "--"} sub="incidents" sourceId="traffic" />
+          <Metric label="Accidents" value={trafficAccidents} sub="active" color={trafficAccidents > 0 ? "var(--accent)" : undefined} sourceId="traffic" />
+          <Metric label="Jams" value={trafficJams} sub="reported" sourceId="traffic" />
         </div>
 
         <Divider />
 
-        {/* Seismic + Flood + Disasters */}
-        <div className="flex items-center gap-0 shrink-0 hidden xl:flex">
+        {/* Seismic + Flood + Disasters — always visible */}
+        <div className="flex items-center gap-0 shrink-0">
           {strongestQuake && (
             <Metric
               label="Max Quake"
               value={`M${strongestQuake.magnitude.toFixed(1)}`}
               sub="30d SE Asia"
               color={strongestQuake.magnitude >= 5 ? "var(--accent)" : strongestQuake.magnitude >= 4 ? "#f59e0b" : undefined}
+              sourceId="earthquakes"
             />
           )}
           {highestRiskRiver && (
@@ -227,6 +272,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               value={highestRiskRiver.riskLevel.toUpperCase()}
               sub={highestRiskRiver.name.split("(")[0].trim()}
               color={riskColorHex(highestRiskRiver.riskLevel)}
+              sourceId="flood"
             />
           )}
           {disasters && disasters.length > 0 && (
@@ -235,31 +281,63 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               value={disasters.length}
               sub={redAlerts > 0 ? `${redAlerts} red` : orangeAlerts > 0 ? `${orangeAlerts} orange` : "green"}
               color={redAlerts > 0 ? "var(--accent)" : orangeAlerts > 0 ? "#f59e0b" : undefined}
+              sourceId="disasters"
             />
           )}
         </div>
 
         <Divider />
 
-        {/* Commodity prices (NABC) */}
-        <div className="flex items-center gap-0 shrink-0 hidden 2xl:flex">
+        {/* Commodity prices (NABC) — always visible */}
+        <div className="flex items-center gap-0 shrink-0">
           {topCommodities.map((c) => (
             <Metric
               key={c.id}
               label={c.nameEn}
               value={typeof c.price === "number" && c.price > 100 ? c.price.toLocaleString("en-US") : c.price}
               sub={c.unit}
+              sourceId="commodities"
             />
           ))}
         </div>
 
-        {/* Timestamp */}
-        <div className="shrink-0 text-right ml-auto">
-          <div className="text-[7px] font-black uppercase tracking-wider opacity-20 leading-none mb-0.5">GENERATED</div>
-          <div className="text-[9px] tabular-nums opacity-40">
-            {new Date(brief.generatedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+        <Divider />
+
+        {/* ── Command Status + Refresh ────────────────── */}
+        <div className="shrink-0 ml-auto flex items-center gap-3">
+          {/* Feed health dots */}
+          <div className="flex flex-col gap-[3px]">
+            <FeedDot ok={!!traffic} label="TFC" />
+            <FeedDot ok={!!quakes} label="QKE" />
+            <FeedDot ok={!!rivers} label="FLD" />
+            <FeedDot ok={!!disasters} label="DIS" />
+            <FeedDot ok={!!commodities} label="AGR" />
           </div>
-          <div className="text-[7px] opacity-20 uppercase mt-0.5">Connected Grid V5</div>
+
+          {/* Sync status */}
+          <div className="text-right">
+            <div className="flex items-center gap-1.5 justify-end mb-0.5">
+              <div className={`w-[6px] h-[6px] rounded-full ${anyRefreshing ? "bg-[var(--safe,#22c55e)] animate-pulse" : "bg-white/20"}`} />
+              <span className="text-[7px] font-black uppercase tracking-wider opacity-40">
+                {anyRefreshing ? "SYNCING" : "LIVE"}
+              </span>
+            </div>
+            <div className="text-[9px] tabular-nums opacity-50 leading-none">
+              {timeAgo(latestRefresh)}
+            </div>
+            <div className="text-[6px] font-black uppercase tracking-wider opacity-20 mt-0.5">
+              {activeFeedCount}/5 feeds
+            </div>
+          </div>
+
+          {/* Manual refresh button */}
+          <button
+            onClick={refreshAll}
+            title="Refresh all data feeds immediately"
+            className={`h-[36px] w-[36px] flex items-center justify-center border border-white/15 hover:border-white/40 hover:bg-white/5 transition-all ${anyRefreshing ? "animate-spin" : ""}`}
+          >
+            <RefreshCw size={12} className="opacity-40" />
+          </button>
         </div>
       </div>
     </section>
