@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 
 export const revalidate = 3600;
 
@@ -76,6 +77,19 @@ export async function GET() {
     );
 
     const prices = results.filter((r): r is CommodityPrice => r !== null);
+
+    // Archive commodity signals (non-blocking)
+    void archiveSignalBatch(prices.map((p): ArchiveSignal => ({
+      external_id: `nabc-${p.id}-${p.date}`,
+      signal_type: "commodity",
+      source_provider: "nabc",
+      source_url: "https://www.nabc.go.th",
+      title: `${p.nameEn}: ${p.price} ${p.unit}`,
+      summary: `Market: ${p.market}, Date: ${p.date}`,
+      published_at: p.date ? new Date(p.date).toISOString() : new Date().toISOString(),
+      country_focus: ["TH"],
+    })));
+
     return NextResponse.json(prices.length > 0 ? prices : FALLBACK);
   } catch {
     return NextResponse.json(FALLBACK);

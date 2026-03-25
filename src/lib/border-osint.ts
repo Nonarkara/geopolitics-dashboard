@@ -1,4 +1,5 @@
 import { fallbackNews, fallbackTicker } from "./mock-data";
+import { archiveSignalBatch, type ArchiveSignal } from "./signal-archive";
 import {
   BORDER_AREAS,
   incidentMatchesBorderArea,
@@ -390,6 +391,23 @@ async function fetchGdeltSignals() {
         })
         .filter((item): item is BorderNarrativeSignal => item !== null),
     ).slice(0, 8);
+
+    // ── Archive GDELT signals to research database (non-blocking) ──
+    void archiveSignalBatch(
+      signals.map((s): ArchiveSignal => ({
+        external_id: s.sourceUrl ?? s.id,
+        signal_type: "osint",
+        source_provider: "gdelt",
+        source_url: s.sourceUrl,
+        title: s.title,
+        summary: s.summary,
+        url: s.sourceUrl,
+        published_at: s.publishedAt,
+        region: s.areaId,
+        severity: s.severity,
+        tags: s.tags,
+      })),
+    );
 
     return {
       signals: signals.length > 0 ? signals : FALLBACK_BORDER_SIGNALS,

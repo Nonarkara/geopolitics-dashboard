@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 
 export const revalidate = 120;
 
@@ -76,6 +77,20 @@ export async function GET() {
         };
       })
       .filter((incident) => isNearBorder(incident.lat, incident.lng));
+
+    // Archive traffic signals (non-blocking)
+    void archiveSignalBatch(incidents.map((i): ArchiveSignal => ({
+      external_id: i.id,
+      signal_type: "traffic",
+      source_provider: "longdo",
+      source_url: "https://event.longdo.com",
+      title: i.title,
+      summary: i.description,
+      published_at: i.start || new Date().toISOString(),
+      severity: i.severity > 3 ? "alert" : i.severity > 1 ? "watch" : "stable",
+      lat: i.lat,
+      lng: i.lng,
+    })));
 
     return NextResponse.json(incidents);
   } catch {

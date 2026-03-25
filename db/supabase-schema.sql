@@ -45,5 +45,34 @@ CREATE TABLE IF NOT EXISTS data_snapshots (
 
 CREATE INDEX IF NOT EXISTS idx_snapshots_feed ON data_snapshots (feed_id, captured_at DESC);
 
--- Enable Realtime on news_items for live subscriptions
+-- ── Signal Archive (Supabase mirror) ─────────────────────────
+-- Mirrors the PostgreSQL signal_archive for Realtime subscriptions.
+CREATE TABLE IF NOT EXISTS signal_archive (
+  id              BIGSERIAL PRIMARY KEY,
+  external_id     TEXT,
+  signal_type     TEXT NOT NULL,
+  source_provider TEXT NOT NULL,
+  source_url      TEXT,
+  title           TEXT NOT NULL,
+  summary         TEXT,
+  url             TEXT,
+  published_at    TIMESTAMPTZ NOT NULL,
+  ingested_at     TIMESTAMPTZ DEFAULT now(),
+  region          TEXT,
+  country_focus   TEXT[] DEFAULT '{}',
+  severity        TEXT,
+  score           REAL,
+  fatalities      INTEGER,
+  keywords        TEXT[] DEFAULT '{}',
+  tags            JSONB DEFAULT '[]',
+  payload         JSONB
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_signal_archive_dedup
+  ON signal_archive (source_provider, external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_signal_archive_published ON signal_archive (published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_signal_archive_region ON signal_archive (region, published_at DESC);
+
+-- Enable Realtime on news_items and signal_archive for live subscriptions
 ALTER PUBLICATION supabase_realtime ADD TABLE news_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE signal_archive;

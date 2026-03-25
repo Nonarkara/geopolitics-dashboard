@@ -193,3 +193,77 @@ CREATE TABLE IF NOT EXISTS intelligence_source_health (
 );
 
 CREATE INDEX IF NOT EXISTS intelligence_source_checked_idx ON intelligence_source_health(checked_at DESC);
+
+-- ═══════════════════════════════════════════════════════════════
+-- V5.0 RESEARCH DATABASE — Capture All Signals for Trend Analysis
+-- ═══════════════════════════════════════════════════════════════
+
+-- Signal Archive: permanent store of every news article, intelligence signal,
+-- OSINT report, humanitarian update, and environmental event. Nothing gets lost.
+CREATE TABLE IF NOT EXISTS signal_archive (
+    id              BIGSERIAL PRIMARY KEY,
+    external_id     TEXT,
+    signal_type     TEXT NOT NULL,
+    source_provider TEXT NOT NULL,
+    source_url      TEXT,
+    title           TEXT NOT NULL,
+    summary         TEXT,
+    url             TEXT,
+    published_at    TIMESTAMPTZ NOT NULL,
+    ingested_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    region          TEXT,
+    country_focus   TEXT[] DEFAULT '{}',
+    severity        TEXT,
+    score           REAL,
+    fatalities      INTEGER,
+    keywords        TEXT[] DEFAULT '{}',
+    tags            JSONB DEFAULT '[]',
+    payload         JSONB,
+    geom            GEOMETRY(Point, 4326)
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS signal_archive_dedup
+    ON signal_archive (source_provider, external_id) WHERE external_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS signal_archive_published ON signal_archive (published_at DESC);
+CREATE INDEX IF NOT EXISTS signal_archive_region ON signal_archive (region, published_at DESC);
+CREATE INDEX IF NOT EXISTS signal_archive_type ON signal_archive (signal_type, published_at DESC);
+CREATE INDEX IF NOT EXISTS signal_archive_provider ON signal_archive (source_provider, published_at DESC);
+CREATE INDEX IF NOT EXISTS signal_archive_geom ON signal_archive USING GIST (geom);
+CREATE INDEX IF NOT EXISTS signal_archive_keywords ON signal_archive USING GIN (keywords);
+
+-- Visitor Movements: border crossing, refugee flow, tourism, and trade traffic
+CREATE TABLE IF NOT EXISTS visitor_movements (
+    id              BIGSERIAL PRIMARY KEY,
+    crossing_point  TEXT NOT NULL,
+    region          TEXT NOT NULL,
+    direction       TEXT,
+    movement_type   TEXT NOT NULL,
+    count           INTEGER,
+    source_provider TEXT NOT NULL,
+    ref_date        DATE NOT NULL,
+    notes           TEXT,
+    payload         JSONB,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS visitor_movements_crossing ON visitor_movements (crossing_point, ref_date DESC);
+CREATE INDEX IF NOT EXISTS visitor_movements_region ON visitor_movements (region, ref_date DESC);
+CREATE INDEX IF NOT EXISTS visitor_movements_type ON visitor_movements (movement_type, ref_date DESC);
+
+-- Signal Daily Summary: pre-computed rollups for fast trend queries
+CREATE TABLE IF NOT EXISTS signal_daily_summary (
+    id              BIGSERIAL PRIMARY KEY,
+    summary_date    DATE NOT NULL,
+    region          TEXT NOT NULL,
+    signal_type     TEXT NOT NULL,
+    signal_count    INTEGER DEFAULT 0,
+    avg_severity    REAL,
+    top_keywords    TEXT[] DEFAULT '{}',
+    fatality_total  INTEGER DEFAULT 0,
+    source_breakdown JSONB,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS signal_daily_summary_uq
+    ON signal_daily_summary (summary_date, region, signal_type);
+CREATE INDEX IF NOT EXISTS signal_daily_summary_date ON signal_daily_summary (summary_date DESC);

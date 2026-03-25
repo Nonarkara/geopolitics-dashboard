@@ -608,8 +608,29 @@ export const borderFeedApis: InternalApiDescriptor[] = [
   },
 ];
 
-// Merge border feed APIs into main catalog for counting
-export const fullInternalApiCatalog = [...internalApiCatalog, ...borderFeedApis];
+export const researchApis: InternalApiDescriptor[] = [
+  {
+    path: "/api/research/signals",
+    category: "Analytics",
+    purpose:
+      "Query the signal_archive research database. Supports filtering by region, signal type, provider, date range, and keyword. Returns paginated results with total count.",
+    consumers: ["Research clients", "future trend dashboard"],
+    upstreams: ["signal_archive table (PostgreSQL)"],
+    fallback: "Returns empty results when database is not configured.",
+  },
+  {
+    path: "/api/research/trends",
+    category: "Analytics",
+    purpose:
+      "Query pre-aggregated daily signal summaries for trend visualization. Returns counts, severity averages, and keyword trends per region and signal type.",
+    consumers: ["Research clients", "future trend charts"],
+    upstreams: ["signal_daily_summary table (PostgreSQL)"],
+    fallback: "Returns empty results when database is not configured.",
+  },
+];
+
+// Merge all API catalogs for counting
+export const fullInternalApiCatalog = [...internalApiCatalog, ...borderFeedApis, ...researchApis];
 
 export const externalProviderCategoryOrder: ExternalProviderCategory[] = [
   "News",

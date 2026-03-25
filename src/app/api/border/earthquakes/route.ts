@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logFeedHealth } from "../../../../lib/supabase";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 
 export const revalidate = 300;
 
@@ -80,6 +81,22 @@ export async function GET() {
     }));
 
     void logFeedHealth({ feed_id: "earthquakes", status: "ok", response_time_ms: Date.now() - t0, message: null });
+
+    // Archive seismic signals (non-blocking)
+    void archiveSignalBatch(events.map((e): ArchiveSignal => ({
+      external_id: e.id,
+      signal_type: "seismic",
+      source_provider: "usgs",
+      source_url: e.url,
+      title: `M${e.magnitude.toFixed(1)} — ${e.place}`,
+      summary: `Depth ${e.depth}km`,
+      url: e.url,
+      published_at: e.time,
+      severity: e.magnitude >= 5 ? "alert" : e.magnitude >= 4 ? "watch" : "stable",
+      lat: e.lat,
+      lng: e.lng,
+    })));
+
     return NextResponse.json(events);
   } catch {
     void logFeedHealth({ feed_id: "earthquakes", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });

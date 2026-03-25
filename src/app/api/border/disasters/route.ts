@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 
 export const revalidate = 600;
 
@@ -95,6 +96,20 @@ export async function GET() {
         source: "GDACS",
       }))
       .slice(0, 15);
+
+    // Archive disaster signals (non-blocking)
+    void archiveSignalBatch(disasters.map((d): ArchiveSignal => ({
+      external_id: d.id,
+      signal_type: "disaster",
+      source_provider: "gdacs",
+      source_url: "https://www.gdacs.org",
+      title: d.title,
+      summary: `${d.type} — Alert: ${d.alertLevel}`,
+      published_at: d.date || new Date().toISOString(),
+      severity: d.alertLevel === "Red" ? "alert" : d.alertLevel === "Orange" ? "watch" : "stable",
+      lat: d.lat,
+      lng: d.lng,
+    })));
 
     return NextResponse.json(disasters);
   } catch {
