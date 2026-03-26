@@ -175,7 +175,8 @@ export async function GET() {
               .split(/\s+/)
               .filter((w) => w.length > 3)
               .slice(0, 15),
-          }).then(() => {/* ok */}).catch(() => {/* dupe ok */});
+          });
+          // _mirrorErr ignored — duplicate inserts are expected and harmless
         }
         // Ignore duplicate errors (idempotency_key conflict = already stored)
       }
