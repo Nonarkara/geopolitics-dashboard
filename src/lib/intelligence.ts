@@ -180,6 +180,22 @@ const KEYWORD_GROUPS = [
     weight: 10,
     terms: ["aqi", "pm2.5", "pm25", "smoke", "air quality", "haze"],
   },
+  {
+    tag: "border",
+    weight: 20,
+    terms: [
+      "border", "frontier", "crossing", "checkpoint", "customs",
+      "smuggling", "refugee", "clash", "displacement", "militia",
+    ],
+  },
+  {
+    tag: "conflict",
+    weight: 18,
+    terms: [
+      "fighting", "attack", "shelling", "casualties", "military",
+      "armed", "insurgent", "ceasefire", "coup", "junta",
+    ],
+  },
 ] as const;
 
 const FEED_SOURCES: FeedSource[] = [
@@ -237,6 +253,46 @@ const FEED_SOURCES: FeedSource[] = [
     url: "https://www.channelnewsasia.com/api/v1/rss-outbound-feed?_format=xml",
     group: "asia",
     trustScore: 10,
+    kind: "rss",
+  },
+  {
+    id: "matichon",
+    label: "Matichon Online",
+    url: "https://www.matichon.co.th/feed",
+    group: "thailand",
+    trustScore: 12,
+    kind: "rss",
+  },
+  {
+    id: "khaosod-en",
+    label: "Khaosod English",
+    url: "https://www.khaosodenglish.com/feed/",
+    group: "thailand",
+    trustScore: 12,
+    kind: "rss",
+  },
+  {
+    id: "irrawaddy",
+    label: "The Irrawaddy",
+    url: "https://www.irrawaddy.com/feed",
+    group: "asia",
+    trustScore: 11,
+    kind: "rss",
+  },
+  {
+    id: "phnom-penh-post",
+    label: "Phnom Penh Post",
+    url: "https://www.phnompenhpost.com/rss.xml",
+    group: "asia",
+    trustScore: 11,
+    kind: "rss",
+  },
+  {
+    id: "benarnews",
+    label: "BenarNews",
+    url: "https://www.benarnews.org/english/rss/rss.xml",
+    group: "asia",
+    trustScore: 11,
     kind: "rss",
   },
 ];

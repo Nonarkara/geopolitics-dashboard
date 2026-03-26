@@ -381,3 +381,84 @@ export async function queryTrends(params: {
     return [];
   }
 }
+
+/* ── Escalation Detection ───────────────────────────────── */
+
+export interface EscalationAlert {
+  region: string;
+  todayCount: number;
+  baselineAvg: number;
+  ratio: number;
+  todaySeverityAvg: number | null;
+  baselineSeverityAvg: number | null;
+  severityDelta: number | null;
+  escalated: boolean;
+  reason: string;
+  topSignals: { title: string; source_provider: string; severity: string | null; published_at: string }[];
+}
+
+/**
+ * Compare today's signal activity against the 7-day rolling baseline.
+ * Flags escalation if count exceeds 2x baseline or severity jumps >0.5 points.
+ */
+export async function detectEscalation(region: string): Promise<EscalationAlert | null> {
+  if (!isDatabaseConfigured) return null;
+
+  try {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(todayStart.getTime() - 7 * 86400000);
+
+    const [todayRes, baselineRes, topRes] = await Promise.all([
+      query<{ cnt: string; avg_sev: string | null }>(
+        `SELECT COUNT(*)::text AS cnt,
+                AVG(CASE severity WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
+         FROM signal_archive WHERE region = $1 AND published_at >= $2`,
+        [region, todayStart.toISOString()],
+      ),
+      query<{ cnt: string; avg_sev: string | null }>(
+        `SELECT (COUNT(*) / 7.0)::text AS cnt,
+                AVG(CASE severity WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
+         FROM signal_archive WHERE region = $1 AND published_at >= $2 AND published_at < $3`,
+        [region, weekAgo.toISOString(), todayStart.toISOString()],
+      ),
+      query<{ title: string; source_provider: string; severity: string | null; published_at: string }>(
+        `SELECT title, source_provider, severity, published_at
+         FROM signal_archive WHERE region = $1 AND published_at >= $2
+         ORDER BY published_at DESC LIMIT 5`,
+        [region, todayStart.toISOString()],
+      ),
+    ]);
+
+    const todayCount = parseInt(todayRes.rows[0]?.cnt ?? "0", 10);
+    const baselineAvg = parseFloat(baselineRes.rows[0]?.cnt ?? "0");
+    const todaySev = todayRes.rows[0]?.avg_sev ? parseFloat(todayRes.rows[0].avg_sev) : null;
+    const baselineSev = baselineRes.rows[0]?.avg_sev ? parseFloat(baselineRes.rows[0].avg_sev) : null;
+    const ratio = baselineAvg > 0 ? todayCount / baselineAvg : todayCount > 0 ? 999 : 0;
+    const sevDelta = todaySev !== null && baselineSev !== null ? todaySev - baselineSev : null;
+
+    const countEscalated = ratio >= 2;
+    const sevEscalated = sevDelta !== null && sevDelta > 0.5;
+    const escalated = countEscalated || sevEscalated;
+
+    const reasons: string[] = [];
+    if (countEscalated) reasons.push(`Signal count ${todayCount} is ${ratio.toFixed(1)}x the 7-day average (${baselineAvg.toFixed(1)})`);
+    if (sevEscalated) reasons.push(`Severity average jumped by ${sevDelta!.toFixed(2)} points above baseline`);
+    if (!escalated) reasons.push("Within normal parameters");
+
+    return {
+      region,
+      todayCount,
+      baselineAvg: Math.round(baselineAvg * 10) / 10,
+      ratio: Math.round(ratio * 10) / 10,
+      todaySeverityAvg: todaySev ? Math.round(todaySev * 100) / 100 : null,
+      baselineSeverityAvg: baselineSev ? Math.round(baselineSev * 100) / 100 : null,
+      severityDelta: sevDelta ? Math.round(sevDelta * 100) / 100 : null,
+      escalated,
+      reason: reasons.join("; "),
+      topSignals: topRes.rows,
+    };
+  } catch {
+    return null;
+  }
+}

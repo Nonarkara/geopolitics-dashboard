@@ -27,6 +27,12 @@ export type ExternalProviderCategory =
   | "Markets"
   | "Mapping & Media"
   | "Satellite Imagery"
+  | "Maritime & Aviation"
+  | "Financial Intelligence"
+  | "Humanitarian"
+  | "Cyber & Infrastructure"
+  | "Prediction & Sentiment"
+  | "Research & Reference"
   | "Optional";
 
 export interface ArchitectureSection {
@@ -636,9 +642,15 @@ export const externalProviderCategoryOrder: ExternalProviderCategory[] = [
   "News",
   "Environmental",
   "Mobility",
+  "Maritime & Aviation",
   "Markets",
+  "Financial Intelligence",
+  "Humanitarian",
   "Mapping & Media",
   "Satellite Imagery",
+  "Cyber & Infrastructure",
+  "Prediction & Sentiment",
+  "Research & Reference",
   "Optional",
 ];
 
@@ -933,6 +945,226 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     surfaces: ["Base map selection"],
     endpoints: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"],
   },
+  /* ── Maritime & Aviation (sourced from World Monitor) ────── */
+  {
+    id: "aisstream",
+    label: "AISStream",
+    category: "Maritime & Aviation",
+    description: "Real-time vessel tracking via WebSocket AIS data. Monitors vessel movements through strategic waterways including the Strait of Malacca.",
+    surfaces: ["Future maritime overlay"],
+    endpoints: ["wss://stream.aisstream.io/v0/stream"],
+    optional: true,
+  },
+  {
+    id: "imf-portwatch",
+    label: "IMF PortWatch",
+    category: "Maritime & Aviation",
+    description: "Weekly vessel transit counts across strategic waterways and global shipping chokepoints. Tracks supply chain disruption signals.",
+    surfaces: ["Future trade flow analytics"],
+    endpoints: ["https://portwatch.imf.org/api/"],
+    optional: true,
+  },
+  {
+    id: "aviationstack",
+    label: "AviationStack",
+    category: "Maritime & Aviation",
+    description: "Real-time and historical flight data for 40+ international airports. Tracks delays, cancellations, and air traffic disruptions.",
+    surfaces: ["Future flight disruption overlay"],
+    endpoints: ["https://api.aviationstack.com/v1/flights"],
+    optional: true,
+  },
+  {
+    id: "icao-notam",
+    label: "ICAO NOTAM API",
+    category: "Maritime & Aviation",
+    description: "Airport and airspace closure notices (NOTAMs) for monitoring restricted zones, military exercises, and aviation disruptions.",
+    surfaces: ["Future airspace monitoring"],
+    endpoints: ["https://applications.icao.int/dataservices/api/notams-realtime-list"],
+    optional: true,
+  },
+  {
+    id: "adsb-exchange",
+    label: "ADS-B Exchange",
+    category: "Maritime & Aviation",
+    description: "Unfiltered ADS-B transponder data for military and civilian aircraft tracking without commercial filtering.",
+    surfaces: ["Future military flight overlay"],
+    endpoints: ["https://globe.adsbexchange.com/"],
+    optional: true,
+  },
+  /* ── Financial Intelligence (sourced from World Monitor) ── */
+  {
+    id: "yahoo-finance",
+    label: "Yahoo Finance",
+    category: "Financial Intelligence",
+    description: "Stock tickers, indices, commodities, and ETF data for 92+ global exchanges. Real-time price movement correlation.",
+    surfaces: ["Future market correlation analytics"],
+    endpoints: ["https://query1.finance.yahoo.com/v8/finance/chart/"],
+    optional: true,
+  },
+  {
+    id: "coingecko",
+    label: "CoinGecko",
+    category: "Financial Intelligence",
+    description: "Real-time cryptocurrency prices, stablecoin peg monitoring, and market capitalization data.",
+    surfaces: ["Future crypto volatility indicator"],
+    endpoints: ["https://api.coingecko.com/api/v3/"],
+    optional: true,
+  },
+  {
+    id: "bis-policy-rates",
+    label: "Bank for International Settlements",
+    category: "Financial Intelligence",
+    description: "Central bank policy rates, real effective exchange rates, and credit-to-GDP ratios for ASEAN and global economies.",
+    surfaces: ["Future macro financial analytics"],
+    endpoints: ["https://data.bis.org/api/v2/"],
+    optional: true,
+  },
+  {
+    id: "eia-energy",
+    label: "U.S. Energy Information Administration",
+    category: "Financial Intelligence",
+    description: "WTI/Brent crude oil prices, US oil production data, and petroleum inventory levels affecting ASEAN energy markets.",
+    surfaces: ["Future energy price tracking"],
+    endpoints: ["https://api.eia.gov/v2/"],
+    optional: true,
+  },
+  {
+    id: "fred-freight",
+    label: "FRED (Federal Reserve Economic Data)",
+    category: "Financial Intelligence",
+    description: "Deep Sea Freight PPI and Freight Transportation Services Index for global supply chain pressure monitoring.",
+    surfaces: ["Future supply chain analytics"],
+    endpoints: ["https://api.stlouisfed.org/fred/series/observations"],
+    optional: true,
+  },
+  {
+    id: "wto-trade",
+    label: "World Trade Organization",
+    category: "Financial Intelligence",
+    description: "Trade restrictions, tariff databases, bilateral flows, and SPS/TBT trade barriers affecting ASEAN economies.",
+    surfaces: ["Future trade restriction analytics"],
+    endpoints: ["https://apiportal.wto.org/"],
+    optional: true,
+  },
+  /* ── Humanitarian ─────────────────────────────────────── */
+  {
+    id: "un-ocha-hapi",
+    label: "UN OCHA HAPI",
+    category: "Humanitarian",
+    description: "Humanitarian API providing refugee, asylum seeker, and IDP population counts. Essential for displacement tracking along Myanmar and Cambodian borders.",
+    surfaces: ["Refugee flow analytics", "border command"],
+    endpoints: ["https://hapi.humdata.org/api/v2/"],
+    optional: true,
+  },
+  {
+    id: "worldpop",
+    label: "WorldPop",
+    category: "Humanitarian",
+    description: "High-resolution population distribution estimates useful for displacement impact assessment in border regions.",
+    surfaces: ["Future population density overlay"],
+    endpoints: ["https://hub.worldpop.org/rest/data/"],
+    optional: true,
+  },
+  {
+    id: "cdc-travel-notices",
+    label: "CDC Travel Health Notices",
+    category: "Humanitarian",
+    description: "Health travel advisories and disease outbreak notifications relevant to border crossing health screening.",
+    surfaces: ["Future health alert layer"],
+    endpoints: ["https://tools.cdc.gov/api/v2/resources/media"],
+    optional: true,
+  },
+  /* ── Cyber & Infrastructure ───────────────────────────── */
+  {
+    id: "cloudflare-radar",
+    label: "Cloudflare Radar",
+    category: "Cyber & Infrastructure",
+    description: "Internet outage detection and traffic anomaly monitoring. Tracks connectivity disruptions that correlate with conflict events.",
+    surfaces: ["Future infrastructure monitoring"],
+    endpoints: ["https://api.cloudflare.com/client/v4/radar/"],
+    optional: true,
+  },
+  {
+    id: "gpsjam",
+    label: "GPSJam.org",
+    category: "Cyber & Infrastructure",
+    description: "GPS/GNSS jamming and spoofing analysis derived from ADS-B aircraft data. Detects electronic warfare activity.",
+    surfaces: ["Future EW detection overlay"],
+    endpoints: ["https://gpsjam.org/"],
+    optional: true,
+  },
+  {
+    id: "feodo-tracker",
+    label: "Feodo Tracker (abuse.ch)",
+    category: "Cyber & Infrastructure",
+    description: "Botnet command-and-control infrastructure indicators. Tracks cyber threats originating from or targeting ASEAN networks.",
+    surfaces: ["Future cyber threat layer"],
+    endpoints: ["https://feodotracker.abuse.ch/downloads/ipblocklist.json"],
+    optional: true,
+  },
+  /* ── Prediction & Sentiment ───────────────────────────── */
+  {
+    id: "polymarket",
+    label: "Polymarket (Prediction Markets)",
+    category: "Prediction & Sentiment",
+    description: "Geopolitical prediction market data from Gamma API. Crowd-sourced probability estimates for conflict outcomes and geopolitical events.",
+    surfaces: ["Future prediction market analytics"],
+    endpoints: ["https://gamma-api.polymarket.com/"],
+    optional: true,
+  },
+  {
+    id: "fear-greed-index",
+    label: "Fear & Greed Index",
+    category: "Prediction & Sentiment",
+    description: "Market sentiment indicator combining volatility, momentum, and safe-haven demand. Correlates with geopolitical risk perception.",
+    surfaces: ["Future sentiment overlay"],
+    endpoints: ["https://api.alternative.me/fng/"],
+    optional: true,
+  },
+  /* ── Research & Reference ──────────────────────────────── */
+  {
+    id: "worldmonitor-reference",
+    label: "World Monitor (Reference Architecture)",
+    category: "Research & Reference",
+    description: "Open-source geopolitical monitoring platform by koala73. Provides API discovery patterns, multi-source correlation techniques, and architectural reference for intelligence dashboards. Many providers in this catalog were discovered through World Monitor.",
+    surfaces: ["API discovery", "architecture reference"],
+    endpoints: ["https://github.com/koala73/worldmonitor"],
+  },
+  {
+    id: "drnon-satellite-toolkit-ref",
+    label: "DrNon Global Satellite Toolkit",
+    category: "Research & Reference",
+    description: "Open-source satellite imagery integration toolkit providing basemap fallback chains, overlay catalogs, distance grids, and a registry of 22 satellite APIs across 80+ countries.",
+    surfaces: ["Base maps", "data overlays", "distance grid", "fallback chain"],
+    endpoints: ["https://github.com/Nonarkara/DrNon-Global-Satellite-Toolkit"],
+  },
+  {
+    id: "celestrak-tle",
+    label: "CelesTrak TLE Database",
+    category: "Research & Reference",
+    description: "Free NORAD Two-Line Element data for ~185 satellites. Updated every 2 hours. Enables orbital surveillance and satellite pass prediction.",
+    surfaces: ["Future satellite tracking overlay"],
+    endpoints: ["https://celestrak.org/NORAD/elements/gp.php"],
+    optional: true,
+  },
+  {
+    id: "nasa-eonet",
+    label: "NASA EONET",
+    category: "Environmental",
+    description: "Earth Observatory Natural Event Tracker for satellite-based disaster detection including wildfires, volcanic eruptions, and severe storms via GOES/Himawari, MODIS, and SAR.",
+    surfaces: ["Future disaster tracking overlay"],
+    endpoints: ["https://eonet.gsfc.nasa.gov/api/v3/events"],
+    optional: true,
+  },
+  {
+    id: "ucdp",
+    label: "Uppsala Conflict Data Program",
+    category: "Research & Reference",
+    description: "Academic conflict dataset tracking active conflicts, battle-related deaths, and organized violence worldwide. Essential for historical trend analysis.",
+    surfaces: ["Future conflict trend comparison"],
+    endpoints: ["https://ucdp.uu.se/apidocs/"],
+    optional: true,
+  },
   {
     id: "supabase",
     label: "Supabase (Realtime + Storage)",
@@ -1056,3 +1288,99 @@ export const architectureSummary = {
   optionalProviderCount: externalProviderCatalog.filter((provider) => provider.optional)
     .length,
 };
+
+/* ═══════════════════════════════════════════════════════════════
+ * SATELLITE DATA BEST PRACTICES (STAC/COG/ARD)
+ * ═══════════════════════════════════════════════════════════════ */
+
+export interface SatelliteProviderEntry {
+  id: string;
+  name: string;
+  type: "public" | "commercial";
+  stacEndpoint?: string;
+  description: string;
+  authMethod: string;
+  bestFor: string;
+}
+
+export const satelliteProviderRegistry: SatelliteProviderEntry[] = [
+  {
+    id: "nasa-cmr-stac",
+    name: "NASA Earthdata CMR-STAC",
+    type: "public",
+    stacEndpoint: "https://cmr.earthdata.nasa.gov/stac/",
+    description: "Near-complete NASA archive including Landsat, MODIS, VIIRS, GPM. Cloud-hosted for in-region analysis.",
+    authMethod: "Earthdata Login Bearer token",
+    bestFor: "Historical analysis, fire detection, vegetation monitoring",
+  },
+  {
+    id: "sentinel-hub",
+    name: "Sentinel Hub Processing API",
+    type: "public",
+    stacEndpoint: "https://services.sentinel-hub.com/api/v1/catalog/",
+    description: "On-demand processing with custom evalscripts (JS-like band math). Returns PNG/JPEG/GeoTIFF in seconds. Batch processing for large areas.",
+    authMethod: "OAuth Client ID/Secret (1-hour token expiry)",
+    bestFor: "Custom indices (NDVI, EVI), change detection, rapid prototyping",
+  },
+  {
+    id: "planetary-computer",
+    name: "Microsoft Planetary Computer",
+    type: "public",
+    stacEndpoint: "https://planetarycomputer.microsoft.com/api/stac/v1",
+    description: "Easiest signed STAC access. Auto-signed SAS tokens via pystac_client modifier. Hosts Sentinel-2, Landsat, and derived products.",
+    authMethod: "planetary_computer.sign_inplace modifier (auto-signs)",
+    bestFor: "Quick analysis, Jupyter notebooks, cloud-native workflows",
+  },
+  {
+    id: "usgs-landsat-stac",
+    name: "USGS Landsat STAC",
+    type: "public",
+    stacEndpoint: "https://landsatlook.usgs.gov/stac-server",
+    description: "Dedicated STAC API for Landsat Collection 2 COGs. 50+ years of continuous Earth observation.",
+    authMethod: "None (public COGs)",
+    bestFor: "Long-term change detection, historical baselines",
+  },
+  {
+    id: "google-earth-engine-sat",
+    name: "Google Earth Engine",
+    type: "public",
+    description: "Planetary-scale JS/Python API on analysis-ready catalogs (Landsat, Sentinel, etc.). No storage/compute management needed.",
+    authMethod: "Google Cloud service account",
+    bestFor: "Large-scale temporal analysis, ML-ready pipelines",
+  },
+  {
+    id: "planet-api",
+    name: "Planet Labs",
+    type: "commercial",
+    stacEndpoint: "https://api.planet.com/data/v1/",
+    description: "Daily global coverage at 3-5m resolution. STAC-like API with rate limits and credit system.",
+    authMethod: "API key (commercial license)",
+    bestFor: "Daily monitoring, high-frequency change detection",
+  },
+];
+
+export const stacBestPractices: string[] = [
+  "Use STAC as the universal catalog standard: Collections (datasets), Items (granules with GeoJSON geometry), Assets (band files as COGs).",
+  "Query efficiently: POST /search with bbox, datetime, collections, limit. Use eo:cloud_cover filter (e.g., {lt: 20}) to pre-filter cloudy scenes.",
+  "Always paginate results. Never assume a single page contains all matching items.",
+  "Prefer Cloud Optimized GeoTIFF (COG) assets — they enable HTTP range requests for partial reads (tiles/pyramids) without downloading full files.",
+  "Use pystac-client (Python) + rioxarray/stackstac for loading STAC items into xarray datacubes.",
+  "Query Catalog/Search first to confirm data exists in your AOI/time before requesting assets or processing.",
+  "For Planetary Computer: use modifier=planetary_computer.sign_inplace for auto-signed SAS tokens (unsigned → 404).",
+  "For Sentinel Hub: use Requests Builder UI to prototype evalscripts, then call Processing API programmatically.",
+  "For NASA Earthdata: nearly all data is cloud-hosted — use their Python recipes for cost-effective in-cloud analysis.",
+  "Prioritize Analysis Ready Data (CEOS-ARD): standardized radiometric/geometric corrections, per-pixel cloud masks, and QA metadata.",
+  "Store credentials securely (never in code). Handle rate limits (429s) with exponential backoff.",
+  "Filter early: cloud cover, quality bands, date range. Process to common grid (radiometric calibration, atmospheric correction, reprojection).",
+  "Enable CORS everywhere. Provide HTML views via STAC Browser. Use relative links for portable catalogs.",
+];
+
+export const cogWorkflowNotes: string[] = [
+  "COG (Cloud Optimized GeoTIFF) is the non-negotiable format for modern satellite workflows.",
+  "COGs use internal tiling and overviews to enable HTTP range requests — read only the pixels/bands you need.",
+  "Open COGs with rioxarray.open_rasterio(url, overview_level=...) or GDAL virtual filesystem (/vsicurl/).",
+  "Traditional full-file downloads are obsolete. STAC + COG lets you query, then read only needed data directly from cloud storage.",
+  "Media type: image/tiff; application=geotiff; profile=cloud-optimized",
+  "For multi-item analysis: use stackstac to build lazy datacubes from STAC search results, then compute with Dask for parallelism.",
+  "TiTiler provides dynamic tiling from COG/STAC for web visualization — ideal for dashboard map overlays.",
+];
