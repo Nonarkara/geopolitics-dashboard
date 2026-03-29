@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
+import { logFeedHealth, saveDataSnapshot } from "../../../../lib/supabase";
 
 export const revalidate = 1800;
 
@@ -88,6 +90,33 @@ async function fetchRiverDischarge(river: typeof BORDER_RIVERS[number]): Promise
 }
 
 export async function GET() {
-  const results = await Promise.all(BORDER_RIVERS.map(fetchRiverDischarge));
-  return NextResponse.json(results);
+  const t0 = Date.now();
+  try {
+    const results = await Promise.all(BORDER_RIVERS.map(fetchRiverDischarge));
+
+    // Archive flood signals (non-blocking)
+    const today = new Date().toISOString().slice(0, 10);
+    void archiveSignalBatch(results.map((r): ArchiveSignal => ({
+      external_id: `flood-${r.id}-${today}`,
+      signal_type: "weather",
+      source_provider: "open-meteo",
+      source_url: "https://open-meteo.com",
+      title: `${r.name}: ${r.riskLevel} risk (${r.currentDischarge} m³/s)`,
+      summary: `Trend: ${r.trend}, Peak: ${r.forecastPeak} m³/s on ${r.forecastPeakDate}`,
+      published_at: new Date().toISOString(),
+      severity: r.riskLevel === "critical" ? "alert" : r.riskLevel === "high" ? "watch" : "stable",
+      lat: r.lat,
+      lng: r.lng,
+      country_focus: ["TH"],
+    })));
+
+    // Snapshot for historical comparison
+    void saveDataSnapshot({ feed_id: "flood-risk", snapshot_data: { rivers: results, date: today } });
+    void logFeedHealth({ feed_id: "flood-risk", status: "ok", response_time_ms: Date.now() - t0, message: `${results.length} rivers` });
+
+    return NextResponse.json(results);
+  } catch {
+    void logFeedHealth({ feed_id: "flood-risk", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });
+    return NextResponse.json(BORDER_RIVERS.map(r => ({ ...r, currentDischarge: 0, forecastPeak: 0, forecastPeakDate: "", trend: "stable" as const, riskLevel: "low" as const })));
+  }
 }

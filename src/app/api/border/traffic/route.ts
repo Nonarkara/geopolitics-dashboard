@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
+import { logFeedHealth } from "../../../../lib/supabase";
 
 export const revalidate = 120;
 
@@ -49,12 +50,14 @@ function isNearBorder(lat: number, lng: number): boolean {
 const FALLBACK: TrafficIncident[] = [];
 
 export async function GET() {
+  const t0 = Date.now();
   try {
     const response = await fetch("https://event.longdo.com/feed/json", {
       next: { revalidate: 120 },
     });
 
     if (!response.ok) {
+      void logFeedHealth({ feed_id: "traffic", status: "error", response_time_ms: Date.now() - t0, message: `HTTP ${response.status}` });
       return NextResponse.json(FALLBACK);
     }
 
@@ -92,8 +95,10 @@ export async function GET() {
       lng: i.lng,
     })));
 
+    void logFeedHealth({ feed_id: "traffic", status: "ok", response_time_ms: Date.now() - t0, message: null });
     return NextResponse.json(incidents);
   } catch {
+    void logFeedHealth({ feed_id: "traffic", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });
     return NextResponse.json(FALLBACK);
   }
 }

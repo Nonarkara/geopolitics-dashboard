@@ -258,6 +258,7 @@ export interface FatalityTrendSeries {
 export interface ConflictTrendsResponse {
   provincialData: ConflictTrendSeries;
   fatalities: FatalityTrendSeries;
+  rainfall: FatalityTrendSeries;
 }
 
 export type SignalTone = "up" | "down" | "neutral";
@@ -315,11 +316,34 @@ export interface ApiSourceResponse {
   sources: ApiSourceEntry[];
 }
 
+export type RuntimeDatasetState =
+  | "live"
+  | "stale"
+  | "fallback"
+  | "on_demand"
+  | "disabled";
+
+export type DashboardDatasetCriticality = "core" | "optional";
+
+export interface DashboardDatasetStatus {
+  id: string;
+  label: string;
+  source: string;
+  criticality: DashboardDatasetCriticality;
+  state: RuntimeDatasetState;
+  latestTimestamp: string | null;
+  ageMinutes: number | null;
+  freshnessTargetMinutes: number;
+  details: string;
+}
+
 export interface DashboardStatusPayload {
   status: string;
   version: string;
   signal_strength: number;
+  checkedAt: string;
   services: Record<string, string>;
+  datasets: DashboardDatasetStatus[];
 }
 
 export type PublicCameraCategory =
@@ -490,12 +514,31 @@ export interface CorridorConvergenceResponse {
 
 export type BorderCommandPosture = "priority" | "watch" | "stable";
 
+export interface ScoreContribution {
+  factor: string;
+  rawValue: number;
+  weight: number;
+  contribution: number;
+  source: string;
+  sourceUrl?: string;
+}
+
+export interface ScoreBreakdown {
+  baseScore: number;
+  baseScoreRationale: string;
+  contributions: ScoreContribution[];
+  rawTotal: number;
+  clampedScore: number;
+  formula: string;
+}
+
 export interface BorderAreaStatus {
   id: string;
   label: string;
   counterpart: string;
   posture: BorderCommandPosture;
   score: number;
+  scoreBreakdown: ScoreBreakdown;
   incidentCount: number;
   fatalityCount: number;
   verifiedCameras: number;
@@ -532,6 +575,7 @@ export interface BorderCommandBrief {
   summary: string;
   overallPosture: BorderCommandPosture;
   overallScore: number;
+  overallScoreMethod: string;
   areas: BorderAreaStatus[];
   topConcerns: BorderCommandConcern[];
   actionQueue: BorderActionItem[];

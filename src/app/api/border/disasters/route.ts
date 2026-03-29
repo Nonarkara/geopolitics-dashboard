@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
+import { logFeedHealth } from "../../../../lib/supabase";
 
 export const revalidate = 600;
 
@@ -66,6 +67,7 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
 const FALLBACK: RegionalDisaster[] = [];
 
 export async function GET() {
+  const t0 = Date.now();
   try {
     const fromDate = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
     const toDate = new Date().toISOString().slice(0, 10);
@@ -75,7 +77,10 @@ export async function GET() {
       { next: { revalidate: 600 } }
     );
 
-    if (!res.ok) return NextResponse.json(FALLBACK);
+    if (!res.ok) {
+      void logFeedHealth({ feed_id: "disasters", status: "error", response_time_ms: Date.now() - t0, message: `HTTP ${res.status}` });
+      return NextResponse.json(FALLBACK);
+    }
 
     const json: GDACSResponse = await res.json();
 
@@ -111,8 +116,10 @@ export async function GET() {
       lng: d.lng,
     })));
 
+    void logFeedHealth({ feed_id: "disasters", status: "ok", response_time_ms: Date.now() - t0, message: `${disasters.length} events` });
     return NextResponse.json(disasters);
   } catch {
+    void logFeedHealth({ feed_id: "disasters", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });
     return NextResponse.json(FALLBACK);
   }
 }

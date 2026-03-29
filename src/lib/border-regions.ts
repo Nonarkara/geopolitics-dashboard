@@ -13,6 +13,7 @@ export type BorderAreaConfig = {
   radiusKm: number;
   aliases: string[];
   baseScore: number;
+  baseScoreRationale: string;
   watchpoints: string[];
   actionTitle: string;
   actionOwner: string;
@@ -38,6 +39,7 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
       "burma",
     ],
     baseScore: 58,
+    baseScoreRationale: "Chronic conflict spillover baseline — active civil war in Kayin/Karen state drives elevated default threat",
     watchpoints: [
       "Conflict spillover around Mae Sot / Myawaddy",
       "Shelter and humanitarian pressure in Tak",
@@ -66,6 +68,7 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
       "khmer",
     ],
     baseScore: 34,
+    baseScoreRationale: "Cross-border queue monitoring and scam-economy narrative baseline — moderate security posture",
     watchpoints: [
       "Queue visibility gap at Aranyaprathet / Poipet",
       "Cross-border passenger and casino-linked traffic surges",
@@ -95,6 +98,7 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
       "malaysia",
     ],
     baseScore: 42,
+    baseScoreRationale: "Southern corridor security and freight flow baseline — intermittent security incidents",
     watchpoints: [
       "Coach and freight pressure on Hat Yai / Sadao approaches",
       "Southern security tempo near Sungai Kolok and Narathiwat",

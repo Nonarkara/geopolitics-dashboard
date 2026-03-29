@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import type { BorderCommandBrief } from "../../types/dashboard";
+import type { BorderCommandBrief, ScoreBreakdown } from "../../types/dashboard";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
 import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
-import { useFetch } from "../../hooks/useFetch";
+import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
 import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
 
 function postureColor(posture: string) {
@@ -74,7 +74,8 @@ function Metric({ label, value, sub, color, sourceId }: {
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-[5px] uppercase tracking-wider opacity-20 hover:opacity-50 underline transition-opacity leading-none mt-0.5 block"
+          className="text-[7px] uppercase tracking-wider opacity-25 hover:opacity-60 underline transition-opacity leading-none mt-0.5 block"
+          title={`${source.label} — refreshes every ${source.refreshInterval}`}
         >
           {source.shortLabel}
         </a>
@@ -100,18 +101,82 @@ function riskColorHex(level: string) {
 function timeAgo(date: Date | null): string {
   if (!date) return "--";
   const sec = Math.round((Date.now() - date.getTime()) / 1000);
-  if (sec < 60) return `${sec}s ago`;
+  if (sec < 60) return `${sec}s`;
   const min = Math.round(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  return `${Math.round(min / 60)}h ago`;
+  if (min < 60) return `${min}m`;
+  return `${Math.round(min / 60)}h`;
 }
 
-/** Micro feed-health dot */
-function FeedDot({ ok, label }: { ok: boolean; label: string }) {
+/** 3-state feed health dot: green (fresh), amber (stale), red (error/no data) */
+function FeedDot({ fetchResult, label, expectedIntervalMs }: {
+  fetchResult: UseFetchResult<unknown>;
+  label: string;
+  expectedIntervalMs: number;
+}) {
+  const [showTip, setShowTip] = useState(false);
+
+  const hasData = fetchResult.data !== null;
+  const hasError = fetchResult.error !== null;
+  const age = fetchResult.lastRefreshed ? Date.now() - fetchResult.lastRefreshed.getTime() : Infinity;
+  const isStale = age > expectedIntervalMs * 2;
+
+  let dotColor = "bg-[var(--safe,#22c55e)]"; // fresh
+  if (hasError || !hasData) dotColor = "bg-red-500";
+  else if (isStale) dotColor = "bg-amber-500";
+
   return (
-    <div className="flex items-center gap-1" title={`${label}: ${ok ? "connected" : "waiting"}`}>
-      <div className={`w-[5px] h-[5px] rounded-full ${ok ? "bg-[var(--safe,#22c55e)]" : "bg-white/15"}`} />
+    <div
+      className="relative flex items-center gap-1 cursor-default"
+      onMouseEnter={() => setShowTip(true)}
+      onMouseLeave={() => setShowTip(false)}
+    >
+      <div className={`w-[5px] h-[5px] rounded-full ${dotColor}`} />
       <span className="text-[5px] font-black uppercase tracking-wider opacity-30">{label}</span>
+      {showTip && (
+        <div className="absolute bottom-full left-0 mb-1 z-50 w-[180px] bg-black border border-white/20 px-2 py-1.5 pointer-events-none">
+          <div className="text-[7px] font-black uppercase tracking-wider opacity-60 mb-1">{label}</div>
+          <div className="text-[7px] opacity-50">
+            Age: {timeAgo(fetchResult.lastRefreshed)} | Fetches: {fetchResult.fetchCount} | Errors: {fetchResult.errorCount}
+          </div>
+          {fetchResult.error && (
+            <div className="text-[7px] text-red-400 mt-0.5">Last error: {fetchResult.error}</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Score breakdown hover tooltip */
+function ScoreBreakdownTooltip({ breakdown, show }: { breakdown: ScoreBreakdown; show: boolean }) {
+  if (!show) return null;
+  return (
+    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 w-[260px] bg-black border border-white/20 px-3 py-2.5 pointer-events-none">
+      <div className="text-[7px] font-black uppercase tracking-[0.25em] opacity-40 mb-1.5">Score Breakdown</div>
+      <div className="text-[8px] opacity-60 mb-1">
+        BASE: {breakdown.baseScore}
+      </div>
+      <div className="text-[6px] opacity-30 mb-2 leading-snug">{breakdown.baseScoreRationale}</div>
+      {breakdown.contributions.map((c, i) => (
+        <div key={i} className="flex items-center justify-between text-[8px] py-0.5 border-t border-white/5">
+          <span className="opacity-60">{c.factor}</span>
+          <span className="tabular-nums opacity-80">
+            {c.rawValue} x {c.weight} = <span className="font-black">{c.contribution}</span>
+            {c.sourceUrl ? (
+              <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer" className="ml-1 text-[6px] opacity-40 underline">{c.source}</a>
+            ) : (
+              <span className="ml-1 text-[6px] opacity-30">{c.source}</span>
+            )}
+          </span>
+        </div>
+      ))}
+      <div className="border-t border-white/10 mt-1 pt-1 flex justify-between text-[8px]">
+        <span className="opacity-40">TOTAL</span>
+        <span className="font-black tabular-nums">
+          {breakdown.rawTotal} {breakdown.rawTotal !== breakdown.clampedScore && `→ ${breakdown.clampedScore}`} (max 96)
+        </span>
+      </div>
+      <div className="text-[6px] opacity-20 mt-1 font-mono">{breakdown.formula}</div>
     </div>
   );
 }
@@ -129,22 +194,19 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const traffic = trafficFetch.data;
   const disasters = disastersFetch.data;
 
-  // Track aggregate refresh state
   const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing;
 
-  // Most recent refresh across all feeds
-  const allRefreshTimes = [
-    commoditiesFetch.lastRefreshed,
-    riversFetch.lastRefreshed,
-    quakesFetch.lastRefreshed,
-    trafficFetch.lastRefreshed,
-    disastersFetch.lastRefreshed,
-  ].filter(Boolean) as Date[];
-  const latestRefresh = allRefreshTimes.length > 0
-    ? new Date(Math.max(...allRefreshTimes.map(d => d.getTime())))
-    : null;
+  // Find the stalest feed
+  const feedAges: { label: string; age: number }[] = [
+    { label: "TFC", age: trafficFetch.lastRefreshed ? Date.now() - trafficFetch.lastRefreshed.getTime() : Infinity },
+    { label: "QKE", age: quakesFetch.lastRefreshed ? Date.now() - quakesFetch.lastRefreshed.getTime() : Infinity },
+    { label: "FLD", age: riversFetch.lastRefreshed ? Date.now() - riversFetch.lastRefreshed.getTime() : Infinity },
+    { label: "DIS", age: disastersFetch.lastRefreshed ? Date.now() - disastersFetch.lastRefreshed.getTime() : Infinity },
+    { label: "AGR", age: commoditiesFetch.lastRefreshed ? Date.now() - commoditiesFetch.lastRefreshed.getTime() : Infinity },
+  ];
+  const stalest = feedAges.reduce((a, b) => (a.age > b.age ? a : b));
+  const stalestLabel = stalest.age < Infinity ? `${stalest.label} ${timeAgo(new Date(Date.now() - stalest.age))}` : "--";
 
-  // Refresh all feeds manually
   const refreshAll = useCallback(() => {
     commoditiesFetch.refresh();
     riversFetch.refresh();
@@ -159,6 +221,9 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     const id = setInterval(() => setTick(t => t + 1), 5000);
     return () => clearInterval(id);
   }, []);
+
+  // Score breakdown hover state
+  const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
 
   if (!brief) {
     return (
@@ -175,32 +240,34 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const totalVerified = brief.areas.reduce((s, a) => s + a.verifiedCameras, 0);
   const totalCandidates = brief.areas.reduce((s, a) => s + a.candidateCameras, 0);
 
-  const highestRiskRiver = rivers
-    ?.slice()
-    .sort((a, b) => {
-      const rank = (l: string) => l === "critical" ? 4 : l === "high" ? 3 : l === "moderate" ? 2 : 1;
-      return rank(b.riskLevel) - rank(a.riskLevel);
-    })[0];
+  const highestRiskRiver = rivers?.slice().sort((a, b) => {
+    const rank = (l: string) => l === "critical" ? 4 : l === "high" ? 3 : l === "moderate" ? 2 : 1;
+    return rank(b.riskLevel) - rank(a.riskLevel);
+  })[0];
 
   const strongestQuake = quakes?.slice().sort((a, b) => b.magnitude - a.magnitude)[0];
-
   const trafficAccidents = traffic?.filter(t => t.category === "accident").length ?? 0;
   const trafficJams = traffic?.filter(t => t.category === "trafficjam").length ?? 0;
-
   const redAlerts = disasters?.filter(d => d.alertLevel === "Red").length ?? 0;
   const orangeAlerts = disasters?.filter(d => d.alertLevel === "Orange").length ?? 0;
-
   const topCommodities = commodities?.slice(0, 3) ?? [];
 
-  // Count active feeds
+  // Find the area with the highest score for score breakdown
+  const topArea = brief.areas.reduce((a, b) => (a.score >= b.score ? a : b), brief.areas[0]);
+
   const activeFeedCount = [commodities, rivers, quakes, traffic, disasters].filter(Boolean).length;
+  const totalErrors = trafficFetch.errorCount + quakesFetch.errorCount + riversFetch.errorCount + disastersFetch.errorCount + commoditiesFetch.errorCount;
 
   return (
     <section className="bg-[var(--bg)] border-t border-black shrink-0 px-4 py-2 relative z-40">
       <div className="max-w-[2200px] mx-auto flex items-center gap-3 overflow-x-auto no-scrollbar">
 
-        {/* Overall posture badge */}
-        <div className="shrink-0 flex flex-col items-center gap-0.5">
+        {/* Overall posture badge — hover for score breakdown */}
+        <div
+          className="shrink-0 flex flex-col items-center gap-0.5 relative cursor-default"
+          onMouseEnter={() => setShowScoreBreakdown(true)}
+          onMouseLeave={() => setShowScoreBreakdown(false)}
+        >
           <div
             className="w-[44px] h-[44px] rounded-sm flex items-center justify-center"
             style={{ backgroundColor: `color-mix(in srgb, ${postureColor(brief.overallPosture)} 15%, transparent)` }}
@@ -218,6 +285,9 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
           >
             {brief.overallPosture}
           </div>
+          {topArea?.scoreBreakdown && (
+            <ScoreBreakdownTooltip breakdown={topArea.scoreBreakdown} show={showScoreBreakdown} />
+          )}
         </div>
 
         <Divider />
@@ -225,13 +295,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         {/* Area score bars */}
         <div className="flex flex-col gap-1 min-w-0 w-[340px] shrink-0">
           {brief.areas.map((area) => (
-            <ScoreBar
-              key={area.id}
-              label={area.label}
-              counterpart={area.counterpart}
-              score={area.score}
-              posture={area.posture}
-            />
+            <ScoreBar key={area.id} label={area.label} counterpart={area.counterpart} score={area.score} posture={area.posture} />
           ))}
         </div>
 
@@ -246,7 +310,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
         <Divider />
 
-        {/* Traffic (Longdo) — always visible, compressed on smaller screens */}
+        {/* Traffic (Longdo) */}
         <div className="flex items-center gap-0 shrink-0">
           <Metric label="Traffic" value={traffic?.length ?? "--"} sub="incidents" sourceId="traffic" />
           <Metric label="Accidents" value={trafficAccidents} sub="active" color={trafficAccidents > 0 ? "var(--accent)" : undefined} sourceId="traffic" />
@@ -255,49 +319,34 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
         <Divider />
 
-        {/* Seismic + Flood + Disasters — always visible */}
+        {/* Seismic + Flood + Disasters */}
         <div className="flex items-center gap-0 shrink-0">
           {strongestQuake && (
-            <Metric
-              label="Max Quake"
-              value={`M${strongestQuake.magnitude.toFixed(1)}`}
-              sub="30d SE Asia"
+            <Metric label="Max Quake" value={`M${strongestQuake.magnitude.toFixed(1)}`} sub="30d SE Asia"
               color={strongestQuake.magnitude >= 5 ? "var(--accent)" : strongestQuake.magnitude >= 4 ? "#f59e0b" : undefined}
-              sourceId="earthquakes"
-            />
+              sourceId="earthquakes" />
           )}
           {highestRiskRiver && (
-            <Metric
-              label="River Risk"
-              value={highestRiskRiver.riskLevel.toUpperCase()}
+            <Metric label="River Risk" value={highestRiskRiver.riskLevel.toUpperCase()}
               sub={highestRiskRiver.name.split("(")[0].trim()}
-              color={riskColorHex(highestRiskRiver.riskLevel)}
-              sourceId="flood"
-            />
+              color={riskColorHex(highestRiskRiver.riskLevel)} sourceId="flood" />
           )}
           {disasters && disasters.length > 0 && (
-            <Metric
-              label="GDACS"
-              value={disasters.length}
+            <Metric label="GDACS" value={disasters.length}
               sub={redAlerts > 0 ? `${redAlerts} red` : orangeAlerts > 0 ? `${orangeAlerts} orange` : "green"}
               color={redAlerts > 0 ? "var(--accent)" : orangeAlerts > 0 ? "#f59e0b" : undefined}
-              sourceId="disasters"
-            />
+              sourceId="disasters" />
           )}
         </div>
 
         <Divider />
 
-        {/* Commodity prices (NABC) — always visible */}
+        {/* Commodity prices (NABC) */}
         <div className="flex items-center gap-0 shrink-0">
           {topCommodities.map((c) => (
-            <Metric
-              key={c.id}
-              label={c.nameEn}
+            <Metric key={c.id} label={c.nameEn}
               value={typeof c.price === "number" && c.price > 100 ? c.price.toLocaleString("en-US") : c.price}
-              sub={c.unit}
-              sourceId="commodities"
-            />
+              sub={c.unit} sourceId="commodities" />
           ))}
         </div>
 
@@ -305,28 +354,28 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
         {/* ── Command Status + Refresh ────────────────── */}
         <div className="shrink-0 ml-auto flex items-center gap-3">
-          {/* Feed health dots */}
+          {/* 3-state feed health dots */}
           <div className="flex flex-col gap-[3px]">
-            <FeedDot ok={!!traffic} label="TFC" />
-            <FeedDot ok={!!quakes} label="QKE" />
-            <FeedDot ok={!!rivers} label="FLD" />
-            <FeedDot ok={!!disasters} label="DIS" />
-            <FeedDot ok={!!commodities} label="AGR" />
+            <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={120_000} />
+            <FeedDot fetchResult={quakesFetch as UseFetchResult<unknown>} label="QKE" expectedIntervalMs={300_000} />
+            <FeedDot fetchResult={riversFetch as UseFetchResult<unknown>} label="FLD" expectedIntervalMs={1800_000} />
+            <FeedDot fetchResult={disastersFetch as UseFetchResult<unknown>} label="DIS" expectedIntervalMs={600_000} />
+            <FeedDot fetchResult={commoditiesFetch as UseFetchResult<unknown>} label="AGR" expectedIntervalMs={3600_000} />
           </div>
 
           {/* Sync status */}
           <div className="text-right">
             <div className="flex items-center gap-1.5 justify-end mb-0.5">
-              <div className={`w-[6px] h-[6px] rounded-full ${anyRefreshing ? "bg-[var(--safe,#22c55e)] animate-pulse" : "bg-white/20"}`} />
+              <div className={`w-[6px] h-[6px] rounded-full ${anyRefreshing ? "bg-[var(--safe,#22c55e)] animate-pulse" : totalErrors > 0 ? "bg-red-500" : "bg-white/20"}`} />
               <span className="text-[7px] font-black uppercase tracking-wider opacity-40">
                 {anyRefreshing ? "SYNCING" : "LIVE"}
               </span>
             </div>
-            <div className="text-[9px] tabular-nums opacity-50 leading-none">
-              {timeAgo(latestRefresh)}
+            <div className="text-[8px] tabular-nums opacity-40 leading-none" title="Age of stalest feed">
+              STALEST: {stalestLabel}
             </div>
             <div className="text-[6px] font-black uppercase tracking-wider opacity-20 mt-0.5">
-              {activeFeedCount}/5 feeds
+              {activeFeedCount}/5 feeds {totalErrors > 0 ? `| ${totalErrors} err` : ""}
             </div>
           </div>
 

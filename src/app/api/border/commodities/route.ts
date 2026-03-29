@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
+import { logFeedHealth } from "../../../../lib/supabase";
 
 export const revalidate = 3600;
 
@@ -71,6 +72,7 @@ async function fetchCategory(thai: string, english: string): Promise<CommodityPr
 }
 
 export async function GET() {
+  const t0 = Date.now();
   try {
     const results = await Promise.all(
       BORDER_COMMODITIES.map((c) => fetchCategory(c.thai, c.english))
@@ -90,8 +92,10 @@ export async function GET() {
       country_focus: ["TH"],
     })));
 
+    void logFeedHealth({ feed_id: "commodities", status: "ok", response_time_ms: Date.now() - t0, message: `${prices.length}/${BORDER_COMMODITIES.length} fetched` });
     return NextResponse.json(prices.length > 0 ? prices : FALLBACK);
   } catch {
+    void logFeedHealth({ feed_id: "commodities", status: "error", response_time_ms: Date.now() - t0, message: "fetch failed" });
     return NextResponse.json(FALLBACK);
   }
 }

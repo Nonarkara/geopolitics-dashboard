@@ -214,19 +214,40 @@ function buildAreaStatus(
   const candidateCameras = matchedCameras.filter(
     (camera) => camera.validationState === "candidate",
   ).length;
-  const score = Math.min(
-    96,
-    area.baseScore +
-      matchedIncidents.length * 9 +
-      fatalityCount * 6 +
-      matchedNarratives.length * 2 +
-      (humanitarianSnapshot
-        ? Math.min(12, Math.round(humanitarianSnapshot.count / 20_000))
-        : 0) +
-      verifiedCameras * 3 +
-      candidateCameras * 4,
-  );
+  const contributions: import("../types/dashboard").ScoreContribution[] = [];
+
+  if (matchedIncidents.length > 0) {
+    contributions.push({ factor: "Matched Incidents", rawValue: matchedIncidents.length, weight: 9, contribution: matchedIncidents.length * 9, source: "ACLED", sourceUrl: "https://acleddata.com" });
+  }
+  if (fatalityCount > 0) {
+    contributions.push({ factor: "Fatalities", rawValue: fatalityCount, weight: 6, contribution: fatalityCount * 6, source: "ACLED", sourceUrl: "https://acleddata.com" });
+  }
+  if (matchedNarratives.length > 0) {
+    contributions.push({ factor: "OSINT Narratives", rawValue: matchedNarratives.length, weight: 2, contribution: matchedNarratives.length * 2, source: "GDELT", sourceUrl: "https://api.gdeltproject.org" });
+  }
+  const humanitarianContrib = humanitarianSnapshot ? Math.min(12, Math.round(humanitarianSnapshot.count / 20_000)) : 0;
+  if (humanitarianContrib > 0) {
+    contributions.push({ factor: "Humanitarian Pressure", rawValue: humanitarianSnapshot!.count, weight: 1, contribution: humanitarianContrib, source: "UNHCR", sourceUrl: "https://www.unhcr.org/refugee-statistics" });
+  }
+  if (verifiedCameras > 0) {
+    contributions.push({ factor: "Verified Cameras", rawValue: verifiedCameras, weight: 3, contribution: verifiedCameras * 3, source: "Camera Network" });
+  }
+  if (candidateCameras > 0) {
+    contributions.push({ factor: "Candidate Cameras", rawValue: candidateCameras, weight: 4, contribution: candidateCameras * 4, source: "Camera Network" });
+  }
+
+  const rawTotal = area.baseScore + contributions.reduce((s, c) => s + c.contribution, 0);
+  const score = Math.min(96, rawTotal);
   const posture = postureFromScore(score);
+
+  const scoreBreakdown: import("../types/dashboard").ScoreBreakdown = {
+    baseScore: area.baseScore,
+    baseScoreRationale: area.baseScoreRationale,
+    contributions,
+    rawTotal,
+    clampedScore: score,
+    formula: `min(96, baseScore + incidents×9 + fatalities×6 + narratives×2 + humanitarian + cameras×3 + scouts×4)`,
+  };
 
   return {
     id: area.id,
@@ -234,6 +255,7 @@ function buildAreaStatus(
     counterpart: area.counterpart,
     posture,
     score,
+    scoreBreakdown,
     incidentCount: matchedIncidents.length,
     fatalityCount,
     verifiedCameras,
@@ -380,6 +402,7 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
     summary: buildSummary(areas),
     overallPosture: postureFromScore(overallScore),
     overallScore,
+    overallScoreMethod: `max(${areas.map(a => `${a.label}:${a.score}`).join(", ")})`,
     areas,
     topConcerns: topConcerns.slice(0, 6),
     actionQueue: actionQueue.slice(0, 4),
