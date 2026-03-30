@@ -699,6 +699,7 @@ export function createFlightPathsLayer(flights: FlightData[]) {
       getAlignmentBaseline: "top" as const,
       getPixelOffset: [8, 4],
       fontFamily: "SF Mono, JetBrains Mono, monospace",
+      fontSettings: { sdf: true },
       outlineColor: [10, 15, 26, 200],
       outlineWidth: 2,
       sizeUnits: "pixels" as const,
