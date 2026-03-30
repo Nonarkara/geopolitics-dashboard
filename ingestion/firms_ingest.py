@@ -1,8 +1,15 @@
 import os
 import requests
 import psycopg2
-from datetime import datetime, timedelta
+from datetime import datetime
 from dotenv import load_dotenv
+from common import (
+    REQUEST_TIMEOUT_SECONDS,
+    exit_with_error,
+    fallback_or_raise,
+    is_value_configured,
+    skip_job,
+)
 
 load_dotenv()
 
@@ -17,11 +24,13 @@ def fetch_firms_data(area="Thailand"):
     url = f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{FIRMS_KEY}/VIIRS_SNPP/THA/1"
     
     if FIRMS_KEY == 'your_firms_key_here':
-        print("Warning: No FIRMS_KEY. Using mock data.")
-        return mock_firms_data()
+        return fallback_or_raise(
+            "FIRMS_KEY is not configured.",
+            mock_firms_data,
+        )
 
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status()
         import csv
         from io import StringIO
@@ -29,8 +38,10 @@ def fetch_firms_data(area="Thailand"):
         reader = csv.DictReader(f)
         return list(reader)
     except Exception as e:
-        print(f"Error fetching FIRMS data: {e}")
-        return mock_firms_data()
+        return fallback_or_raise(
+            f"Error fetching FIRMS data: {e}",
+            mock_firms_data,
+        )
 
 def mock_firms_data():
     return [
@@ -55,13 +66,11 @@ def mock_firms_data():
 def ingest_firms_data(data):
     if not data or not DB_URL:
         return
-    
+
+    conn = psycopg2.connect(DB_URL)
+    cur = conn.cursor()
+
     try:
-        conn = psycopg2.connect(DB_URL)
-        cur = conn.cursor()
-        
-        # Tables are now managed in schema.sql
-        
         for item in data:
             lat = float(item.get('latitude'))
             lng = float(item.get('longitude'))
@@ -77,14 +86,30 @@ def ingest_firms_data(data):
                 item.get('acq_date'),
                 lng, lat
             ))
-        
+
         conn.commit()
+        print(f"Successfully ingested {len(data)} fire events.")
+    finally:
         cur.close()
         conn.close()
-        print(f"Successfully ingested {len(data)} fire events.")
-    except Exception as e:
-        print(f"FIRMS ingestion error: {e}")
+
+
+def main():
+    try:
+        if not is_value_configured(FIRMS_KEY, 'your_firms_key_here'):
+            return skip_job(
+                "Skipping FIRMS ingestion: FIRMS_KEY is not configured. Thermal hotspots remain an optional feed."
+            )
+
+        data = fetch_firms_data()
+        if not DB_URL:
+            print(f"Dry run: fetched {len(data)} fire events but no DATABASE_URL found.")
+            return 0
+
+        ingest_firms_data(data)
+        return 0
+    except Exception as error:
+        return exit_with_error("FIRMS ingestion failed", error)
 
 if __name__ == "__main__":
-    data = fetch_firms_data()
-    ingest_firms_data(data)
+    raise SystemExit(main())

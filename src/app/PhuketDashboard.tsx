@@ -10,8 +10,10 @@ import ProvinceDashboard from "../components/Phuket/Analytics/ProvinceDashboard"
 import BorderMap from "../components/Phuket/Map/BorderMap";
 import Sidebar from "../components/Phuket/Sidebar/Sidebar";
 import type { ProvinceSelection } from "../types/dashboard";
+import { isDataExplorerEnabled } from "../lib/feature-flags";
 
 export default function PhuketDashboard() {
+  const dataExplorerEnabled = isDataExplorerEnabled();
   const [selectedProvince, setSelectedProvince] =
     useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
@@ -44,7 +46,7 @@ export default function PhuketDashboard() {
       <TopBar
         onOpenManual={openManual}
         onOpenArchitecture={openArchitecture}
-        onOpenDataExplorer={openDataExplorer}
+        onOpenDataExplorer={dataExplorerEnabled ? openDataExplorer : undefined}
       />
 
       <div className="flex min-h-0 flex-1 border-t border-[var(--line)] overflow-hidden">
@@ -82,10 +84,12 @@ export default function PhuketDashboard() {
         isOpen={isArchitectureOpen}
         onClose={() => setIsArchitectureOpen(false)}
       />
-      <DatabaseExplorerModal
-        isOpen={isDataExplorerOpen}
-        onClose={() => setIsDataExplorerOpen(false)}
-      />
+      {dataExplorerEnabled ? (
+        <DatabaseExplorerModal
+          isOpen={isDataExplorerOpen}
+          onClose={() => setIsDataExplorerOpen(false)}
+        />
+      ) : null}
     </main>
   );
 }

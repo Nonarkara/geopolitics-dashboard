@@ -20,6 +20,24 @@ const nextConfig = {
       process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
       process.env.MAPBOX_ACCESS_TOKEN ??
       "",
+    NEXT_PUBLIC_ENABLE_DATA_EXPLORER:
+      process.env.NEXT_PUBLIC_ENABLE_DATA_EXPLORER ?? "",
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
   },
   webpack: (config) => {
     config.resolve.alias = {

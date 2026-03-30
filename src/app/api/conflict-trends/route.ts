@@ -14,6 +14,11 @@ interface FatalityTrendRow {
   fatalities: number;
 }
 
+interface RainfallTrendRow {
+  label: string;
+  rainfall: number;
+}
+
 const fallbackData: ConflictTrendsResponse = {
   provincialData: {
     labels: ["Phuket", "Phang Nga", "Krabi", "Ranong", "Surat Thani", "Trang"],
@@ -22,13 +27,17 @@ const fallbackData: ConflictTrendsResponse = {
   },
   fatalities: {
     labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+    data: [1, 0, 2, 1, 3, 1],
+  },
+  rainfall: {
+    labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
     data: [18, 26, 31, 22, 35, 28],
   },
 };
 
 export async function GET() {
   try {
-    const [provincialRes, fatalityRes] = await Promise.all([
+    const [provincialRes, fatalityRes, rainfallRes] = await Promise.all([
       query<ProvincialTrendRow>(`
         WITH location_buckets AS (
           SELECT
@@ -57,17 +66,41 @@ export async function GET() {
             INTERVAL '1 week'
           )::date AS week_start
         ),
+        weekly_fatalities AS (
+          SELECT
+            date_trunc('week', event_date)::date AS week_start,
+            COALESCE(SUM(fatalities), 0)::int AS fatalities
+          FROM events
+          WHERE event_date >= CURRENT_DATE - INTERVAL '42 days'
+          GROUP BY 1
+        )
+        SELECT
+          to_char(weeks.week_start, 'Mon DD') AS label,
+          COALESCE(weekly_fatalities.fatalities, 0)::int AS fatalities
+        FROM weeks
+        LEFT JOIN weekly_fatalities
+          ON weeks.week_start = weekly_fatalities.week_start
+        ORDER BY weeks.week_start
+      `),
+      query<RainfallTrendRow>(`
+        WITH weeks AS (
+          SELECT generate_series(
+            date_trunc('week', CURRENT_DATE) - INTERVAL '5 weeks',
+            date_trunc('week', CURRENT_DATE),
+            INTERVAL '1 week'
+          )::date AS week_start
+        ),
         weekly_rainfall AS (
           SELECT
             date_trunc('week', ref_date)::date AS week_start,
-            COALESCE(AVG(value), 0)::int AS fatalities
+            COALESCE(AVG(value), 0)::int AS rainfall
           FROM rainfall_data
           WHERE ref_date >= CURRENT_DATE - INTERVAL '42 days'
           GROUP BY 1
         )
         SELECT
           to_char(weeks.week_start, 'Mon DD') AS label,
-          COALESCE(weekly_rainfall.fatalities, 0)::int AS fatalities
+          COALESCE(weekly_rainfall.rainfall, 0)::int AS rainfall
         FROM weeks
         LEFT JOIN weekly_rainfall
           ON weeks.week_start = weekly_rainfall.week_start
@@ -75,7 +108,11 @@ export async function GET() {
       `),
     ]);
 
-    if (provincialRes.rows.length === 0 || fatalityRes.rows.length === 0) {
+    if (
+      provincialRes.rows.length === 0 ||
+      fatalityRes.rows.length === 0 ||
+      rainfallRes.rows.length === 0
+    ) {
       return NextResponse.json(fallbackData);
     }
 
@@ -88,6 +125,10 @@ export async function GET() {
       fatalities: {
         labels: fatalityRes.rows.map((row) => row.label),
         data: fatalityRes.rows.map((row) => row.fatalities),
+      },
+      rainfall: {
+        labels: rainfallRes.rows.map((row) => row.label),
+        data: rainfallRes.rows.map((row) => row.rainfall),
       },
     };
 

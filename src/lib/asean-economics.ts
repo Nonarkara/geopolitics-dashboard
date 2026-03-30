@@ -35,7 +35,7 @@ const ECONOMIC_NEWS_TERMS = [
 interface WorldBankMetadata {
   page: number;
   pages: number;
-  per_page: string;
+  per_page: number | string;
   total: number;
 }
 
@@ -151,7 +151,7 @@ function isWorldBankIndicatorResponse(
     isRecord(value[0]) &&
     typeof value[0].page === "number" &&
     typeof value[0].pages === "number" &&
-    typeof value[0].per_page === "string" &&
+    (typeof value[0].per_page === "string" || typeof value[0].per_page === "number") &&
     typeof value[0].total === "number" &&
     Array.isArray(value[1]) &&
     value[1].every(isWorldBankIndicatorRow)

@@ -1,8 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
+import {
+  isDataExplorerAuthorized,
+  unauthorizedDataExplorerResponse,
+} from "../../../../lib/data-explorer-auth";
 import { buildDatabaseTablePreview } from "../../../../lib/database-browser";
 import { getErrorMessage } from "../../../../lib/errors";
+import { isDataExplorerEnabled } from "../../../../lib/feature-flags";
 
 export async function GET(request: NextRequest) {
+  if (!isDataExplorerEnabled()) {
+    return NextResponse.json(
+      { error: "Data explorer is disabled." },
+      { status: 403 },
+    );
+  }
+
+  if (!isDataExplorerAuthorized(request)) {
+    return unauthorizedDataExplorerResponse();
+  }
+
   const table = request.nextUrl.searchParams.get("table");
   const limitParam = request.nextUrl.searchParams.get("limit");
   const limit = limitParam ? Number(limitParam) : 50;

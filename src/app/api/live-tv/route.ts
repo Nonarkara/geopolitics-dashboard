@@ -4,9 +4,25 @@ const CACHE_TTL = 900; // 15 minutes
 
 export const revalidate = 900;
 
+function normalizeYouTubeHandle(handle: string) {
+  const trimmed = handle.trim();
+
+  if (/^@[A-Za-z0-9._-]{3,64}$/.test(trimmed)) {
+    return trimmed;
+  }
+
+  return null;
+}
+
 async function getLiveVideoId(handle: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://www.youtube.com/${handle}/streams`, {
+    const channelPath = normalizeYouTubeHandle(handle);
+    if (!channelPath) {
+      return null;
+    }
+
+    const youtubeUrl = new URL(`https://www.youtube.com/${channelPath}/streams`);
+    const res = await fetch(youtubeUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
         "Accept-Language": "en-US,en;q=0.9",
@@ -56,6 +72,10 @@ export async function GET(request: Request) {
 
   if (!handle) {
     return NextResponse.json({ error: "Missing handle" }, { status: 400 });
+  }
+
+  if (!normalizeYouTubeHandle(handle)) {
+    return NextResponse.json({ error: "Invalid handle" }, { status: 400 });
   }
 
   const videoId = await getLiveVideoId(handle);

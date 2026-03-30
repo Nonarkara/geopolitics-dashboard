@@ -29,18 +29,17 @@ import {
   type InternalApiCategory,
   type InternalApiDescriptor,
 } from "../../../lib/dashboard-architecture";
+import type {
+  DashboardDatasetStatus,
+  DashboardStatusPayload,
+} from "../../../types/dashboard";
 
 interface DashboardArchitectureModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface StatusPayload {
-  status: string;
-  version: string;
-  signal_strength: number;
-  services: Record<string, string>;
-}
+type StatusPayload = DashboardStatusPayload;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
@@ -52,8 +51,24 @@ function isStatusPayload(value: unknown): value is StatusPayload {
     typeof value.status === "string" &&
     typeof value.version === "string" &&
     typeof value.signal_strength === "number" &&
+    typeof value.checkedAt === "string" &&
     isRecord(value.services) &&
-    Object.values(value.services).every((service) => typeof service === "string")
+    Object.values(value.services).every((service) => typeof service === "string") &&
+    Array.isArray(value.datasets) &&
+    value.datasets.every(
+      (dataset) =>
+        isRecord(dataset) &&
+        typeof dataset.id === "string" &&
+        typeof dataset.label === "string" &&
+        typeof dataset.source === "string" &&
+        (dataset.criticality === "core" || dataset.criticality === "optional") &&
+        typeof dataset.state === "string" &&
+        (typeof dataset.latestTimestamp === "string" ||
+          dataset.latestTimestamp === null) &&
+        (typeof dataset.ageMinutes === "number" || dataset.ageMinutes === null) &&
+        typeof dataset.freshnessTargetMinutes === "number" &&
+        typeof dataset.details === "string",
+    )
   );
 }
 
@@ -91,6 +106,62 @@ function toneClasses(tone: ArchitectureLayerTone) {
     default:
       return "border-[var(--line-bright)] bg-[var(--line-bright)] text-[var(--cool)]";
   }
+}
+
+function stateBadgeClasses(value: string) {
+  switch (value) {
+    case "live":
+    case "configured":
+    case "secured":
+      return "border-[#14532d] bg-[rgba(34,197,94,0.16)] text-[#86efac]";
+    case "on_demand":
+    case "hybrid":
+    case "memory":
+      return "border-[#0f3d5e] bg-[rgba(14,165,233,0.14)] text-[#7dd3fc]";
+    case "stale":
+    case "limited":
+    case "fallback":
+    case "missing":
+    case "unprotected":
+    case "enabled":
+      return "border-[#7c2d12] bg-[rgba(249,115,22,0.16)] text-[#fdba74]";
+    case "disabled":
+    case "default":
+      return "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--muted)]";
+    default:
+      return "border-[var(--line-bright)] bg-[var(--line-bright)] text-[var(--cool)]";
+  }
+}
+
+function formatRuntimeTimestamp(value: string | null) {
+  if (!value) {
+    return "No snapshot";
+  }
+
+  return new Date(value).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatRuntimeAge(minutes: number) {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+
+  if (minutes < 24 * 60) {
+    return `${Math.round(minutes / 60)}h`;
+  }
+
+  return `${Math.round(minutes / (24 * 60))}d`;
+}
+
+function countHealthyDatasets(datasets: DashboardDatasetStatus[]) {
+  return datasets.filter(
+    (dataset) => dataset.state === "live" || dataset.state === "on_demand",
+  ).length;
 }
 
 function groupInternalApis(category: InternalApiCategory) {
@@ -483,19 +554,19 @@ function RuntimeTab({
                 icon={<Network size={18} />}
                 label="Runtime status"
                 value={statusPayload.status}
-                helper={`Version ${statusPayload.version} with signal strength ${statusPayload.signal_strength.toFixed(2)}.`}
+                helper={`Version ${statusPayload.version} checked ${formatRuntimeTimestamp(statusPayload.checkedAt)} with signal strength ${statusPayload.signal_strength.toFixed(2)}.`}
               />
               <SummaryCard
                 icon={<Database size={18} />}
-                label="Optional providers"
-                value={String(architectureSummary.optionalProviderCount)}
-                helper="Mapbox and OpenAI are optional enrichers, not hard dependencies."
+                label="Healthy datasets"
+                value={`${countHealthyDatasets(statusPayload.datasets)}/${statusPayload.datasets.length}`}
+                helper="Live and on-demand datasets are counted as healthy. Stale and fallback posture are not."
               />
               <SummaryCard
                 icon={<Server size={18} />}
                 label="Service flags"
                 value={String(Object.keys(statusPayload.services).length)}
-                helper="These flags reflect current environment configuration rather than provider liveness."
+                helper="These flags capture security posture, optional integrations, and fail-safe switches."
               />
             </div>
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
@@ -508,12 +579,65 @@ function RuntimeTab({
                     <h3 className="text-[14px] font-semibold text-[var(--ink)]">
                       {prettifyServiceName(serviceName)}
                     </h3>
-                    <span className="rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
+                    <span
+                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
+                        state,
+                      )}`}
+                    >
                       {state}
                     </span>
                   </div>
                 </article>
               ))}
+            </div>
+            <div className="mt-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="eyebrow">Dataset Freshness</div>
+                  <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
+                    This reads stored snapshots and known fallback posture. It does not pretend every upstream is live just because the app is online.
+                  </p>
+                </div>
+              </div>
+              <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                {statusPayload.datasets.map((dataset) => (
+                  <article
+                    key={dataset.id}
+                    className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                          {dataset.label}
+                        </h3>
+                        <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">
+                          {dataset.source}
+                        </p>
+                      </div>
+                      <span
+                        className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
+                          dataset.state,
+                        )}`}
+                      >
+                        {dataset.state}
+                      </span>
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Pill>{dataset.criticality}</Pill>
+                      <Pill>Latest {formatRuntimeTimestamp(dataset.latestTimestamp)}</Pill>
+                      {dataset.ageMinutes !== null ? (
+                        <Pill>Age {formatRuntimeAge(dataset.ageMinutes)}</Pill>
+                      ) : null}
+                      <Pill>
+                        Target {formatRuntimeAge(dataset.freshnessTargetMinutes)}
+                      </Pill>
+                    </div>
+                    <p className="mt-3 text-[12px] leading-5 text-[var(--muted)]">
+                      {dataset.details}
+                    </p>
+                  </article>
+                ))}
+              </div>
             </div>
           </>
         ) : (

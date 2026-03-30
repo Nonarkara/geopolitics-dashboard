@@ -46,6 +46,8 @@ import type {
   AirQualityPoint,
   ConflictZoneCollection,
   ConflictZoneFeature,
+  DashboardDatasetStatus,
+  DashboardStatusPayload,
   FireEvent,
   IncidentFeature,
   ProvinceSelection,
@@ -140,6 +142,62 @@ function isPublicCameraResponse(value: unknown): value is PublicCameraResponse {
     "cameras" in value &&
     Array.isArray(value.cameras)
   );
+}
+
+function isDashboardDatasetStatus(value: unknown): value is DashboardDatasetStatus {
+  return (
+    isRecord(value) &&
+    typeof value.id === "string" &&
+    typeof value.label === "string" &&
+    typeof value.details === "string" &&
+    typeof value.state === "string" &&
+    (value.criticality === "core" || value.criticality === "optional")
+  );
+}
+
+function isDashboardStatusPayload(value: unknown): value is DashboardStatusPayload {
+  return (
+    isRecord(value) &&
+    typeof value.status === "string" &&
+    Array.isArray(value.datasets) &&
+    value.datasets.every(isDashboardDatasetStatus)
+  );
+}
+
+interface FeedAlert {
+  id: string;
+  label: string;
+  state: DashboardDatasetStatus["state"];
+  details: string;
+}
+
+function buildFeedAlerts(
+  payload: DashboardStatusPayload | null,
+  datasetIds: string[],
+): FeedAlert[] {
+  if (!payload) {
+    return [];
+  }
+
+  return datasetIds
+    .map((datasetId) =>
+      payload.datasets.find((dataset) => dataset.id === datasetId),
+    )
+    .filter(
+      (dataset): dataset is DashboardDatasetStatus =>
+        Boolean(
+          dataset &&
+            (dataset.state === "stale" ||
+              dataset.state === "fallback" ||
+              dataset.state === "disabled"),
+        ),
+    )
+    .map((dataset) => ({
+      id: dataset.id,
+      label: dataset.label,
+      state: dataset.state,
+      details: dataset.details,
+    }));
 }
 
 function createViewport(
@@ -279,6 +337,7 @@ export default function BorderMap({
   const [airQuality, setAirQuality] = useState<AirQualityPoint[]>([]);
   const [flights, setFlights] = useState<FlightData[]>([]);
   const [cameras, setCameras] = useState<PublicCamera[]>([]);
+  const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
   const [borders, setBorders] = useState<RegionBorderCollection | null>(null);
   const [conflictZones, setConflictZones] =
     useState<ConflictZoneCollection>(EMPTY_CONFLICT_ZONES);
@@ -396,6 +455,7 @@ export default function BorderMap({
         conflictZoneData,
         flightData,
         cameraData,
+        statusData,
       ] = await Promise.all([
         fetchJson<IncidentFeature[]>("/api/incidents", []),
         fetchJson<FireEvent[]>("/api/fires", []),
@@ -409,6 +469,7 @@ export default function BorderMap({
           generatedAt: "",
           cameras: [],
         }),
+        fetchJson<DashboardStatusPayload | null>("/api/status", null),
       ]);
 
       setIncidents(Array.isArray(incidentData) ? incidentData : []);
@@ -419,6 +480,12 @@ export default function BorderMap({
       setFlights(Array.isArray(flightData) ? flightData : []);
       setCameras(
         isPublicCameraResponse(cameraData) ? cameraData.cameras : [],
+      );
+      setFeedAlerts(
+        buildFeedAlerts(
+          isDashboardStatusPayload(statusData) ? statusData : null,
+          ["conflict_events", "fires", "rainfall", "air_quality"],
+        ),
       );
       setBorders(borderData);
       setConflictZones(conflictZoneData);
@@ -894,7 +961,7 @@ export default function BorderMap({
               </button>
             ))}
           </div>
-          <div className={`flex items-center gap-2 min-w-[140px] ${showSatelliteOverlay ? "opacity-100" : "opacity-40"}`}>
+        <div className={`flex items-center gap-2 min-w-[140px] ${showSatelliteOverlay ? "opacity-100" : "opacity-40"}`}>
             <span className="text-[9px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
             <input
               type="range"
@@ -910,6 +977,22 @@ export default function BorderMap({
             />
           </div>
         </div>
+        {feedAlerts.length > 0 ? (
+          <div className="flex flex-wrap items-center gap-2 border-t border-[var(--line)] px-3 py-1.5 xl:px-4">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.16em] text-[#b45309]">
+              Feed Integrity
+            </span>
+            {feedAlerts.map((alert) => (
+              <span
+                key={alert.id}
+                title={alert.details}
+                className="rounded-full border border-[#f59e0b]/40 bg-[#fff7ed] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9a3412]"
+              >
+                {alert.label} {alert.state}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-40 border-t border-[var(--line)] bg-[rgba(248,246,240,0.85)] backdrop-blur-md">

@@ -651,6 +651,7 @@ export function createProvinceLabelsLayer() {
     getAlignmentBaseline: "center" as const,
     fontFamily: "Helvetica Neue, Arial, sans-serif",
     fontWeight: "bold" as unknown as number,
+    fontSettings: { sdf: true },
     outlineColor: [10, 15, 26, 200],
     outlineWidth: 2,
     sizeUnits: "pixels" as const,

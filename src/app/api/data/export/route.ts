@@ -3,7 +3,12 @@ import {
   exportDatabaseTableRows,
   getDatabaseTableDescriptor,
 } from "../../../../lib/database-browser";
+import {
+  isDataExplorerAuthorized,
+  unauthorizedDataExplorerResponse,
+} from "../../../../lib/data-explorer-auth";
 import { getErrorMessage } from "../../../../lib/errors";
+import { isDataExplorerEnabled } from "../../../../lib/feature-flags";
 
 function serializeCsvValue(value: unknown) {
   if (value === null || typeof value === "undefined") {
@@ -34,6 +39,17 @@ function toCsv(columns: string[], rows: Array<Record<string, unknown>>) {
 }
 
 export async function GET(request: NextRequest) {
+  if (!isDataExplorerEnabled()) {
+    return NextResponse.json(
+      { error: "Data explorer is disabled." },
+      { status: 403 },
+    );
+  }
+
+  if (!isDataExplorerAuthorized(request)) {
+    return unauthorizedDataExplorerResponse();
+  }
+
   const table = request.nextUrl.searchParams.get("table");
   const format = request.nextUrl.searchParams.get("format") ?? "csv";
 

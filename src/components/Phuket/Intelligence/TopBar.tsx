@@ -86,7 +86,7 @@ interface EnvData {
 interface TopBarProps {
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
-  onOpenDataExplorer: () => void;
+  onOpenDataExplorer?: () => void;
 }
 
 function formatTime(timezone: string) {
@@ -207,14 +207,16 @@ export default function TopBar({
             >
               <Network size={16} />
             </button>
-            <button
-              type="button"
-              onClick={onOpenDataExplorer}
-              className="p-1.5 text-[var(--dim)] hover:text-[var(--ink)] transition-colors"
-              title="Data / Export"
-            >
-              <Database size={16} />
-            </button>
+            {onOpenDataExplorer ? (
+              <button
+                type="button"
+                onClick={onOpenDataExplorer}
+                className="p-1.5 text-[var(--dim)] hover:text-[var(--ink)] transition-colors"
+                title="Data / Export"
+              >
+                <Database size={16} />
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onOpenManual}

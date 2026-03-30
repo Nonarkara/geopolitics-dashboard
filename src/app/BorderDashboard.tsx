@@ -15,6 +15,7 @@ import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerMo
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
+import { isDataExplorerEnabled } from "../lib/feature-flags";
 
 function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
   return (
@@ -28,6 +29,7 @@ function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
 }
 
 export default function BorderDashboard() {
+  const dataExplorerEnabled = isDataExplorerEnabled();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
@@ -73,7 +75,9 @@ export default function BorderDashboard() {
             brief={brief}
             onOpenManual={() => setIsManualOpen(true)}
             onOpenArchitecture={() => setIsArchitectureOpen(true)}
-            onOpenDataExplorer={() => setIsDataExplorerOpen(true)}
+            onOpenDataExplorer={
+              dataExplorerEnabled ? () => setIsDataExplorerOpen(true) : undefined
+            }
           />
         </header>
 
@@ -129,7 +133,12 @@ export default function BorderDashboard() {
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
       <DashboardManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
       <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(false)} />
-      <DatabaseExplorerModal isOpen={isDataExplorerOpen} onClose={() => setIsDataExplorerOpen(false)} />
+      {dataExplorerEnabled ? (
+        <DatabaseExplorerModal
+          isOpen={isDataExplorerOpen}
+          onClose={() => setIsDataExplorerOpen(false)}
+        />
+      ) : null}
     </main>
   );
 }

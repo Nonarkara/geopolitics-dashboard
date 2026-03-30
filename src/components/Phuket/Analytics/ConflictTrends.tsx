@@ -69,8 +69,8 @@ export default function ConflictTrends() {
     (sum, value) => sum + value,
     0,
   );
-  const latestFatalityValue =
-    data.fatalities.data[data.fatalities.data.length - 1] ?? 0;
+  const latestRainfallValue =
+    data.rainfall.data[data.rainfall.data.length - 1] ?? 0;
 
   const provincialData = {
     labels: data.provincialData.labels,
@@ -94,13 +94,13 @@ export default function ConflictTrends() {
     ],
   };
 
-  const fatalitiesTrend = {
-    labels: data.fatalities.labels,
+  const rainfallTrend = {
+    labels: data.rainfall.labels,
     datasets: [
       {
         fill: false,
-        label: "Fatalities",
-        data: data.fatalities.data,
+        label: "Rainfall",
+        data: data.rainfall.data,
         borderColor: "#f59e0b",
         tension: 0.25,
         pointRadius: 0,
@@ -184,12 +184,12 @@ export default function ConflictTrends() {
               Latest
             </div>
             <div className="pt-0.5 text-[13px] font-mono font-bold tabular-nums text-[#f59e0b]">
-              {latestFatalityValue}
+              {latestRainfallValue}
             </div>
           </div>
         </div>
         <div className="flex-1">
-          <Line options={options} data={fatalitiesTrend} />
+          <Line options={options} data={rainfallTrend} />
         </div>
         <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
           Source: weekly pressure proxy · 5-min polling

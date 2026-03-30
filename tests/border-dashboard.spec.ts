@@ -408,9 +408,7 @@ test("opens the top-bar command modals from the border dashboard", async ({
   await expect(page.getByText("APIs And System Architecture")).toBeVisible();
   await page.getByRole("button", { name: "Close architecture reference" }).click();
 
-  await page.getByRole("button", { name: "Data" }).click();
-  await expect(page.getByText("Data Explorer")).toBeVisible();
-  await page.getByRole("button", { name: "Close data explorer" }).click();
+  await expect(page.getByRole("button", { name: "Data" })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Docs" }).click();
   await expect(page.getByText("Operator Manual")).toBeVisible();
