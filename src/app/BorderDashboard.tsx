@@ -14,6 +14,8 @@ import DashboardArchitectureModal from "../components/Intelligence/DashboardArch
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
+import { TimeWindowProvider } from "../contexts/TimeWindowContext";
+import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
 
@@ -67,6 +69,7 @@ export default function BorderDashboard() {
 
   return (
     <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
+      <TimeWindowProvider>
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
@@ -125,9 +128,13 @@ export default function BorderDashboard() {
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
-        {/* ROW 5: BORDER STATUS STRIP */}
+        {/* ROW 5: TIME MACHINE */}
+        <TimeMachine />
+
+        {/* ROW 6: BORDER STATUS STRIP */}
         <BorderStatusStrip brief={brief} />
       </div>
+      </TimeWindowProvider>
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />

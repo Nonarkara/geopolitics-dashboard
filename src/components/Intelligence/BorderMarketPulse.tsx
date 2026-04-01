@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Coins, ExternalLink, RefreshCw } from "lucide-react";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
+import Sparkline from "../Common/Sparkline";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { fallbackMarketRadarResponse } from "../../lib/mock-data";
 import type {
   EconomicIndicator,
@@ -59,6 +61,7 @@ function formatIndicatorChange(change: number | string) {
 }
 
 export default function BorderMarketPulse() {
+  const { timeWindow } = useTimeWindow();
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
@@ -66,7 +69,11 @@ export default function BorderMarketPulse() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch("/api/markets", { cache: "no-store" });
+        let url = "/api/markets";
+        if (timeWindow) {
+          url += `?from=${encodeURIComponent(timeWindow.from)}&to=${encodeURIComponent(timeWindow.to)}`;
+        }
+        const response = await fetch(url, { cache: "no-store" });
         const nextPayload: unknown = await response.json();
 
         if (isMarketRadarResponse(nextPayload)) {
@@ -93,7 +100,31 @@ export default function BorderMarketPulse() {
     }, 60_000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timeWindow]);
+
+  // Sparkline historical data for each indicator
+  const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
+
+  useEffect(() => {
+    const labels = payload.data.map((d) => d.label);
+    if (labels.length === 0) return;
+
+    Promise.all(
+      labels.slice(0, 5).map(async (label) => {
+        try {
+          const res = await fetch(`/api/research/sparklines?metric=${encodeURIComponent(label)}&days=14`);
+          const data = (await res.json()) as { values: number[] };
+          return [label, data.values ?? []] as const;
+        } catch {
+          return [label, []] as const;
+        }
+      }),
+    ).then((results) => {
+      const map: Record<string, number[]> = {};
+      for (const [label, values] of results) map[label] = [...values];
+      setSparklines(map);
+    });
+  }, [payload.data]);
 
   const primary = useMemo(
     () =>
@@ -147,8 +178,19 @@ export default function BorderMarketPulse() {
                 <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
                   {primary.label}
                 </div>
-                <div className="mt-1 text-[31px] font-black tabular-nums leading-none tracking-[-0.04em]">
-                  {formatIndicatorValue(primary)}
+                <div className="mt-1 flex items-end gap-2">
+                  <span className="text-[31px] font-black tabular-nums leading-none tracking-[-0.04em]">
+                    {formatIndicatorValue(primary)}
+                  </span>
+                  {sparklines[primary.label]?.length > 2 && (
+                    <Sparkline
+                      data={sparklines[primary.label]}
+                      width={56}
+                      height={20}
+                      color={primary.up ? "#86efac" : "#fda4af"}
+                      fillOpacity={0.15}
+                    />
+                  )}
                 </div>
               </div>
               <div className="text-right">
@@ -208,8 +250,18 @@ export default function BorderMarketPulse() {
               <div className="mt-1.5 text-[10px] font-black uppercase tracking-tight">
                 {indicator.label}
               </div>
-              <div className="mt-0.5 text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]">
-                {formatIndicatorValue(indicator)}
+              <div className="flex items-end justify-between gap-1">
+                <div className="text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]">
+                  {formatIndicatorValue(indicator)}
+                </div>
+                {sparklines[indicator.label]?.length > 2 && (
+                  <Sparkline
+                    data={sparklines[indicator.label]}
+                    width={44}
+                    height={14}
+                    color={indicator.up ? "var(--safe)" : "var(--accent)"}
+                  />
+                )}
               </div>
               <div className="mt-1.5 flex items-center gap-1 text-[6px] font-mono uppercase tracking-[0.08em] opacity-35 border-t border-[var(--line-dim)] pt-1">
                 <span>{indicator.source ?? "FX API"}</span>

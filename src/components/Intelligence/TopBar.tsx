@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Clock3, Database, Shield } from "lucide-react";
+import { BookOpen, Clock3, Database, Printer, Shield } from "lucide-react";
 import DashboardVersionBadge from "../Common/DashboardVersionBadge";
 import CommandTooltip from "../Common/CommandTooltip";
 import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
@@ -164,6 +164,15 @@ export default function TopBar({
               Docs
             </button>
           </CommandTooltip>
+          <a
+            href="/briefing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-8 items-center gap-2 border border-black bg-white px-3 text-[9px] font-black uppercase tracking-widest transition-all hover:bg-black hover:text-white"
+          >
+            <Printer size={10} strokeWidth={3} />
+            PDF
+          </a>
         </div>
       </div>
     </header>

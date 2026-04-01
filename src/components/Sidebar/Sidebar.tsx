@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowDown,
   ArrowUp,
+  Brain,
   Camera,
   Droplets,
   ExternalLink,
@@ -130,6 +131,36 @@ export default function Sidebar({ brief }: SidebarProps) {
   const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
   const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
 
+  const [narrative, setNarrative] = useState<string | null>(null);
+  const [narrativeTime, setNarrativeTime] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/border-command/narrative", { cache: "no-store" });
+        const json = await res.json();
+        if (active && json.narrative) {
+          setNarrative(json.narrative);
+          setNarrativeTime(
+            new Date(json.generatedAt).toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+            }),
+          );
+        }
+      } catch {
+        /* keep last good */
+      }
+    };
+    void load();
+    const id = setInterval(() => void load(), 3600_000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
+
   return (
     <aside className="flex h-full flex-col select-none overflow-hidden bg-white">
       <div className="border-b-[1.5px] border-[var(--line)] p-4 shrink-0">
@@ -149,8 +180,20 @@ export default function Sidebar({ brief }: SidebarProps) {
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="text-[11px] leading-relaxed text-[var(--muted)]">
-            {brief?.summary ??
-              "The border command story will appear here once the executive brief finishes loading."}
+            {narrative ? (
+              <>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <Brain size={8} className="text-[var(--accent)]" />
+                  <span className="text-[6px] font-black uppercase tracking-[0.2em] text-[var(--accent)] opacity-60">
+                    AI Narrative {narrativeTime ? `\u00b7 ${narrativeTime}` : ""}
+                  </span>
+                </div>
+                {narrative}
+              </>
+            ) : (
+              brief?.summary ??
+              "The border command story will appear here once the executive brief finishes loading."
+            )}
           </div>
           <div className="shrink-0 text-right">
             <div className="text-[22px] font-black tabular-nums leading-none">

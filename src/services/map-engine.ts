@@ -21,6 +21,7 @@ import type {
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
+  VesselPosition,
 } from "../types/dashboard";
 
 /**
@@ -707,4 +708,114 @@ export function createFlightPathsLayer(flights: FlightData[]) {
       pickable: false,
     }),
   ];
+}
+
+const VESSEL_FLAG_COLORS: Record<string, [number, number, number, number]> = {
+  TH: [0, 200, 255, 160],
+  SG: [0, 255, 128, 160],
+  MY: [180, 100, 255, 160],
+};
+
+function getVesselColor(flagCountry: string | null): [number, number, number, number] {
+  if (flagCountry && VESSEL_FLAG_COLORS[flagCountry]) {
+    return VESSEL_FLAG_COLORS[flagCountry];
+  }
+  return [80, 140, 255, 160];
+}
+
+export function createVesselLayer(vessels: VesselPosition[]) {
+  if (!Array.isArray(vessels) || vessels.length === 0) return null;
+
+  return [
+    new ScatterplotLayer({
+      id: "vessel-positions",
+      data: vessels,
+      getPosition: (d: VesselPosition) => [d?.lng || 0, d?.lat || 0],
+      getRadius: 4000,
+      getFillColor: (d: VesselPosition) => getVesselColor(d?.flagCountry || null),
+      radiusMinPixels: 3,
+      radiusMaxPixels: 8,
+      stroked: true,
+      lineWidthMinPixels: 1,
+      getLineColor: [255, 255, 255, 80],
+      pickable: true,
+    }),
+    new TextLayer({
+      id: "vessel-names",
+      data: vessels,
+      getPosition: (d: VesselPosition) => [d?.lng || 0, d?.lat || 0],
+      getText: (d: VesselPosition) => d?.vesselName || d?.mmsi || "",
+      getSize: 9,
+      getColor: [200, 220, 255, 180],
+      getTextAnchor: "start" as const,
+      getAlignmentBaseline: "center" as const,
+      getPixelOffset: [10, 0],
+      fontFamily: "SF Mono, JetBrains Mono, monospace",
+      fontSettings: { sdf: true },
+      outlineColor: [0, 0, 0, 200],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
+      billboard: false,
+      pickable: false,
+    }),
+  ];
+}
+
+interface SignalPulseData {
+  id: string;
+  lat: number;
+  lng: number;
+  signal_type: string;
+  severity: string;
+  published_at: string;
+  title: string;
+}
+
+const SIGNAL_TYPE_COLORS: Record<string, [number, number, number, number]> = {
+  incident: [255, 60, 60, 160],
+  thermal: [255, 160, 0, 140],
+  weather: [0, 180, 255, 120],
+  osint: [180, 100, 255, 120],
+  news: [180, 100, 255, 120],
+  seismic: [255, 255, 0, 140],
+};
+
+function getSignalColor(signalType: string): [number, number, number, number] {
+  return SIGNAL_TYPE_COLORS[signalType] ?? [255, 255, 255, 80];
+}
+
+function getSignalLineColor(signalType: string): [number, number, number, number] {
+  const fill = getSignalColor(signalType);
+  return [
+    Math.min(255, fill[0] + 60),
+    Math.min(255, fill[1] + 60),
+    Math.min(255, fill[2] + 60),
+    Math.min(255, fill[3] + 40),
+  ];
+}
+
+export function createSignalPulseLayer(signals: SignalPulseData[]) {
+  if (!Array.isArray(signals) || signals.length === 0) return null;
+
+  const now = Date.now();
+
+  return new ScatterplotLayer({
+    id: "signal-pulses",
+    data: signals,
+    getPosition: (d: SignalPulseData) => [d?.lng || 0, d?.lat || 0],
+    getRadius: (d: SignalPulseData) => {
+      const ageHours = (now - new Date(d?.published_at || now).getTime()) / 3_600_000;
+      return Math.max(2000, 8000 - ageHours * 300);
+    },
+    getFillColor: (d: SignalPulseData) => getSignalColor(d?.signal_type || ""),
+    radiusMinPixels: 4,
+    radiusMaxPixels: 16,
+    stroked: true,
+    lineWidthMinPixels: 1,
+    getLineColor: (d: SignalPulseData) => getSignalLineColor(d?.signal_type || ""),
+    pickable: true,
+    transitions: {
+      getRadius: { duration: 1000, easing: (t: number) => t },
+    },
+  });
 }

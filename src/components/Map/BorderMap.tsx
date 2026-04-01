@@ -5,12 +5,12 @@ import type { MapViewState } from "@deck.gl/core";
 import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
 import {
-  Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check, Grid3x3
+  Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check, Grid3x3, Ship, Radio
 } from "lucide-react";
 import CommandTooltip from "../Common/CommandTooltip";
 import { BASE_MAP_TOOLTIPS, OVERLAY_TOOLTIPS, INTEL_TOGGLE_TOOLTIPS } from "../../lib/tooltip-catalog";
 import {
-  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer, createKilometerGridLayer
+  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer, createKilometerGridLayer, createVesselLayer, createSignalPulseLayer
 } from "../../services/map-engine";
 import type {
   DashboardDatasetStatus,
@@ -21,6 +21,7 @@ import type {
   FlightData,
   RefugeeMovement,
   ConflictZoneCollection,
+  VesselPosition,
 } from "../../types/dashboard";
 import { getUsableMapboxToken } from "../../lib/mapbox";
 
@@ -251,6 +252,8 @@ export default function BorderMap({
   const [showZones, setShowZones] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
+  const [showVessels, setShowVessels] = useState(false);
+  const [showSignalPulse, setShowSignalPulse] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
@@ -260,6 +263,8 @@ export default function BorderMap({
   const [flights, setFlights] = useState<FlightData[]>([]);
   const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
   const [zones, setZones] = useState<ConflictZoneCollection | null>(null);
+  const [vessels, setVessels] = useState<VesselPosition[]>([]);
+  const [recentSignals, setRecentSignals] = useState<{ id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[]>([]);
   const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
 
   const hasMapboxToken = MAPBOX_TOKEN.length > 0;
@@ -267,19 +272,23 @@ export default function BorderMap({
   useEffect(() => {
     const load = async () => {
       try {
-        const [inc, fir, flt, ref, zn, runtimeStatus] = await Promise.all([
+        const [inc, fir, flt, ref, zn, runtimeStatus, ves, sig] = await Promise.all([
           fetch("/api/border/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/fires", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/flights", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/border/movements", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
           fetch("/api/map/overlays", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
           fetch("/api/status", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
+          fetch("/api/border/vessels", { cache: 'no-store' }).then(res => res.json()).catch(() => ({ vessels: [] })),
+          fetch(`/api/research/signals?from=${new Date(Date.now() - 86400000).toISOString()}&limit=100`, { cache: 'no-store' }).then(res => res.json()).catch(() => ({ signals: [] })),
         ]);
         setIncidents(inc || []);
         setFires(fir || []);
         setFlights(flt || []);
         setRefugees(ref || []);
         setZones(zn || null);
+        setVessels(ves?.vessels || []);
+        setRecentSignals((sig?.signals || []).filter((s: { lat?: number; lng?: number }) => s.lat && s.lng));
         setFeedAlerts(
           buildFeedAlerts(
             isDashboardStatusPayload(runtimeStatus) ? runtimeStatus : null,
@@ -350,12 +359,14 @@ export default function BorderMap({
     if (showFires) result.push(createFireLayer(fires));
     if (showRefugees) result.push(createRefugeeLayer(refugees));
     if (showFlights) result.push(createFlightPathsLayer(flights));
+    if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
+    if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
     if (showLabels) result.push(createProvinceLabelsLayer());
 
     return result.flat().filter(Boolean);
-  }, [activeBase, baseMapOpacity, activeOverlayIds, showGrid, viewState.longitude, viewState.latitude, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showLabels]);
+  }, [activeBase, baseMapOpacity, activeOverlayIds, showGrid, viewState.longitude, viewState.latitude, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showLabels]);
 
-  const activeLayersCount = [showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid].filter(Boolean).length;
+  const activeLayersCount = [showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
@@ -366,6 +377,8 @@ export default function BorderMap({
     setShowZones(false);
     setShowLabels(false);
     setShowGrid(false);
+    setShowVessels(false);
+    setShowSignalPulse(false);
     setActiveOverlayIds(new Set());
     setActiveBaseId("ESRI");
   };
@@ -512,6 +525,8 @@ export default function BorderMap({
             { active: showZones, set: setShowZones, label: "ZONE", icon: Target },
             { active: showLabels, set: setShowLabels, label: "LBL", icon: Globe },
             { active: showGrid, set: setShowGrid, label: "GRID", icon: Grid3x3 },
+            { active: showVessels, set: setShowVessels, label: "SHIP", icon: Ship },
+            { active: showSignalPulse, set: setShowSignalPulse, label: "SIG", icon: Radio },
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
@@ -571,6 +586,8 @@ export default function BorderMap({
               { label: "THERMAL", val: fires?.length || 0 },
               { label: "TRAFFIC", val: flights?.length || 0 },
               { label: "FLOW", val: refugees?.length || 0 },
+              { label: "VESSEL", val: vessels?.length || 0 },
+              { label: "PULSE", val: recentSignals?.length || 0 },
             ].map(m => (
               <div key={m.label} className="flex flex-col">
                 <span className="text-[9px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>

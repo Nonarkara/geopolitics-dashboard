@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import type { BorderCommandBrief, BorderAreaStatus, ScoreBreakdown } from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
+import Sparkline from "../Common/Sparkline";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
@@ -23,10 +24,11 @@ function postureColor(posture: string) {
   }
 }
 
-function ScoreBar({ area, expanded, onToggle }: {
+function ScoreBar({ area, expanded, onToggle, history }: {
   area: BorderAreaStatus;
   expanded: boolean;
   onToggle: () => void;
+  history?: number[];
 }) {
   const { label, counterpart, score, posture, scoreBreakdown } = area;
   const color = postureColor(posture);
@@ -69,6 +71,9 @@ function ScoreBar({ area, expanded, onToggle }: {
         >
           {posture}
         </div>
+        {history && history.length > 2 && (
+          <Sparkline data={history} width={36} height={10} color={color} fillOpacity={0.2} />
+        )}
       </div>
 
       {/* Inline expanded breakdown panel */}
@@ -286,6 +291,27 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   // Track which area's breakdown panel is expanded (null = none)
   const [expandedAreaId, setExpandedAreaId] = useState<string | null>(null);
 
+  // Score history sparklines per area
+  const [scoreHistory, setScoreHistory] = useState<Record<string, number[]>>({});
+  useEffect(() => {
+    if (!brief?.areas) return;
+    Promise.all(
+      brief.areas.map(async (area) => {
+        try {
+          const res = await fetch(`/api/research/sparklines?metric=${encodeURIComponent("score:" + area.id)}&days=7`);
+          const data = (await res.json()) as { values: number[] };
+          return [area.id, data.values ?? []] as const;
+        } catch {
+          return [area.id, []] as const;
+        }
+      }),
+    ).then((results) => {
+      const map: Record<string, number[]> = {};
+      for (const [id, values] of results) map[id] = [...values];
+      setScoreHistory(map);
+    });
+  }, [brief?.areas]);
+
   if (!brief) {
     return (
       <section className="bg-[var(--bg)] border-t border-black shrink-0 h-[72px] flex items-center justify-center">
@@ -363,6 +389,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               area={area}
               expanded={expandedAreaId === area.id}
               onToggle={() => setExpandedAreaId(prev => prev === area.id ? null : area.id)}
+              history={scoreHistory[area.id]}
             />
           ))}
         </div>

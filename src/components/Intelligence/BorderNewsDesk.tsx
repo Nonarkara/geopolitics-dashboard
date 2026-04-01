@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { ExternalLink, Newspaper, RefreshCw } from "lucide-react";
 import { fallbackNews } from "../../lib/mock-data";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import type { NewsResponse } from "../../types/dashboard";
 
 function isNewsResponse(value: unknown): value is NewsResponse {
@@ -40,12 +41,17 @@ function formatHeaderTime(value: string) {
 }
 
 export default function BorderNewsDesk() {
+  const { timeWindow } = useTimeWindow();
   const [news, setNews] = useState<NewsResponse>(fallbackNews);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch("/api/border/news", { cache: "no-store" });
+        let url = "/api/border/news";
+        if (timeWindow) {
+          url += `?from=${encodeURIComponent(timeWindow.from)}&to=${encodeURIComponent(timeWindow.to)}`;
+        }
+        const response = await fetch(url, { cache: "no-store" });
         const payload: unknown = await response.json();
 
         if (isNewsResponse(payload)) {
@@ -62,7 +68,7 @@ export default function BorderNewsDesk() {
     }, 30_000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [timeWindow]);
 
   return (
     <section
