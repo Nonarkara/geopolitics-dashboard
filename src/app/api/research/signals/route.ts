@@ -5,7 +5,8 @@ import { querySignals } from "../../../../lib/signal-archive";
  * GET /api/research/signals
  *
  * Query the signal archive for research and trend analysis.
- * Supports filtering by region, signal_type, source_provider, date range, and keyword.
+ * Supports filtering by region, signal_type, source_provider, date range, keyword,
+ * and full-text search across title, summary, region, and keywords.
  *
  * Query params:
  *   region         - myanmar-frontier | cambodia-frontier | malaysia-frontier | general
@@ -14,6 +15,7 @@ import { querySignals } from "../../../../lib/signal-archive";
  *   from           - ISO date (e.g. 2025-01-01)
  *   to             - ISO date (e.g. 2025-12-31)
  *   keyword        - keyword to match in extracted keywords array
+ *   search         - full-text search query (uses PostgreSQL websearch_to_tsquery)
  *   limit          - max results (default 50, max 200)
  *   offset         - pagination offset
  */
@@ -27,6 +29,7 @@ export async function GET(request: NextRequest) {
     from: searchParams.get("from") ?? undefined,
     to: searchParams.get("to") ?? undefined,
     keyword: searchParams.get("keyword") ?? undefined,
+    search: searchParams.get("search") ?? undefined,
     limit: searchParams.has("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined,
     offset: searchParams.has("offset") ? parseInt(searchParams.get("offset")!, 10) : undefined,
   });
@@ -41,6 +44,7 @@ export async function GET(request: NextRequest) {
       from: searchParams.get("from"),
       to: searchParams.get("to"),
       keyword: searchParams.get("keyword"),
+      search: searchParams.get("search"),
     },
   });
 }

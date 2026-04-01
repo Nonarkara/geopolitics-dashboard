@@ -267,3 +267,95 @@ CREATE TABLE IF NOT EXISTS signal_daily_summary (
 CREATE UNIQUE INDEX IF NOT EXISTS signal_daily_summary_uq
     ON signal_daily_summary (summary_date, region, signal_type);
 CREATE INDEX IF NOT EXISTS signal_daily_summary_date ON signal_daily_summary (summary_date DESC);
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- NEWS, FEED HEALTH & SNAPSHOTS (formerly in supabase-schema.sql)
+-- ═══════════════════════════════════════════════════════════════
+
+-- News Items — headlines from all news feeds (Realtime-enabled)
+CREATE TABLE IF NOT EXISTS news_items (
+    id           UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    source       TEXT NOT NULL,
+    title        TEXT NOT NULL,
+    summary      TEXT,
+    url          TEXT NOT NULL UNIQUE,
+    published_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    severity     TEXT,
+    tags         TEXT[] DEFAULT '{}',
+    payload      JSONB,
+    created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS news_items_published_idx ON news_items (published_at DESC);
+CREATE INDEX IF NOT EXISTS news_items_source_idx ON news_items (source);
+
+-- Feed Health — upstream data feed health tracking
+CREATE TABLE IF NOT EXISTS feed_health (
+    id               UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    feed_id          TEXT NOT NULL,
+    status           TEXT NOT NULL CHECK (status IN ('ok', 'error', 'timeout', 'degraded')),
+    checked_at       TIMESTAMPTZ DEFAULT NOW(),
+    response_time_ms INTEGER,
+    message          TEXT
+);
+
+CREATE INDEX IF NOT EXISTS feed_health_feed_idx ON feed_health (feed_id, checked_at DESC);
+
+-- Data Snapshots — periodic snapshots of fetched data for historical comparison
+CREATE TABLE IF NOT EXISTS data_snapshots (
+    id            UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    feed_id       TEXT NOT NULL,
+    snapshot_data JSONB NOT NULL,
+    captured_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS data_snapshots_feed_idx ON data_snapshots (feed_id, captured_at DESC);
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- V6.1 NEW DATA SOURCES
+-- ═══════════════════════════════════════════════════════════════
+
+-- GDELT GKG Entities — named persons, organizations, themes, sentiment
+CREATE TABLE IF NOT EXISTS gkg_entities (
+    id              BIGSERIAL PRIMARY KEY,
+    entity_type     TEXT NOT NULL,
+    entity_name     TEXT NOT NULL,
+    mention_count   INTEGER DEFAULT 1,
+    avg_tone        REAL,
+    source_count    INTEGER DEFAULT 1,
+    first_seen      TIMESTAMPTZ NOT NULL,
+    last_seen       TIMESTAMPTZ NOT NULL,
+    sample_sources  TEXT[] DEFAULT '{}',
+    ref_date        DATE NOT NULL,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (entity_type, entity_name, ref_date)
+);
+
+CREATE INDEX IF NOT EXISTS gkg_entities_type_idx ON gkg_entities (entity_type);
+CREATE INDEX IF NOT EXISTS gkg_entities_ref_date_idx ON gkg_entities (ref_date DESC);
+CREATE INDEX IF NOT EXISTS gkg_entities_mentions_idx ON gkg_entities (mention_count DESC);
+
+-- Maritime Vessel Positions — AIS tracking via AISstream
+CREATE TABLE IF NOT EXISTS vessel_positions (
+    id              BIGSERIAL PRIMARY KEY,
+    mmsi            TEXT NOT NULL,
+    vessel_name     TEXT,
+    ship_type       INTEGER,
+    latitude        FLOAT NOT NULL,
+    longitude       FLOAT NOT NULL,
+    speed           REAL,
+    course          REAL,
+    heading         REAL,
+    destination     TEXT,
+    flag_country    TEXT,
+    geom            GEOMETRY(Point, 4326),
+    observed_at     TIMESTAMPTZ NOT NULL,
+    created_at      TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (mmsi, observed_at)
+);
+
+CREATE INDEX IF NOT EXISTS vessel_positions_mmsi_idx ON vessel_positions (mmsi);
+CREATE INDEX IF NOT EXISTS vessel_positions_observed_idx ON vessel_positions (observed_at DESC);
+CREATE INDEX IF NOT EXISTS vessel_positions_geom_idx ON vessel_positions USING GIST (geom);

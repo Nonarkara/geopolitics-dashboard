@@ -9,7 +9,13 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 const ENV_PATH = path.join(ROOT_DIR, ".env");
-const SCHEMA_PATH = path.join(ROOT_DIR, "db", "schema.sql");
+
+/** Schema files applied in order */
+const SCHEMA_FILES = [
+  path.join(ROOT_DIR, "db", "schema.sql"),
+  path.join(ROOT_DIR, "db", "migrations", "001_v6_supabase_upgrade.sql"),
+  path.join(ROOT_DIR, "db", "migrations", "002_holistic_conflict_model.sql"),
+];
 
 function loadDotEnvFile(filepath) {
   try {
@@ -50,23 +56,37 @@ async function main() {
 
   const connectionString = process.env.DATABASE_URL?.trim();
   if (!connectionString) {
-    throw new Error("DATABASE_URL is required.");
+    throw new Error(
+      "DATABASE_URL is required. Set it to your Supabase direct connection string."
+    );
   }
 
-  const schemaSql = await fs.readFile(SCHEMA_PATH, "utf8");
   const client = new pg.Client({ connectionString });
-
   await client.connect();
 
   try {
-    await client.query(schemaSql);
-    console.log("Database schema applied.");
+    for (const schemaPath of SCHEMA_FILES) {
+      const filename = path.relative(ROOT_DIR, schemaPath);
+      try {
+        const sql = await fs.readFile(schemaPath, "utf8");
+        await client.query(sql);
+        console.log(`Applied: ${filename}`);
+      } catch (error) {
+        console.error(
+          `Failed: ${filename} — ${error instanceof Error ? error.message : String(error)}`
+        );
+        throw error;
+      }
+    }
+    console.log("\nAll schema files applied successfully.");
   } finally {
     await client.end();
   }
 }
 
 main().catch((error) => {
-  console.error(`Schema apply failed: ${error instanceof Error ? error.message : String(error)}`);
+  console.error(
+    `Schema apply failed: ${error instanceof Error ? error.message : String(error)}`
+  );
   process.exit(1);
 });

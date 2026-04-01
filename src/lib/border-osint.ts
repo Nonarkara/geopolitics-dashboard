@@ -563,12 +563,14 @@ function buildMarketNewsItem(indicator: EconomicIndicator, index: number): NewsI
       indicator.unit,
     )} with a move of ${formatDelta(indicator.change)}.`,
     source: indicator.source ?? "Market radar",
+    sourceUrl: "https://open.er-api.com/v6/latest/USD",
     tag: "Markets",
     publishedAt: new Date().toISOString(),
     severity:
       typeof indicator.change === "number" && Math.abs(indicator.change) >= 1
         ? "watch"
         : "stable",
+    provider: indicator.source ?? "ExchangeRate API",
   };
 }
 
@@ -578,9 +580,11 @@ function buildIncidentNewsItem(incident: IncidentFeature): NewsItem {
     title: `${incident.properties.type} / ${incident.properties.location}`,
     summary: incident.properties.notes,
     source: "Border incident monitor",
+    sourceUrl: "https://acleddata.com",
     tag: "Field",
     publishedAt: incident.properties.eventDate || new Date().toISOString(),
     severity: getSeverity(incident.properties.fatalities),
+    provider: "ACLED",
   };
 }
 
@@ -645,18 +649,22 @@ export function buildBorderNews(
     title: signal.title,
     summary: signal.summary,
     source: signal.source,
+    sourceUrl: signal.sourceUrl,
     tag: signal.provider === "GDELT DOC 2" ? "Narrative" : "OSINT",
     publishedAt: signal.publishedAt,
     severity: signal.severity,
+    provider: signal.provider,
   }));
   const humanitarianItems = osint.humanitarian.map<NewsItem>((snapshot) => ({
     id: snapshot.id,
     title: snapshot.label,
     summary: snapshot.detail,
     source: snapshot.source,
+    sourceUrl: snapshot.sourceUrl,
     tag: "Displacement",
     publishedAt: `${snapshot.asOf}-01-01T00:00:00.000Z`,
     severity: snapshot.count >= 50_000 ? "alert" : "watch",
+    provider: "UNHCR",
   }));
   const fieldItems = incidents.slice(0, 2).map(buildIncidentNewsItem);
   const marketItems = indicators.slice(0, 1).map(buildMarketNewsItem);

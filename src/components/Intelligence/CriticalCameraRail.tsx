@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Camera, ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import type { PublicCamera } from "../../types/dashboard";
+import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useCriticalCameras } from "./useCriticalCameras";
 
 function formatGeneratedAt(value: string | null) {
@@ -18,20 +19,32 @@ function formatGeneratedAt(value: string | null) {
   });
 }
 
-function formatCameraAge(value: string) {
+function formatAbsoluteTime(value: string) {
+  const d = new Date(value);
+  const day = d.getDate();
+  const mon = d.toLocaleString("en-GB", { month: "short" });
+  const time = d.toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  return `${day} ${mon} ${time}`;
+}
+
+function formatRelativeAge(value: string) {
   const diffMs = Math.max(0, Date.now() - new Date(value).getTime());
   const diffMinutes = Math.round(diffMs / 60000);
 
   if (diffMinutes <= 1) {
-    return "just refreshed";
+    return "(just now)";
   }
 
   if (diffMinutes < 60) {
-    return `${diffMinutes}m ago`;
+    return `(${diffMinutes}m ago)`;
   }
 
   const diffHours = Math.round(diffMinutes / 60);
-  return `${diffHours}h ago`;
+  return `(${diffHours}h ago)`;
 }
 
 function statusClass(status: "live" | "offline" | "stale") {
@@ -69,7 +82,7 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
   return (
     <article
       data-testid={`critical-camera-card-${camera.id}`}
-      className="flex h-full w-[210px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#0b1018_0%,#121925_100%)] text-white"
+      className="flex h-full w-[200px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#0b1018_0%,#121925_100%)] text-white"
     >
       <div className="relative h-[110px] overflow-hidden bg-black">
         {camera.snapshotUrl && !imageFailed ? (
@@ -78,7 +91,7 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
             alt={`${camera.label} camera`}
             fill
             unoptimized
-            sizes="210px"
+            sizes="200px"
             className="object-cover"
             onError={() => setImageFailed(true)}
             onLoad={() => setImageFailed(false)}
@@ -105,7 +118,7 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
+      <div className="flex flex-1 flex-col gap-1.5 px-2.5 py-2">
         <div className="min-h-0">
           <div className="flex items-center justify-between gap-2">
             <div className="text-[8px] font-black uppercase tracking-[0.18em] text-white/40">
@@ -124,8 +137,11 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
           {camera.strategicNote ?? camera.provider}
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-2 text-[8px] font-mono uppercase text-white/38">
-          <span>{formatCameraAge(camera.lastCheckedAt)}</span>
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[8px] font-mono tabular-nums text-white/38">
+          <span>
+            {formatAbsoluteTime(camera.lastCheckedAt)}{" "}
+            <span className="text-white/25">{formatRelativeAge(camera.lastCheckedAt)}</span>
+          </span>
           <a
             href={camera.sourcePageUrl}
             target="_blank"
@@ -164,15 +180,18 @@ export default function CriticalCameraRail() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => void reload()}
-          className="inline-flex shrink-0 items-center gap-2 border border-white/12 bg-white/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/65 transition-colors hover:border-white/25 hover:text-white"
-          aria-label="Refresh critical camera feeds"
-        >
-          <RefreshCw size={12} />
-          {formatGeneratedAt(generatedAt)}
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <FreshnessDot lastUpdated={generatedAt} />
+          <button
+            type="button"
+            onClick={() => void reload()}
+            className="inline-flex items-center gap-2 border border-white/12 bg-white/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/65 transition-colors hover:border-white/25 hover:text-white"
+            aria-label="Refresh critical camera feeds"
+          >
+            <RefreshCw size={12} />
+            {formatGeneratedAt(generatedAt)}
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-4 border-b border-white/10 px-3 py-2 text-[8px] font-mono uppercase tracking-[0.14em] text-white/42">

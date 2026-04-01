@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
-import { getSupabase, supabaseEnabled } from "../../../../lib/supabase";
+import { getServiceSupabase, supabaseEnabled } from "../../../../lib/supabase";
+
+/** Uses service-role client for writes (RLS bypass) */
+const getSupabase = getServiceSupabase;
 import { classifyRegion } from "../../../../lib/signal-archive";
 
 /**

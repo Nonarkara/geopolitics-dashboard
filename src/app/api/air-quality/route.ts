@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { AirQualityPoint } from "../../../types/dashboard";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../lib/signal-archive";
 
 const AIR_QUALITY_LOCATIONS = [
   { label: "Phuket Town", lat: 7.8804, lng: 98.3923, tz: "Asia/Bangkok" },
@@ -110,6 +111,41 @@ export async function GET() {
       )
     );
     const merged = results.map((result, index) => result ?? fallbackAirQuality[index]);
+
+    // Archive AQI readings — environmental data is critical for longitudinal
+    // analysis of air quality trends, haze events, and cross-border pollution.
+    try {
+      const liveResults = results.filter((r): r is GlobalAirQualityPoint => r !== null);
+      if (liveResults.length > 0) {
+        const signals: ArchiveSignal[] = liveResults.map((point): ArchiveSignal => ({
+          external_id: `aqi-${point.label.toLowerCase().replace(/\W+/g, "-")}-${new Date().toISOString().slice(0, 13)}`,
+          signal_type: "weather",
+          source_provider: "Open-Meteo",
+          source_url: "https://open-meteo.com",
+          title: `AQI ${point.label}: ${point.aqi} (${point.category})`,
+          summary: `PM2.5: ${point.pm25 ?? "?"} µg/m³${point.temp !== undefined ? `, ${point.temp}°C` : ""}${point.condition ? `, ${point.condition}` : ""}`,
+          published_at: point.observedAt ?? new Date().toISOString(),
+          severity: point.aqi > 150 ? "alert" : point.aqi > 100 ? "watch" : "stable",
+          score: Math.min(point.aqi / 300, 1),
+          lat: point.lat,
+          lng: point.lng,
+          keywords: ["aqi", "pm25", "air-quality", point.label.toLowerCase().replace(/\W+/g, "-")],
+          payload: {
+            type: "air_quality_reading",
+            aqi: point.aqi,
+            pm25: point.pm25,
+            category: point.category,
+            temp: point.temp,
+            condition: point.condition,
+            tz: point.tz,
+          },
+        }));
+        void archiveSignalBatch(signals);
+      }
+    } catch {
+      // Non-critical
+    }
+
     return NextResponse.json(merged);
   } catch {
     return NextResponse.json(fallbackAirQuality);

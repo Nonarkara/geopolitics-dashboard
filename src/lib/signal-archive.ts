@@ -8,7 +8,7 @@
 
 import { query, isDatabaseConfigured } from "./db";
 import { BORDER_AREAS, type BorderAreaId } from "./border-regions";
-import { getSupabase } from "./supabase";
+import { getServiceSupabase, getSupabase } from "./supabase-server";
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -24,7 +24,12 @@ export type SignalType =
   | "seismic"
   | "traffic"
   | "disaster"
-  | "commodity";
+  | "commodity"
+  | "political"
+  | "diplomatic"
+  | "military"
+  | "gkg"
+  | "maritime";
 
 export interface ArchiveSignal {
   external_id?: string;
@@ -139,8 +144,9 @@ export function classifyCountries(text: string): string[] {
 /* ── Archive Functions ──────────────────────────────────── */
 
 /**
- * Archive a single signal to PostgreSQL. Silently no-ops if DB not configured.
+ * Archive a single signal to Supabase (single source of truth).
  * Uses ON CONFLICT to deduplicate by (source_provider, external_id).
+ * PostGIS geometry is created via raw SQL for coordinate-bearing signals.
  */
 export async function archiveSignal(signal: ArchiveSignal): Promise<void> {
   const text = `${signal.title} ${signal.summary ?? ""}`;
@@ -148,10 +154,6 @@ export async function archiveSignal(signal: ArchiveSignal): Promise<void> {
   const keywords = signal.keywords ?? extractKeywords(signal.title, signal.summary);
   const countryFocus = signal.country_focus ?? classifyCountries(text);
 
-  // Always mirror to Supabase (non-blocking, works without PostgreSQL)
-  void mirrorToSupabase(signal, region, keywords, countryFocus);
-
-  // PostgreSQL archival (requires DATABASE_URL)
   if (!isDatabaseConfigured) return;
 
   try {
@@ -214,45 +216,6 @@ export async function archiveSignalBatch(signals: ArchiveSignal[]): Promise<void
   }
 }
 
-/** Mirror a signal to Supabase for Realtime subscriptions. */
-async function mirrorToSupabase(
-  signal: ArchiveSignal,
-  region: string | null,
-  keywords: string[],
-  countryFocus: string[],
-): Promise<void> {
-  const sb = getSupabase();
-  if (!sb) return;
-  try {
-    const row = {
-      external_id: signal.external_id ?? null,
-      signal_type: signal.signal_type,
-      source_provider: signal.source_provider,
-      source_url: signal.source_url ?? null,
-      title: signal.title,
-      summary: signal.summary ?? null,
-      url: signal.url ?? null,
-      published_at: signal.published_at,
-      region,
-      country_focus: countryFocus,
-      severity: signal.severity ?? null,
-      score: signal.score ?? null,
-      fatalities: signal.fatalities ?? null,
-      keywords,
-      tags: signal.tags ?? [],
-      payload: signal.payload ?? null,
-    };
-
-    // Plain insert — duplicates will fail on the unique index and that's fine
-    const { error } = await sb.from("signal_archive").insert(row);
-    if (error && !error.message.includes("duplicate")) {
-      // Unexpected error — log but don't break the dashboard
-    }
-  } catch {
-    /* non-critical */
-  }
-}
-
 /* ── Research Query Helpers ──────────────────────────────── */
 
 export interface SignalQueryParams {
@@ -262,6 +225,7 @@ export interface SignalQueryParams {
   from?: string;
   to?: string;
   keyword?: string;
+  search?: string; // full-text search query
   limit?: number;
   offset?: number;
 }
@@ -273,6 +237,34 @@ export interface SignalQueryResult {
 
 export async function querySignals(params: SignalQueryParams): Promise<SignalQueryResult> {
   if (!isDatabaseConfigured) return { signals: [], total: 0 };
+
+  const limit = Math.min(params.limit ?? 50, 200);
+  const offset = params.offset ?? 0;
+
+  // Use full-text search function if search query is provided
+  if (params.search) {
+    try {
+      const result = await query<ArchiveSignal & { rank: number; total_count: string }>(
+        `SELECT * FROM fn_search_signals($1, $2, $3, $4, $5, $6, $7)`,
+        [
+          params.search,
+          params.region ?? null,
+          params.signal_type ?? null,
+          params.from ?? null,
+          params.to ?? null,
+          limit,
+          offset,
+        ],
+      );
+
+      return {
+        signals: result.rows,
+        total: parseInt(result.rows[0]?.total_count as unknown as string ?? "0", 10),
+      };
+    } catch {
+      // Fall through to standard query if fn_search_signals not available
+    }
+  }
 
   const conditions: string[] = [];
   const values: unknown[] = [];
@@ -304,8 +296,6 @@ export async function querySignals(params: SignalQueryParams): Promise<SignalQue
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
-  const limit = Math.min(params.limit ?? 50, 200);
-  const offset = params.offset ?? 0;
 
   try {
     const [countResult, dataResult] = await Promise.all([
@@ -400,9 +390,47 @@ export interface EscalationAlert {
 /**
  * Compare today's signal activity against the 7-day rolling baseline.
  * Flags escalation if count exceeds 2x baseline or severity jumps >0.5 points.
+ * Uses the database function fn_detect_escalation when available for efficiency.
  */
 export async function detectEscalation(region: string): Promise<EscalationAlert | null> {
   if (!isDatabaseConfigured) return null;
+
+  // Try server-side function first (single query vs 3 parallel queries)
+  try {
+    const result = await query<{
+      region: string;
+      today_count: string;
+      baseline_avg_7d: string;
+      ratio: string;
+      today_severity_avg: string | null;
+      baseline_severity_avg: string | null;
+      severity_delta: string | null;
+      escalated: boolean;
+      reason: string;
+      top_signals: { title: string; source_provider: string; severity: string | null; published_at: string }[];
+    }>(
+      `SELECT * FROM fn_detect_escalation($1)`,
+      [region],
+    );
+
+    const row = result.rows[0];
+    if (row) {
+      return {
+        region,
+        todayCount: parseInt(row.today_count, 10),
+        baselineAvg: parseFloat(row.baseline_avg_7d),
+        ratio: parseFloat(row.ratio),
+        todaySeverityAvg: row.today_severity_avg ? parseFloat(row.today_severity_avg) : null,
+        baselineSeverityAvg: row.baseline_severity_avg ? parseFloat(row.baseline_severity_avg) : null,
+        severityDelta: row.severity_delta ? parseFloat(row.severity_delta) : null,
+        escalated: row.escalated,
+        reason: row.reason,
+        topSignals: row.top_signals ?? [],
+      };
+    }
+  } catch {
+    // Fall through to inline implementation if function not available
+  }
 
   try {
     const todayStart = new Date();
@@ -412,13 +440,13 @@ export async function detectEscalation(region: string): Promise<EscalationAlert 
     const [todayRes, baselineRes, topRes] = await Promise.all([
       query<{ cnt: string; avg_sev: string | null }>(
         `SELECT COUNT(*)::text AS cnt,
-                AVG(CASE severity WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
+                AVG(CASE severity WHEN 'critical' THEN 4 WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
          FROM signal_archive WHERE region = $1 AND published_at >= $2`,
         [region, todayStart.toISOString()],
       ),
       query<{ cnt: string; avg_sev: string | null }>(
         `SELECT (COUNT(*) / 7.0)::text AS cnt,
-                AVG(CASE severity WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
+                AVG(CASE severity WHEN 'critical' THEN 4 WHEN 'alert' THEN 3 WHEN 'watch' THEN 2 WHEN 'stable' THEN 1 ELSE NULL END)::text AS avg_sev
          FROM signal_archive WHERE region = $1 AND published_at >= $2 AND published_at < $3`,
         [region, weekAgo.toISOString(), todayStart.toISOString()],
       ),

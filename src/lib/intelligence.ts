@@ -37,6 +37,7 @@ import type {
   TickerItem,
   TickerResponse,
 } from "../types/dashboard";
+import { parseOpenAiText, parseOllamaText } from "./ai-response-parser";
 
 const FEED_JSON_FALLBACK = "https://api.rss2json.com/v1/api.json?rss_url=";
 const INTELLIGENCE_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 min — keeps news/pulsation fresh
@@ -1253,52 +1254,57 @@ function extractJsonObject(text: string) {
   }
 }
 
-function extractResponseText(payload: unknown): string {
-  if (!isRecord(payload)) {
-    return "";
-  }
+// normalized parsing of provider responses is handled by `src/lib/ai-response-parser.ts`
 
-  if (typeof payload.output_text === "string") {
-    return payload.output_text;
-  }
+type AiSummaryResult = Pick<IntelligencePackage, "headline" | "summary" | "priorities">;
 
-  if (!Array.isArray(payload.output)) {
-    return "";
-  }
+const SUMMARY_SYSTEM_PROMPT =
+  "You summarize intelligence packages for an operator dashboard. Return JSON only with keys: headline (string), summary (string), priorities (array of 3 strings). No markdown, no explanation.";
 
-  return payload.output
-    .flatMap((entry) => {
-      if (!isRecord(entry) || !Array.isArray(entry.content)) {
-        return [];
-      }
-
-      return entry.content.flatMap((content) => {
-        if (!isRecord(content)) {
-          return [];
-        }
-
-        if (typeof content.text === "string") {
-          return [content.text];
-        }
-
-        return [];
-      });
-    })
-    .join("\n");
+function buildSummaryUserContent(definition: PackageDefinition, items: SeedItem[]): string {
+  return JSON.stringify({
+    package: definition.title,
+    description: definition.description,
+    items: items.slice(0, 6).map((item) => ({
+      title: item.title,
+      summary: item.summary,
+      source: item.source,
+      tags: item.tags,
+      severity: item.severity,
+      publishedAt: item.publishedAt,
+    })),
+  });
 }
 
-async function summarizeWithAi(
+function validateSummaryResponse(parsed: Record<string, unknown> | null): AiSummaryResult | null {
+  if (
+    parsed &&
+    typeof parsed.headline === "string" &&
+    typeof parsed.summary === "string" &&
+    Array.isArray(parsed.priorities) &&
+    parsed.priorities.every((value) => typeof value === "string")
+  ) {
+    return {
+      headline: parsed.headline,
+      summary: parsed.summary,
+      priorities: parsed.priorities.slice(0, 3),
+    };
+  }
+  return null;
+}
+
+async function summarizeWithOpenAi(
   definition: PackageDefinition,
   items: SeedItem[],
-): Promise<Pick<IntelligencePackage, "headline" | "summary" | "priorities"> | null> {
+): Promise<AiSummaryResult | null> {
   const apiKey = process.env.OPENAI_API_KEY?.trim();
+  if (!apiKey) return null;
 
-  if (!apiKey || items.length === 0) {
-    return null;
-  }
+  const openaiBase = process.env.OPENAI_BASE_URL?.trim() || "https://api.openai.com";
+  const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 5000);
 
   try {
-    const response = await fetch("https://api.openai.com/v1/responses", {
+    const response = await fetch(`${openaiBase.replace(/\/$/, "")}/v1/responses`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -1307,52 +1313,85 @@ async function summarizeWithAi(
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || "gpt-4.1-mini",
         input: [
-          {
-            role: "system",
-            content:
-              "You summarize intelligence packages for an operator dashboard. Return JSON only with headline, summary, priorities.",
-          },
-          {
-            role: "user",
-            content: JSON.stringify({
-              package: definition.title,
-              description: definition.description,
-              items: items.slice(0, 6).map((item) => ({
-                title: item.title,
-                summary: item.summary,
-                source: item.source,
-                tags: item.tags,
-                severity: item.severity,
-                publishedAt: item.publishedAt,
-              })),
-            }),
-          },
+          { role: "system", content: SUMMARY_SYSTEM_PROMPT },
+          { role: "user", content: buildSummaryUserContent(definition, items) },
         ],
       }),
+      signal:
+        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
+          ? (AbortSignal as any).timeout(timeoutMs)
+          : undefined,
     });
 
-    if (!response.ok) {
+    if (!response.ok) return null;
+
+    try {
+      const payload: unknown = await response.json();
+      return validateSummaryResponse(extractJsonObject(parseOpenAiText(payload)));
+    } catch {
       return null;
     }
-
-    const payload: unknown = await response.json();
-    const parsed = extractJsonObject(extractResponseText(payload));
-
-    if (
-      parsed &&
-      typeof parsed.headline === "string" &&
-      typeof parsed.summary === "string" &&
-      Array.isArray(parsed.priorities) &&
-      parsed.priorities.every((value) => typeof value === "string")
-    ) {
-      return {
-        headline: parsed.headline,
-        summary: parsed.summary,
-        priorities: parsed.priorities.slice(0, 3),
-      };
-    }
-
+  } catch {
     return null;
+  }
+}
+
+async function summarizeWithOllama(
+  definition: PackageDefinition,
+  items: SeedItem[],
+): Promise<AiSummaryResult | null> {
+  const ollamaHost = process.env.OLLAMA_HOST || "http://localhost:11434";
+  const ollamaModel = process.env.OLLAMA_MODEL || "qwen2.5-coder:7b";
+  const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 5000);
+
+  try {
+    const response = await fetch(`${ollamaHost.replace(/\/$/, "")}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: ollamaModel,
+        stream: false,
+        messages: [
+          { role: "system", content: SUMMARY_SYSTEM_PROMPT },
+          { role: "user", content: buildSummaryUserContent(definition, items) },
+        ],
+      }),
+      signal:
+        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
+          ? (AbortSignal as any).timeout(timeoutMs)
+          : undefined,
+    });
+
+    if (!response.ok) return null;
+
+    try {
+      const payload = await response.json();
+      const text = parseOllamaText(payload);
+      return validateSummaryResponse(extractJsonObject(text));
+    } catch {
+      return null;
+    }
+  } catch {
+    return null;
+  }
+}
+
+async function summarizeWithAi(
+  definition: PackageDefinition,
+  items: SeedItem[],
+): Promise<AiSummaryResult | null> {
+  if (items.length === 0) return null;
+
+  // Prefer local Ollama first (local-offline priority), then fallback to OpenAI
+  try {
+    const local = await summarizeWithOllama(definition, items);
+    if (local) return local;
+  } catch {
+    // local unavailable, continue to OpenAI
+  }
+
+  try {
+    return await summarizeWithOpenAi(definition, items);
   } catch {
     return null;
   }

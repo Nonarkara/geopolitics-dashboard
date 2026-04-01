@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { FlightData } from "../../../types/dashboard";
+import { archiveSignalBatch, type ArchiveSignal } from "../../../lib/signal-archive";
 
 // Bounding box covering Thailand, Cambodia, Myanmar, and Malaysia
 const BOUNDS = {
@@ -83,7 +84,46 @@ export async function GET() {
         on_ground: !!state[8],
       }));
 
-    return NextResponse.json(flights.length > 0 ? flights : fallbackFlights);
+    const result = flights.length > 0 ? flights : fallbackFlights;
+
+    // Archive flight snapshot — airspace density and traffic patterns are
+    // valuable for longitudinal analysis of regional air traffic trends.
+    if (flights.length > 0) {
+      try {
+        const hourKey = new Date().toISOString().slice(0, 13);
+        const countByCountry: Record<string, number> = {};
+        for (const f of flights) {
+          countByCountry[f.origin_country] = (countByCountry[f.origin_country] ?? 0) + 1;
+        }
+        const signals: ArchiveSignal[] = [{
+          external_id: `flights-snapshot-${hourKey}`,
+          signal_type: "movement",
+          source_provider: "OpenSky Network",
+          source_url: "https://opensky-network.org",
+          title: `Airspace snapshot: ${flights.length} active flights over SE Asia`,
+          summary: Object.entries(countByCountry)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([country, count]) => `${country}: ${count}`)
+            .join(", "),
+          published_at: new Date().toISOString(),
+          severity: "stable",
+          score: Math.min(flights.length / 200, 1),
+          keywords: ["flights", "airspace", "opensky", ...Object.keys(countByCountry).map(c => c.toLowerCase())],
+          payload: {
+            type: "flight_snapshot",
+            totalFlights: flights.length,
+            countByCountry,
+            bounds: BOUNDS,
+          },
+        }];
+        void archiveSignalBatch(signals);
+      } catch {
+        // Non-critical
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (error: unknown) {
     console.error("Flight data error:", error instanceof Error ? error.message : error);
     return NextResponse.json(fallbackFlights);

@@ -8,6 +8,7 @@ import {
   ArrowUp,
   Camera,
   Droplets,
+  ExternalLink,
   Globe,
   Minus,
   Radio,
@@ -83,6 +84,23 @@ function TrendIcon({ trend }: { trend: string }) {
   }
 }
 
+function SourceAttr({ href, label, date }: { href: string; label: string; date?: string }) {
+  return (
+    <div className="text-[7px] font-mono uppercase tracking-[0.08em] opacity-30 mt-1 flex items-center gap-0.5">
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex items-center gap-[2px] hover:opacity-60 transition-opacity"
+      >
+        {label}
+        <ExternalLink size={6} />
+      </a>
+      {date && <span> · {date}</span>}
+    </div>
+  );
+}
+
 interface SidebarProps {
   brief: BorderCommandBrief | null;
 }
@@ -143,6 +161,11 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
           </div>
         </div>
+        {brief && (
+          <div className="mt-2 text-[7px] font-mono uppercase tracking-[0.08em] opacity-25">
+            Brief generated {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
@@ -269,7 +292,11 @@ export default function Sidebar({ brief }: SidebarProps) {
                     </span>
                     <span className="text-[7px] font-black opacity-30">{c.unit}</span>
                   </div>
-                  <div className="text-[7px] opacity-25 mt-0.5 truncate">{c.date}</div>
+                  <SourceAttr
+                    href="https://www.nabc.go.th"
+                    label="NABC"
+                    date={c.date ? new Date(c.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : undefined}
+                  />
                 </div>
               ))}
             </div>
@@ -288,27 +315,30 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
             <div className="space-y-1.5">
               {rivers.map((r) => (
-                <div key={r.id} className={`border border-[var(--line)] p-2 flex items-center gap-2 ${riskBg(r.riskLevel)}`}>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[9px] font-black uppercase tracking-tight truncate">
-                      {r.name}
+                <div key={r.id} className={`border border-[var(--line)] p-2 ${riskBg(r.riskLevel)}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] font-black uppercase tracking-tight truncate">
+                        {r.name}
+                      </div>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[11px] font-black tabular-nums leading-none">
+                          {r.currentDischarge}
+                        </span>
+                        <span className="text-[7px] opacity-30">m³/s</span>
+                        <TrendIcon trend={r.trend} />
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] font-black tabular-nums leading-none">
-                        {r.currentDischarge}
-                      </span>
-                      <span className="text-[7px] opacity-30">m³/s</span>
-                      <TrendIcon trend={r.trend} />
+                    <div className="text-right shrink-0">
+                      <div className={`text-[7px] font-black uppercase tracking-wider ${riskColor(r.riskLevel)}`}>
+                        {r.riskLevel}
+                      </div>
+                      <div className="text-[7px] opacity-25 mt-0.5">
+                        peak {r.forecastPeak}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div className={`text-[7px] font-black uppercase tracking-wider ${riskColor(r.riskLevel)}`}>
-                      {r.riskLevel}
-                    </div>
-                    <div className="text-[7px] opacity-25 mt-0.5">
-                      peak {r.forecastPeak}
-                    </div>
-                  </div>
+                  <SourceAttr href="https://open-meteo.com" label="OPEN-METEO" />
                 </div>
               ))}
             </div>
@@ -344,8 +374,13 @@ export default function Sidebar({ brief }: SidebarProps) {
                   <div className="flex-1 min-w-0">
                     <div className="text-[9px] font-bold leading-tight truncate">{q.place}</div>
                     <div className="text-[7px] opacity-30 mt-0.5">
-                      {q.depth.toFixed(0)}km deep · {new Date(q.time).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                      {q.depth.toFixed(0)}km deep
                     </div>
+                    <SourceAttr
+                      href="https://earthquake.usgs.gov"
+                      label="USGS"
+                      date={new Date(q.time).toLocaleDateString("en-GB", { day: "2-digit", month: "short" })}
+                    />
                   </div>
                 </div>
               ))}
@@ -376,13 +411,15 @@ export default function Sidebar({ brief }: SidebarProps) {
                       <span className={`text-[7px] font-black uppercase tracking-wider ${catColor}`}>
                         {t.category}
                       </span>
-                      <span className="text-[7px] opacity-25">
-                        {new Date(t.start).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
-                      </span>
                     </div>
                     <div className="text-[9px] font-bold leading-tight mt-1 line-clamp-2">
                       {t.title}
                     </div>
+                    <SourceAttr
+                      href="https://www.longdo.com"
+                      label="LONGDO"
+                      date={new Date(t.start).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+                    />
                   </div>
                 );
               })}
@@ -413,13 +450,15 @@ export default function Sidebar({ brief }: SidebarProps) {
                         {d.alertLevel}
                       </span>
                       <span className="text-[7px] font-black uppercase opacity-40">{d.type}</span>
-                      <span className="text-[7px] opacity-25 ml-auto">
-                        {d.date ? new Date(d.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : ""}
-                      </span>
                     </div>
                     <div className="text-[9px] font-bold leading-tight mt-1 line-clamp-2">
                       {d.title}
                     </div>
+                    <SourceAttr
+                      href="https://www.gdacs.org"
+                      label="GDACS"
+                      date={d.date ? new Date(d.date).toLocaleDateString("en-GB", { day: "2-digit", month: "short" }) : undefined}
+                    />
                   </div>
                 );
               })}

@@ -447,7 +447,39 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
         ? "configured"
         : "default",
       intelligence_cache: isDatabaseConfigured ? "hybrid" : "memory",
-      ai_summary: process.env.OPENAI_API_KEY ? "configured" : "fallback",
+      // determine ai_summary by probing local Ollama first, then OpenAI
+      ai_summary: await (async () => {
+        const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 2500);
+        const openaiBase = (process.env.OPENAI_BASE_URL || "https://api.openai.com").replace(/\/$/, "");
+        const openaiKey = process.env.OPENAI_API_KEY?.trim();
+        const ollamaHost = (process.env.OLLAMA_HOST || "http://localhost:11434").replace(/\/$/, "");
+
+        const tryFetch = async (url: string, opts: RequestInit = {}) => {
+          try {
+            const res = await fetch(url, {
+              method: "GET",
+              signal:
+                typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
+                  ? (AbortSignal as any).timeout(timeoutMs)
+                  : undefined,
+              ...opts,
+            });
+            return res.ok || res.status === 401 || res.status === 403;
+          } catch {
+            return false;
+          }
+        };
+
+        // probe local Ollama first
+        const ollamaProbe = await tryFetch(`${ollamaHost}/api/models`);
+        if (ollamaProbe) return "ollama";
+
+        // probe OpenAI next
+        const openaiProbe = await tryFetch(`${openaiBase}/v1/models`, openaiKey ? { headers: { Authorization: `Bearer ${openaiKey}` } } : {});
+        if (openaiProbe) return "configured";
+
+        return "fallback";
+      })(),
       data_explorer: getDataExplorerState(),
       mock_ingestion: process.env.ALLOW_MOCK_INGESTION === "true"
         ? "enabled"

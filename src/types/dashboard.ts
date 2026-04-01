@@ -269,9 +269,11 @@ export interface NewsItem {
   title: string;
   summary: string;
   source: string;
+  sourceUrl?: string;
   tag: string;
   publishedAt: string;
   severity: NewsSeverity;
+  provider?: string;
 }
 
 export interface NewsResponse {
@@ -614,6 +616,46 @@ export interface BorderOsintResponse {
   signals: BorderNarrativeSignal[];
   humanitarian: BorderHumanitarianSnapshot[];
   sources: SourceHealth[];
+}
+
+/* ── V6.1 New Data Sources ─────────────────────────────── */
+
+export interface GkgEntity {
+  id: number;
+  entityType: "person" | "organization" | "theme" | "location";
+  entityName: string;
+  mentionCount: number;
+  avgTone: number | null;
+  sourceCount: number;
+  firstSeen: string;
+  lastSeen: string;
+  sampleSources: string[];
+  refDate: string;
+}
+
+export interface GkgResponse {
+  generatedAt: string;
+  entities: GkgEntity[];
+}
+
+export interface VesselPosition {
+  mmsi: string;
+  vesselName: string | null;
+  shipType: number | null;
+  lat: number;
+  lng: number;
+  speed: number | null;
+  course: number | null;
+  heading: number | null;
+  destination: string | null;
+  flagCountry: string | null;
+  observedAt: string;
+}
+
+export interface VesselTrackingResponse {
+  generatedAt: string;
+  vessels: VesselPosition[];
+  vesselCount: number;
 }
 
 export type MapOverlayKind = "raster" | "vector";

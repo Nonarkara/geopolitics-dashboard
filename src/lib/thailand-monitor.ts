@@ -199,9 +199,11 @@ export function buildThailandNews(
     title: `${incident.properties.type} / ${incident.properties.location}`,
     summary: incident.properties.notes,
     source: "Thailand monitor",
+    sourceUrl: "https://acleddata.com",
     tag: "Field",
     publishedAt: incident.properties.eventDate || new Date().toISOString(),
     severity: getSeverity(incident.properties.fatalities),
+    provider: "ACLED",
   }));
 
   const marketItems = indicators.slice(0, 2).map<NewsItem>((indicator, index) => ({
@@ -211,13 +213,15 @@ export function buildThailandNews(
       indicator.value,
       indicator.unit,
     )} with a move of ${formatDelta(indicator.change)}.`,
-    source: "Market radar",
+    source: indicator.source ?? "Market radar",
+    sourceUrl: "https://open.er-api.com/v6/latest/USD",
     tag: "Markets",
     publishedAt: new Date().toISOString(),
     severity:
       typeof indicator.change === "number" && Math.abs(indicator.change) >= 1
         ? "watch"
         : "stable",
+    provider: indicator.source ?? "ExchangeRate API",
   }));
 
   return {

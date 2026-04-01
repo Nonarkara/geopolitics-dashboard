@@ -1,6 +1,19 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+/**
+ * Supabase client — re-exports from supabase-server.ts for backward compatibility.
+ *
+ * V6: All Supabase access is now consolidated in supabase-server.ts.
+ * This file re-exports the public API so existing imports continue to work.
+ */
 
-export interface NewsItem {
+export {
+  getSupabase,
+  getServiceSupabase,
+  isSupabaseConfigured as supabaseEnabled,
+} from "./supabase-server";
+
+import { getServiceSupabase } from "./supabase-server";
+
+export type NewsItem = {
   id?: string;
   source: string;
   title: string;
@@ -11,51 +24,28 @@ export interface NewsItem {
   tags: string[];
   payload: Record<string, unknown> | null;
   created_at?: string;
-}
+};
 
-export interface FeedHealthRow {
+export type FeedHealthRow = {
   id?: string;
   feed_id: string;
   status: "ok" | "error" | "timeout";
   checked_at?: string;
   response_time_ms: number | null;
   message: string | null;
-}
+};
 
-export interface DataSnapshot {
+export type DataSnapshot = {
   id?: string;
   feed_id: string;
   snapshot_data: Record<string, unknown>;
   captured_at?: string;
-}
+};
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-
-const isConfigured = url.length > 0 && anonKey.length > 0;
-
-let _client: SupabaseClient | null = null;
-
-/**
- * Returns the Supabase client, or `null` when env vars are not configured.
- * The dashboard must work identically without Supabase — every call site
- * must handle `null`.
- */
-export function getSupabase(): SupabaseClient | null {
-  if (!isConfigured) return null;
-  if (!_client) {
-    _client = createClient(url, anonKey);
-  }
-  return _client;
-}
-
-/** Whether Supabase is configured for this deployment. */
-export const supabaseEnabled = isConfigured;
-
-/* ── Convenience helpers ─────────────────────────────────── */
+/* ── Convenience helpers (use service client for writes) ── */
 
 export async function upsertNewsItem(item: NewsItem): Promise<void> {
-  const sb = getSupabase();
+  const sb = getServiceSupabase();
   if (!sb) return;
   try {
     await sb.from("news_items").upsert(item, { onConflict: "url" });
@@ -65,7 +55,7 @@ export async function upsertNewsItem(item: NewsItem): Promise<void> {
 }
 
 export async function logFeedHealth(row: FeedHealthRow): Promise<void> {
-  const sb = getSupabase();
+  const sb = getServiceSupabase();
   if (!sb) return;
   try {
     await sb.from("feed_health").insert(row);
@@ -75,7 +65,7 @@ export async function logFeedHealth(row: FeedHealthRow): Promise<void> {
 }
 
 export async function saveDataSnapshot(snap: DataSnapshot): Promise<void> {
-  const sb = getSupabase();
+  const sb = getServiceSupabase();
   if (!sb) return;
   try {
     await sb.from("data_snapshots").insert(snap);

@@ -98,7 +98,7 @@ export default function BorderDashboard() {
         </div>
 
         {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[236px] shrink-0 connected-grid bg-black overflow-hidden">
+        <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
 
           {/* MARKET PULSE */}
           <div className="w-[340px] shrink-0 grid-cell overflow-hidden">

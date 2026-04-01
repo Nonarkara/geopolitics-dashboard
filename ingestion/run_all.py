@@ -15,6 +15,10 @@ JOB_SCRIPTS = OrderedDict(
         ("rainfall", "rainfall_ingest.py"),
         ("air-quality", "air_quality_ingest.py"),
         ("refugees", "refugee_ingest.py"),
+        ("gkg", "gkg_ingest.py"),
+        ("vessels", "vessel_ingest.py"),
+        ("imf-dbnomics", "imf_dbnomics_ingest.py"),
+        ("daily-summary", "build_daily_summary.py"),
     ]
 )
 

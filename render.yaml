@@ -29,6 +29,18 @@ services:
         value: https://geopolitics-dashboard.onrender.com
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_BASE_URL
+        value: https://api.openai.com
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: OLLAMA_HOST
+        value: http://localhost:11434
+      - key: OLLAMA_MODEL
+        value: qwen2.5-coder:7b
+      - key: AI_REQUEST_TIMEOUT_MS
+        value: "5000"
+      - key: ENABLE_AI_SUMMARIES
+        value: "true"
       - key: NEXT_PUBLIC_ENABLE_DATA_EXPLORER
         value: "false"
       - key: DATA_EXPLORER_ENABLED
@@ -168,6 +180,63 @@ services:
     schedule: "0 4 * * *"
     buildCommand: pip install -r ingestion/requirements.txt
     startCommand: python ingestion/refugee_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-gkg-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "*/15 * * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/gkg_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: ALLOW_MOCK_INGESTION
+        value: "false"
+      - key: INGEST_REQUEST_TIMEOUT_SECONDS
+        value: "30"
+
+  - type: cron
+    name: geopolitics-vessel-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "*/10 * * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/vessel_ingest.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: AISSTREAM_API_KEY
+        sync: false
+      - key: VESSEL_COLLECTION_SECONDS
+        value: "120"
+
+  - type: cron
+    name: geopolitics-imf-dbnomics-ingest
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "30 5 * * 0"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/imf_dbnomics_ingest.py
     envVars:
       - key: DATABASE_URL
         fromDatabase:

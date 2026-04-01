@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Coins, RefreshCw } from "lucide-react";
+import { Activity, Coins, ExternalLink, RefreshCw } from "lucide-react";
+import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { fallbackMarketRadarResponse } from "../../lib/mock-data";
 import type {
   EconomicIndicator,
@@ -115,15 +116,16 @@ export default function BorderMarketPulse() {
       data-testid="border-market-pulse"
       className="flex h-full flex-col overflow-hidden border-r border-[var(--line)] bg-[linear-gradient(180deg,rgba(248,246,240,0.98)_0%,rgba(238,236,228,0.96)_100%)] select-none"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-3 py-2">
         <div>
-          <div className="eyebrow mb-1">Market Pulse</div>
-          <div className="text-[11px] font-black uppercase tracking-[0.03em] text-[var(--ink)]">
-            Cross-border pricing and source confidence
+          <div className="eyebrow mb-0.5">Market Pulse</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.03em] text-[var(--ink)]">
+            Cross-border pricing with source links
           </div>
         </div>
         <div className="inline-flex items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
-          <RefreshCw size={11} />
+          <FreshnessDot lastUpdated={payload.generatedAt} />
+          <RefreshCw size={10} />
           {formatGeneratedAt(payload.generatedAt)}
         </div>
       </div>
@@ -162,18 +164,24 @@ export default function BorderMarketPulse() {
                 </div>
               </div>
             </div>
-            <div className="mt-3 grid grid-cols-2 gap-3 border-t border-white/10 pt-3 text-[9px] uppercase tracking-[0.14em] text-white/55">
+            <div className="mt-2.5 grid grid-cols-2 gap-3 border-t border-white/10 pt-2.5 text-[8px] uppercase tracking-[0.14em] text-white/55">
               <div>
-                <div>Use</div>
-                <div className="mt-1 text-[10px] font-black leading-tight text-white/85">
-                  procurement and trade guidance
+                <div>Sampled</div>
+                <div className="mt-0.5 text-[9px] font-mono font-black tabular-nums leading-tight text-white/75">
+                  {formatGeneratedAt(payload.generatedAt)} ICT
                 </div>
               </div>
               <div>
-                <div>Status</div>
-                <div className="mt-1 text-[10px] font-black leading-tight text-white/85">
-                  live provider value, not fallback
-                </div>
+                <div>Source</div>
+                <a
+                  href="https://open.er-api.com/v6/latest/USD"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] font-black leading-tight text-white/75 hover:text-white transition-colors"
+                >
+                  {primary.source ?? "ExchangeRate API"}
+                  <ExternalLink size={7} className="opacity-40" />
+                </a>
               </div>
             </div>
           </div>
@@ -197,33 +205,45 @@ export default function BorderMarketPulse() {
                   {formatIndicatorChange(indicator.change)}
                 </span>
               </div>
-              <div className="mt-2 text-[11px] font-black uppercase tracking-tight">
+              <div className="mt-1.5 text-[10px] font-black uppercase tracking-tight">
                 {indicator.label}
               </div>
-              <div className="mt-1 text-[17px] font-black tabular-nums leading-none tracking-[-0.03em]">
+              <div className="mt-0.5 text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]">
                 {formatIndicatorValue(indicator)}
+              </div>
+              <div className="mt-1.5 flex items-center gap-1 text-[6px] font-mono uppercase tracking-[0.08em] opacity-35 border-t border-[var(--line-dim)] pt-1">
+                <span>{indicator.source ?? "FX API"}</span>
+                <span>·</span>
+                <span className="tabular-nums">{formatGeneratedAt(payload.generatedAt)}</span>
               </div>
             </div>
           ))}
         </div>
 
-        <div className="mt-auto border-t border-[var(--line-dim)] pt-2.5">
-          <div className="mb-2 inline-flex items-center gap-2 text-[8px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
-            <Activity size={11} className="text-[var(--tech)]" />
-            Source stack
+        <div className="mt-auto border-t border-[var(--line-dim)] pt-2">
+          <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
+            <Activity size={10} className="text-[var(--tech)]" />
+            Source stack — verified providers
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {(payload.sources.length > 0
-              ? payload.sources
-              : ["ExchangeRate API (fallback)", "World Bank WDI"]
+          <div className="flex flex-wrap gap-1">
+            {(
+              [
+                { label: "ExchangeRate API", url: "https://open.er-api.com" },
+                { label: "World Bank WDI", url: "https://data.worldbank.org" },
+                { label: "Binance", url: "https://api.binance.com" },
+              ] as const
             ).map((source) => (
-              <span
-                key={source}
-                className="inline-flex items-center rounded-full border border-[var(--line)] bg-white/70 px-2 py-1 text-[8px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]"
+              <a
+                key={source.label}
+                href={source.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center rounded-full border border-[var(--line)] bg-white/70 px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)] hover:text-[var(--ink)] hover:border-[var(--ink)] transition-colors"
               >
-                <Coins size={9} className="mr-1 opacity-60" />
-                {source}
-              </span>
+                <Coins size={8} className="mr-1 opacity-60" />
+                {source.label}
+                <ExternalLink size={6} className="ml-0.5 opacity-30" />
+              </a>
             ))}
           </div>
         </div>

@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { RefreshCw } from "lucide-react";
-import type { BorderCommandBrief, ScoreBreakdown } from "../../types/dashboard";
+import { RefreshCw, ExternalLink } from "lucide-react";
+import type { BorderCommandBrief, BorderAreaStatus, ScoreBreakdown } from "../../types/dashboard";
+import { FreshnessDot } from "../Common/ProvenanceBadge";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
@@ -22,36 +23,93 @@ function postureColor(posture: string) {
   }
 }
 
-function ScoreBar({ label, counterpart, score, posture }: {
-  label: string;
-  counterpart: string;
-  score: number;
-  posture: string;
+function ScoreBar({ area, expanded, onToggle }: {
+  area: BorderAreaStatus;
+  expanded: boolean;
+  onToggle: () => void;
 }) {
+  const { label, counterpart, score, posture, scoreBreakdown } = area;
   const color = postureColor(posture);
+  const escalationRatio = scoreBreakdown
+    ? scoreBreakdown.baseScore > 0
+      ? +(scoreBreakdown.rawTotal / scoreBreakdown.baseScore).toFixed(1)
+      : null
+    : null;
+
   return (
-    <div className="flex items-center gap-2 min-w-0">
-      <div className="w-[90px] shrink-0 text-right">
-        <div className="text-[9px] font-black uppercase tracking-tight leading-none truncate">{label}</div>
-        <div className="text-[7px] opacity-40 uppercase leading-none">{counterpart}</div>
-      </div>
-      <div className="flex-1 h-[10px] bg-white/5 rounded-sm overflow-hidden relative min-w-[80px]">
+    <div>
+      <div
+        className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-sm -mx-1 px-1"
+        onClick={onToggle}
+      >
+        <div className="w-[90px] shrink-0 text-right">
+          <div className="text-[9px] font-black uppercase tracking-tight leading-none truncate">{label}</div>
+          <div className="text-[7px] opacity-40 uppercase leading-none">{counterpart}</div>
+        </div>
+        <div className="flex-1 h-[10px] bg-white/5 rounded-sm overflow-hidden relative min-w-[80px]">
+          <div
+            className="h-full rounded-sm transition-all duration-700"
+            style={{ width: `${score}%`, backgroundColor: color }}
+          />
+          <div className="absolute inset-0 flex items-center justify-end pr-1">
+            <span className="text-[7px] font-black tabular-nums flex items-center gap-1" style={{ color: score > 60 ? '#000' : color }}>
+              {score}
+              {posture === "priority" && (
+                <span className="inline-block w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse" />
+              )}
+              {escalationRatio !== null && escalationRatio > 1 && (
+                <span className="text-[6px] font-black tabular-nums opacity-60">{escalationRatio}x</span>
+              )}
+            </span>
+          </div>
+        </div>
         <div
-          className="h-full rounded-sm transition-all duration-700"
-          style={{ width: `${score}%`, backgroundColor: color }}
-        />
-        <div className="absolute inset-0 flex items-center justify-end pr-1">
-          <span className="text-[7px] font-black tabular-nums" style={{ color: score > 60 ? '#000' : color }}>
-            {score}
-          </span>
+          className="text-[7px] font-black uppercase w-[52px] text-center py-0.5 rounded-sm shrink-0"
+          style={{ backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`, color }}
+        >
+          {posture}
         </div>
       </div>
-      <div
-        className="text-[7px] font-black uppercase w-[52px] text-center py-0.5 rounded-sm shrink-0"
-        style={{ backgroundColor: `color-mix(in srgb, ${color} 20%, transparent)`, color }}
-      >
-        {posture}
-      </div>
+
+      {/* Inline expanded breakdown panel */}
+      {expanded && scoreBreakdown && (
+        <div className="mt-1 mb-0.5 bg-[#0a0a0a] border border-white/10 rounded-sm px-3 py-2">
+          <div className="text-[7px] font-black uppercase tracking-[0.25em] opacity-40 mb-1.5">SCORE BREAKDOWN — {label}</div>
+          <div className="text-[8px] opacity-60 mb-0.5 tabular-nums">
+            BASE: {scoreBreakdown.baseScore}
+          </div>
+          <div className="text-[6px] opacity-30 mb-2 leading-snug">{scoreBreakdown.baseScoreRationale}</div>
+          {scoreBreakdown.contributions.map((c, i) => (
+            <div key={i} className="flex items-center justify-between text-[8px] py-0.5 border-t border-white/5">
+              <span className="opacity-60 uppercase">{c.factor}</span>
+              <span className="tabular-nums opacity-80 flex items-center gap-1">
+                <span>{c.rawValue} x {c.weight} = <span className="font-black">{c.contribution}</span></span>
+                {c.sourceUrl ? (
+                  <a
+                    href={c.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 opacity-40 hover:opacity-80 transition-opacity"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-[6px] underline">{c.source}</span>
+                    <ExternalLink size={7} />
+                  </a>
+                ) : (
+                  <span className="text-[6px] opacity-30">{c.source}</span>
+                )}
+              </span>
+            </div>
+          ))}
+          <div className="border-t border-white/10 mt-1 pt-1 flex justify-between text-[8px]">
+            <span className="opacity-40 uppercase">TOTAL</span>
+            <span className="font-black tabular-nums">
+              {scoreBreakdown.rawTotal} {scoreBreakdown.rawTotal !== scoreBreakdown.clampedScore && `\u2192 ${scoreBreakdown.clampedScore}`} (max 96)
+            </span>
+          </div>
+          <div className="text-[6px] opacity-20 mt-1 font-mono">{scoreBreakdown.formula}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -222,8 +280,11 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     return () => clearInterval(id);
   }, []);
 
-  // Score breakdown hover state
+  // Score breakdown hover state (overall posture badge)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
+
+  // Track which area's breakdown panel is expanded (null = none)
+  const [expandedAreaId, setExpandedAreaId] = useState<string | null>(null);
 
   if (!brief) {
     return (
@@ -253,7 +314,9 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const topCommodities = commodities?.slice(0, 3) ?? [];
 
   // Find the area with the highest score for score breakdown
-  const topArea = brief.areas.reduce((a, b) => (a.score >= b.score ? a : b), brief.areas[0]);
+  const topArea = brief.areas.length > 0
+    ? brief.areas.reduce((a, b) => (a.score >= b.score ? a : b), brief.areas[0])
+    : null;
 
   const activeFeedCount = [commodities, rivers, quakes, traffic, disasters].filter(Boolean).length;
   const totalErrors = trafficFetch.errorCount + quakesFetch.errorCount + riversFetch.errorCount + disastersFetch.errorCount + commoditiesFetch.errorCount;
@@ -295,7 +358,12 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         {/* Area score bars */}
         <div className="flex flex-col gap-1 min-w-0 w-[340px] shrink-0">
           {brief.areas.map((area) => (
-            <ScoreBar key={area.id} label={area.label} counterpart={area.counterpart} score={area.score} posture={area.posture} />
+            <ScoreBar
+              key={area.id}
+              area={area}
+              expanded={expandedAreaId === area.id}
+              onToggle={() => setExpandedAreaId(prev => prev === area.id ? null : area.id)}
+            />
           ))}
         </div>
 
@@ -366,6 +434,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
           {/* Sync status */}
           <div className="text-right">
             <div className="flex items-center gap-1.5 justify-end mb-0.5">
+              <FreshnessDot lastUpdated={brief?.generatedAt ?? null} staleAfterMs={600_000} offlineAfterMs={1200_000} />
               <div className={`w-[6px] h-[6px] rounded-full ${anyRefreshing ? "bg-[var(--safe,#22c55e)] animate-pulse" : totalErrors > 0 ? "bg-red-500" : "bg-white/20"}`} />
               <span className="text-[7px] font-black uppercase tracking-wider opacity-40">
                 {anyRefreshing ? "SYNCING" : "LIVE"}
