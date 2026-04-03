@@ -5,6 +5,36 @@ databases:
     plan: basic-256mb
     region: oregon
 
+  # --- COST OPTIMIZATION: Uncomment the worker below and remove all cron services ---
+  # --- to consolidate 10 cron jobs ($70/mo) into 1 worker ($7/mo), saving $63/mo ---
+  # - type: worker
+  #   name: geopolitics-ingest-orchestrator
+  #   runtime: python
+  #   plan: starter
+  #   region: oregon
+  #   branch: main
+  #   buildCommand: pip install -r ingestion/requirements.txt
+  #   startCommand: python ingestion/ingest_orchestrator.py
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: geopolitics-dashboard-db
+  #         property: connectionString
+  #     - key: FIRMS_KEY
+  #       sync: false
+  #     - key: ACLED_USERNAME
+  #       sync: false
+  #     - key: ACLED_PASSWORD
+  #       sync: false
+  #     - key: AISSTREAM_API_KEY
+  #       sync: false
+  #     - key: VESSEL_COLLECTION_SECONDS
+  #       value: "120"
+  #     - key: ALLOW_MOCK_INGESTION
+  #       value: "false"
+  #     - key: INGEST_REQUEST_TIMEOUT_SECONDS
+  #       value: "30"
+
 services:
   - type: web
     name: geopolitics-dashboard
@@ -256,6 +286,21 @@ services:
     schedule: "0 3 * * *"
     buildCommand: pip install psycopg2-binary
     startCommand: python ingestion/build_daily_summary.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+
+  - type: cron
+    name: geopolitics-cache-cleanup
+    runtime: python
+    plan: free
+    region: oregon
+    branch: main
+    schedule: "30 4 * * *"
+    buildCommand: pip install psycopg2-binary
+    startCommand: python ingestion/cleanup_caches.py
     envVars:
       - key: DATABASE_URL
         fromDatabase:
