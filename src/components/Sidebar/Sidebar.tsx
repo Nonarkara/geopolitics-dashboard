@@ -25,6 +25,11 @@ import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
 import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import {
+  formatBangkokDayLabel,
+  formatBangkokTimeLabel,
+} from "../../lib/time-window";
 
 function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
   switch (posture) {
@@ -33,7 +38,7 @@ function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
     case "watch":
       return "border-[var(--hazard)] bg-[rgba(245,158,11,0.06)]";
     default:
-      return "border-[var(--line)] bg-white";
+      return "border-white/10 bg-white/[0.03]";
   }
 }
 
@@ -70,7 +75,7 @@ function riskBg(level: string) {
     case "moderate":
       return "bg-[rgba(245,158,11,0.06)]";
     default:
-      return "bg-white";
+      return "bg-white/[0.03]";
   }
 }
 
@@ -125,6 +130,7 @@ function useFetch<T>(url: string, interval: number): T | null {
 }
 
 export default function Sidebar({ brief }: SidebarProps) {
+  const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
   const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
   const rivers = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
   const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
@@ -138,7 +144,7 @@ export default function Sidebar({ brief }: SidebarProps) {
     let active = true;
     const load = async () => {
       try {
-        const res = await fetch("/api/border-command/narrative", { cache: "no-store" });
+        const res = await fetch(buildUrl("/api/border-command/narrative"), { cache: "no-store" });
         const json = await res.json();
         if (active && json.narrative) {
           setNarrative(json.narrative);
@@ -159,14 +165,14 @@ export default function Sidebar({ brief }: SidebarProps) {
       active = false;
       clearInterval(id);
     };
-  }, []);
+  }, [buildUrl]);
 
   return (
-    <aside className="flex h-full flex-col select-none overflow-hidden bg-white">
-      <div className="border-b-[1.5px] border-[var(--line)] p-4 shrink-0">
+    <aside className="flex h-full flex-col select-none overflow-hidden bg-[linear-gradient(180deg,#0a0c12_0%,#0e1118_100%)]">
+      <div className="border-b-[1.5px] border-white/10 p-4 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="eyebrow flex items-center gap-2">
+            <div className="eyebrow text-white/90 flex items-center gap-2">
               <Shield size={10} className="text-[var(--accent)]" />
               Border Command Posture
             </div>
@@ -179,13 +185,13 @@ export default function Sidebar({ brief }: SidebarProps) {
           </span>
         </div>
         <div className="mt-3 flex items-end justify-between gap-3">
-          <div className="text-[11px] leading-relaxed text-[var(--muted)]">
+          <div className="text-[11px] leading-relaxed text-white/50">
             {narrative ? (
               <>
                 <div className="mb-1.5 flex items-center gap-1.5">
                   <Brain size={8} className="text-[var(--accent)]" />
                   <span className="text-[6px] font-black uppercase tracking-[0.2em] text-[var(--accent)] opacity-60">
-                    AI Narrative {narrativeTime ? `\u00b7 ${narrativeTime}` : ""}
+                    {isHistorical ? "Archive Narrative" : "AI Narrative"} {narrativeTime ? `\u00b7 ${narrativeTime}` : ""}
                   </span>
                 </div>
                 {narrative}
@@ -206,15 +212,20 @@ export default function Sidebar({ brief }: SidebarProps) {
         </div>
         {brief && (
           <div className="mt-2 text-[7px] font-mono uppercase tracking-[0.08em] opacity-25">
-            Brief generated {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} {new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}
+            Brief snapshot {formatBangkokTimeLabel(brief.generatedAt)} ICT
           </div>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
+        {isHistorical && timeWindow ? (
+          <section className="border border-white/15 bg-black px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/75">
+            Playback window: {formatBangkokDayLabel(timeWindow.bangkokDay)} ICT
+          </section>
+        ) : null}
         {/* TRI-BORDER PRIORITY BOARD */}
         <section>
-          <div className="eyebrow mb-3 flex items-center gap-2">
+          <div className="eyebrow text-white/90 mb-3 flex items-center gap-2">
             <Siren size={10} className="text-[var(--accent)]" />
             Tri-Border Priority Board
           </div>
@@ -243,11 +254,11 @@ export default function Sidebar({ brief }: SidebarProps) {
                   </div>
                 </div>
 
-                <p className="mt-2 text-[10px] leading-relaxed text-[var(--muted)]">
+                <p className="mt-2 text-[10px] leading-relaxed text-white/50">
                   {area.summary}
                 </p>
 
-                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-[var(--line)] pt-2">
+                <div className="mt-3 grid grid-cols-3 gap-2 border-t border-white/10 pt-2">
                   <div>
                     <div className="text-[8px] font-black uppercase opacity-30">Incidents</div>
                     <div className="text-[12px] font-black tabular-nums">
@@ -272,7 +283,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                   {area.watchpoints.slice(0, 2).map((watchpoint) => (
                     <span
                       key={watchpoint}
-                      className="border border-[var(--line-dim)] bg-[var(--bg)] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest opacity-70"
+                      className="border border-white/[0.06] bg-white/[0.06] px-1.5 py-0.5 text-[9px] font-black uppercase tracking-widest opacity-70"
                     >
                       {watchpoint}
                     </span>
@@ -284,14 +295,14 @@ export default function Sidebar({ brief }: SidebarProps) {
         </section>
 
         {/* IMMEDIATE CONCERNS */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
+        <section className="pt-3 border-t border-white/10">
+          <div className="eyebrow text-white/90 mb-3 flex items-center gap-2">
             <AlertTriangle size={10} className="text-[var(--accent)]" />
             Immediate Concerns
           </div>
           <div className="space-y-2">
             {(brief?.topConcerns ?? []).slice(0, 5).map((concern) => (
-              <div key={concern.id} className="border border-[var(--line)] bg-[var(--bg)] p-3">
+              <div key={concern.id} className="border border-white/10 bg-white/[0.06] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className={`stat-pill ${posturePill(concern.posture)}`}>
                     {concern.areaLabel.split(" ")[0]}
@@ -303,7 +314,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                 <div className="mt-2 text-[11px] font-black uppercase tracking-tight">
                   {concern.label}
                 </div>
-                <p className="mt-1 text-[10px] leading-relaxed text-[var(--muted)]">
+                <p className="mt-1 text-[10px] leading-relaxed text-white/50">
                   {concern.detail}
                 </p>
               </div>
@@ -311,11 +322,19 @@ export default function Sidebar({ brief }: SidebarProps) {
           </div>
         </section>
 
+        {isHistorical ? (
+          <section className="pt-3 border-t border-white/10">
+            <div className="border border-white/10 bg-white/[0.06] p-3 text-[9px] font-black uppercase tracking-[0.14em] text-white/35">
+              Commodity, river, quake, traffic, and disaster panels remain live reference feeds during playback.
+            </div>
+          </section>
+        ) : null}
+
         {/* BORDER COMMODITY PRICES */}
         {commodities && commodities.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
+          <section className="pt-3 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <div className="eyebrow flex items-center gap-2">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
                 <Wheat size={10} className="text-[#d97706]" />
                 Border Commodity Prices
               </div>
@@ -323,7 +342,7 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
             <div className="grid grid-cols-2 gap-1.5">
               {commodities.map((c) => (
-                <div key={c.id} className="border border-[var(--line)] bg-[var(--bg)] p-2">
+                <div key={c.id} className="border border-white/10 bg-white/[0.06] p-2">
                   <div className="text-[8px] font-black uppercase tracking-wider opacity-40 leading-none">
                     {c.nameEn}
                   </div>
@@ -348,9 +367,9 @@ export default function Sidebar({ brief }: SidebarProps) {
 
         {/* BORDER RIVER FLOOD RISK */}
         {rivers && rivers.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
+          <section className="pt-3 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <div className="eyebrow flex items-center gap-2">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
                 <Droplets size={10} className="text-[#3b82f6]" />
                 Border River Discharge
               </div>
@@ -358,7 +377,7 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
             <div className="space-y-1.5">
               {rivers.map((r) => (
-                <div key={r.id} className={`border border-[var(--line)] p-2 ${riskBg(r.riskLevel)}`}>
+                <div key={r.id} className={`border border-white/10 p-2 ${riskBg(r.riskLevel)}`}>
                   <div className="flex items-center gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="text-[9px] font-black uppercase tracking-tight truncate">
@@ -390,9 +409,9 @@ export default function Sidebar({ brief }: SidebarProps) {
 
         {/* SEISMIC ACTIVITY */}
         {quakes && quakes.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
+          <section className="pt-3 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <div className="eyebrow flex items-center gap-2">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
                 <Zap size={10} className="text-[#ef4444]" />
                 Seismic Activity (30d)
               </div>
@@ -402,14 +421,14 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
             <div className="space-y-1">
               {quakes.slice(0, 6).map((q) => (
-                <div key={q.id} className="border border-[var(--line)] bg-[var(--bg)] p-2 flex items-center gap-2">
+                <div key={q.id} className="border border-white/10 bg-white/[0.06] p-2 flex items-center gap-2">
                   <div
                     className={`w-[28px] h-[28px] rounded-sm flex items-center justify-center shrink-0 ${
                       q.magnitude >= 5
                         ? "bg-[rgba(255,59,48,0.12)] text-[var(--accent)]"
                         : q.magnitude >= 4
                           ? "bg-[rgba(245,158,11,0.1)] text-[#f59e0b]"
-                          : "bg-[rgba(0,0,0,0.04)] opacity-60"
+                          : "bg-white/[0.06] opacity-60"
                     }`}
                   >
                     <span className="text-[11px] font-black tabular-nums">{q.magnitude.toFixed(1)}</span>
@@ -433,9 +452,9 @@ export default function Sidebar({ brief }: SidebarProps) {
 
         {/* TRAFFIC INCIDENTS */}
         {traffic && traffic.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
+          <section className="pt-3 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <div className="eyebrow flex items-center gap-2">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
                 <TrendingUp size={10} className="text-[#6366f1]" />
                 Traffic Incidents
               </div>
@@ -449,7 +468,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                   t.category === "roadclosed" ? "text-[#ef4444]" :
                   "opacity-50";
                 return (
-                  <div key={t.id} className="border border-[var(--line)] bg-[var(--bg)] p-2">
+                  <div key={t.id} className="border border-white/10 bg-white/[0.06] p-2">
                     <div className="flex items-center gap-2">
                       <span className={`text-[7px] font-black uppercase tracking-wider ${catColor}`}>
                         {t.category}
@@ -472,9 +491,9 @@ export default function Sidebar({ brief }: SidebarProps) {
 
         {/* REGIONAL DISASTERS (GDACS) */}
         {disasters && disasters.length > 0 && (
-          <section className="pt-3 border-t border-[var(--line)]">
+          <section className="pt-3 border-t border-white/10">
             <div className="flex items-center justify-between mb-3">
-              <div className="eyebrow flex items-center gap-2">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
                 <Globe size={10} className="text-[#0ea5e9]" />
                 Regional Disaster Alerts
               </div>
@@ -485,9 +504,9 @@ export default function Sidebar({ brief }: SidebarProps) {
                 const alertColor =
                   d.alertLevel === "Red" ? "text-[var(--accent)] bg-[rgba(255,59,48,0.08)]" :
                   d.alertLevel === "Orange" ? "text-[#f59e0b] bg-[rgba(245,158,11,0.06)]" :
-                  "opacity-60 bg-[var(--bg)]";
+                  "opacity-60 bg-white/[0.06]";
                 return (
-                  <div key={d.id} className={`border border-[var(--line)] p-2 ${d.alertLevel === "Red" ? "bg-[rgba(255,59,48,0.04)]" : "bg-[var(--bg)]"}`}>
+                  <div key={d.id} className={`border border-white/10 p-2 ${d.alertLevel === "Red" ? "bg-[rgba(255,59,48,0.04)]" : "bg-white/[0.06]"}`}>
                     <div className="flex items-center gap-2">
                       <span className={`text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm ${alertColor}`}>
                         {d.alertLevel}
@@ -510,9 +529,9 @@ export default function Sidebar({ brief }: SidebarProps) {
         )}
 
         {/* INTERVENTION QUEUE */}
-        <section className="pt-3 border-t border-[var(--line)]">
+        <section className="pt-3 border-t border-white/10">
           <div className="flex items-center justify-between mb-3">
-            <div className="eyebrow flex items-center gap-2">
+            <div className="eyebrow text-white/90 flex items-center gap-2">
               <Radio size={10} />
               Intervention Queue
             </div>
@@ -520,7 +539,7 @@ export default function Sidebar({ brief }: SidebarProps) {
           </div>
           <div className="space-y-2">
             {(brief?.actionQueue ?? []).map((action, index) => (
-              <div key={action.id} className="border border-[var(--line)] bg-white p-3">
+              <div key={action.id} className="border border-white/10 bg-white/[0.03] p-3">
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-[9px] font-black tabular-nums opacity-40">
                     0{index + 1}
@@ -532,7 +551,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                 <div className="mt-2 text-[11px] font-black uppercase tracking-tight">
                   {action.title}
                 </div>
-                <p className="mt-1 text-[10px] leading-relaxed text-[var(--muted)]">
+                <p className="mt-1 text-[10px] leading-relaxed text-white/50">
                   {action.detail}
                 </p>
                 <div className="mt-2 inline-flex items-center gap-1 text-[9px] font-black uppercase tracking-[0.14em] opacity-50">
@@ -545,18 +564,18 @@ export default function Sidebar({ brief }: SidebarProps) {
         </section>
 
         {/* COVERAGE NOTE */}
-        <section className="pt-3 border-t border-[var(--line)]">
-          <div className="eyebrow mb-3 flex items-center gap-2">
+        <section className="pt-3 border-t border-white/10">
+          <div className="eyebrow text-white/90 mb-3 flex items-center gap-2">
             <Camera size={10} />
             Coverage Note
           </div>
-          <div className="border border-[var(--line)] bg-[var(--bg)] p-3 text-[10px] leading-relaxed text-[var(--muted)]">
+          <div className="border border-white/10 bg-white/[0.06] p-3 text-[10px] leading-relaxed text-white/50">
             Verified cameras now anchor the Myanmar and Malaysia corridors, while scout slots flag the coverage gap on the Cambodia frontier. That makes the intervention queue useful to a governor: it shows both where the heat is and where visibility is still weak.
           </div>
         </section>
       </div>
 
-      <div className="p-3 bg-white border-t border-[var(--line)] flex items-center justify-between shrink-0">
+      <div className="p-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between shrink-0">
         <div className="text-[11px] font-black opacity-15 uppercase tracking-[0.4em]">
           Sentinel // Border
         </div>

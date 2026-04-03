@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, ExternalLink } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import AnimatedNumber from "../Common/AnimatedNumber";
 import type { BorderCommandBrief, BorderAreaStatus, ScoreBreakdown } from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
@@ -11,7 +13,10 @@ import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
 import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
 import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
+import { useNow } from "../../hooks/useNow";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
+import { formatBangkokDayLabel } from "../../lib/time-window";
 
 function postureColor(posture: string) {
   switch (posture) {
@@ -24,6 +29,19 @@ function postureColor(posture: string) {
   }
 }
 
+function buildMicroNarrative(area: BorderAreaStatus): string | null {
+  const { score, posture, scoreBreakdown } = area;
+  if (!scoreBreakdown) return null;
+  const sorted = [...scoreBreakdown.contributions].sort(
+    (a, b) => Math.abs(b.contribution) - Math.abs(a.contribution),
+  );
+  const top = sorted.slice(0, 2);
+  const parts = top.map(
+    (c) => `${c.factor} (${c.contribution > 0 ? "+" : ""}${c.contribution.toFixed(1)})`,
+  );
+  return `Score ${score} (${posture}) — base ${scoreBreakdown.baseScore} + ${parts.join(" + ")}. Clamped from ${scoreBreakdown.rawTotal.toFixed(0)} to ${scoreBreakdown.clampedScore}.`;
+}
+
 function ScoreBar({ area, expanded, onToggle, history }: {
   area: BorderAreaStatus;
   expanded: boolean;
@@ -32,17 +50,38 @@ function ScoreBar({ area, expanded, onToggle, history }: {
 }) {
   const { label, counterpart, score, posture, scoreBreakdown } = area;
   const color = postureColor(posture);
+  const [hovered, setHovered] = useState(false);
   const escalationRatio = scoreBreakdown
     ? scoreBreakdown.baseScore > 0
       ? +(scoreBreakdown.rawTotal / scoreBreakdown.baseScore).toFixed(1)
       : null
     : null;
+  const microNarrative = hovered && scoreBreakdown && !expanded ? buildMicroNarrative(area) : null;
 
   return (
-    <div>
+    <div className="relative">
+      <AnimatePresence>
+        {microNarrative && (
+          <motion.div
+            key="tooltip"
+            className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 z-50 w-[280px] bg-[#0a0a0a] border border-white/15 rounded-sm px-3 py-2 shadow-xl pointer-events-none"
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 4 }}
+            transition={{ duration: 0.15 }}
+          >
+            <div className="text-[8px] font-mono leading-relaxed text-white/80">
+              {microNarrative}
+            </div>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-white/15" />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div
         className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-sm -mx-1 px-1"
         onClick={onToggle}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
       >
         <div className="w-[90px] shrink-0 text-right">
           <div className="text-[9px] font-black uppercase tracking-tight leading-none truncate">{label}</div>
@@ -55,7 +94,7 @@ function ScoreBar({ area, expanded, onToggle, history }: {
           />
           <div className="absolute inset-0 flex items-center justify-end pr-1">
             <span className="text-[7px] font-black tabular-nums flex items-center gap-1" style={{ color: score > 60 ? '#000' : color }}>
-              {score}
+              <AnimatedNumber value={score} format={(n) => Math.round(n).toString()} />
               {posture === "priority" && (
                 <span className="inline-block w-[5px] h-[5px] rounded-full bg-red-500 animate-pulse" />
               )}
@@ -161,9 +200,10 @@ function riskColorHex(level: string) {
 }
 
 /** Format seconds ago as a short relative string */
-function timeAgo(date: Date | null): string {
+function timeAgo(date: Date | null, nowMs: number | null): string {
   if (!date) return "--";
-  const sec = Math.round((Date.now() - date.getTime()) / 1000);
+  if (nowMs === null) return "--";
+  const sec = Math.round((nowMs - date.getTime()) / 1000);
   if (sec < 60) return `${sec}s`;
   const min = Math.round(sec / 60);
   if (min < 60) return `${min}m`;
@@ -171,16 +211,20 @@ function timeAgo(date: Date | null): string {
 }
 
 /** 3-state feed health dot: green (fresh), amber (stale), red (error/no data) */
-function FeedDot({ fetchResult, label, expectedIntervalMs }: {
+function FeedDot({ fetchResult, label, expectedIntervalMs, nowMs }: {
   fetchResult: UseFetchResult<unknown>;
   label: string;
   expectedIntervalMs: number;
+  nowMs: number | null;
 }) {
   const [showTip, setShowTip] = useState(false);
 
   const hasData = fetchResult.data !== null;
   const hasError = fetchResult.error !== null;
-  const age = fetchResult.lastRefreshed ? Date.now() - fetchResult.lastRefreshed.getTime() : Infinity;
+  const age =
+    fetchResult.lastRefreshed && nowMs !== null
+      ? nowMs - fetchResult.lastRefreshed.getTime()
+      : Infinity;
   const isStale = age > expectedIntervalMs * 2;
 
   let dotColor = "bg-[var(--safe,#22c55e)]"; // fresh
@@ -199,7 +243,7 @@ function FeedDot({ fetchResult, label, expectedIntervalMs }: {
         <div className="absolute bottom-full left-0 mb-1 z-50 w-[180px] bg-black border border-white/20 px-2 py-1.5 pointer-events-none">
           <div className="text-[7px] font-black uppercase tracking-wider opacity-60 mb-1">{label}</div>
           <div className="text-[7px] opacity-50">
-            Age: {timeAgo(fetchResult.lastRefreshed)} | Fetches: {fetchResult.fetchCount} | Errors: {fetchResult.errorCount}
+            Age: {timeAgo(fetchResult.lastRefreshed, nowMs)} | Fetches: {fetchResult.fetchCount} | Errors: {fetchResult.errorCount}
           </div>
           {fetchResult.error && (
             <div className="text-[7px] text-red-400 mt-0.5">Last error: {fetchResult.error}</div>
@@ -245,6 +289,8 @@ function ScoreBreakdownTooltip({ breakdown, show }: { breakdown: ScoreBreakdown;
 }
 
 export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief | null }) {
+  const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
+  const nowMs = useNow(5_000);
   const commoditiesFetch = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
   const riversFetch = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
   const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
@@ -261,14 +307,17 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
   // Find the stalest feed
   const feedAges: { label: string; age: number }[] = [
-    { label: "TFC", age: trafficFetch.lastRefreshed ? Date.now() - trafficFetch.lastRefreshed.getTime() : Infinity },
-    { label: "QKE", age: quakesFetch.lastRefreshed ? Date.now() - quakesFetch.lastRefreshed.getTime() : Infinity },
-    { label: "FLD", age: riversFetch.lastRefreshed ? Date.now() - riversFetch.lastRefreshed.getTime() : Infinity },
-    { label: "DIS", age: disastersFetch.lastRefreshed ? Date.now() - disastersFetch.lastRefreshed.getTime() : Infinity },
-    { label: "AGR", age: commoditiesFetch.lastRefreshed ? Date.now() - commoditiesFetch.lastRefreshed.getTime() : Infinity },
+    { label: "TFC", age: trafficFetch.lastRefreshed && nowMs !== null ? nowMs - trafficFetch.lastRefreshed.getTime() : Infinity },
+    { label: "QKE", age: quakesFetch.lastRefreshed && nowMs !== null ? nowMs - quakesFetch.lastRefreshed.getTime() : Infinity },
+    { label: "FLD", age: riversFetch.lastRefreshed && nowMs !== null ? nowMs - riversFetch.lastRefreshed.getTime() : Infinity },
+    { label: "DIS", age: disastersFetch.lastRefreshed && nowMs !== null ? nowMs - disastersFetch.lastRefreshed.getTime() : Infinity },
+    { label: "AGR", age: commoditiesFetch.lastRefreshed && nowMs !== null ? nowMs - commoditiesFetch.lastRefreshed.getTime() : Infinity },
   ];
   const stalest = feedAges.reduce((a, b) => (a.age > b.age ? a : b));
-  const stalestLabel = stalest.age < Infinity ? `${stalest.label} ${timeAgo(new Date(Date.now() - stalest.age))}` : "--";
+  const stalestLabel =
+    stalest.age < Infinity && nowMs !== null
+      ? `${stalest.label} ${timeAgo(new Date(nowMs - stalest.age), nowMs)}`
+      : "--";
 
   const refreshAll = useCallback(() => {
     commoditiesFetch.refresh();
@@ -277,13 +326,6 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     trafficFetch.refresh();
     disastersFetch.refresh();
   }, [commoditiesFetch, riversFetch, quakesFetch, trafficFetch, disastersFetch]);
-
-  // Relative time ticker
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 5000);
-    return () => clearInterval(id);
-  }, []);
 
   // Score breakdown hover state (overall posture badge)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
@@ -298,7 +340,10 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     Promise.all(
       brief.areas.map(async (area) => {
         try {
-          const res = await fetch(`/api/research/sparklines?metric=${encodeURIComponent("score:" + area.id)}&days=7`);
+          const res = await fetch(buildUrl("/api/research/sparklines", {
+            metric: `score:${area.id}`,
+            days: 7,
+          }));
           const data = (await res.json()) as { values: number[] };
           return [area.id, data.values ?? []] as const;
         } catch {
@@ -310,7 +355,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
       for (const [id, values] of results) map[id] = [...values];
       setScoreHistory(map);
     });
-  }, [brief?.areas]);
+  }, [brief?.areas, buildUrl]);
 
   if (!brief) {
     return (
@@ -350,6 +395,11 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   return (
     <section className="bg-[var(--bg)] border-t border-black shrink-0 px-4 py-2 relative z-40">
       <div className="max-w-[2200px] mx-auto flex items-center gap-3 overflow-x-auto no-scrollbar">
+        {isHistorical && timeWindow ? (
+          <div className="shrink-0 border border-black bg-black px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/75">
+            Playback {formatBangkokDayLabel(timeWindow.bangkokDay)} | hazard feeds remain live reference
+          </div>
+        ) : null}
 
         {/* Overall posture badge — hover for score breakdown */}
         <div
@@ -365,7 +415,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               className="text-[18px] font-black tabular-nums"
               style={{ color: postureColor(brief.overallPosture) }}
             >
-              {brief.overallScore}
+              <AnimatedNumber value={brief.overallScore} format={(n) => Math.round(n).toString()} />
             </span>
           </div>
           <div
@@ -451,11 +501,11 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         <div className="shrink-0 ml-auto flex items-center gap-3">
           {/* 3-state feed health dots */}
           <div className="flex flex-col gap-[3px]">
-            <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={120_000} />
-            <FeedDot fetchResult={quakesFetch as UseFetchResult<unknown>} label="QKE" expectedIntervalMs={300_000} />
-            <FeedDot fetchResult={riversFetch as UseFetchResult<unknown>} label="FLD" expectedIntervalMs={1800_000} />
-            <FeedDot fetchResult={disastersFetch as UseFetchResult<unknown>} label="DIS" expectedIntervalMs={600_000} />
-            <FeedDot fetchResult={commoditiesFetch as UseFetchResult<unknown>} label="AGR" expectedIntervalMs={3600_000} />
+            <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={120_000} nowMs={nowMs} />
+            <FeedDot fetchResult={quakesFetch as UseFetchResult<unknown>} label="QKE" expectedIntervalMs={300_000} nowMs={nowMs} />
+            <FeedDot fetchResult={riversFetch as UseFetchResult<unknown>} label="FLD" expectedIntervalMs={1800_000} nowMs={nowMs} />
+            <FeedDot fetchResult={disastersFetch as UseFetchResult<unknown>} label="DIS" expectedIntervalMs={600_000} nowMs={nowMs} />
+            <FeedDot fetchResult={commoditiesFetch as UseFetchResult<unknown>} label="AGR" expectedIntervalMs={3600_000} nowMs={nowMs} />
           </div>
 
           {/* Sync status */}
@@ -464,7 +514,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               <FreshnessDot lastUpdated={brief?.generatedAt ?? null} staleAfterMs={600_000} offlineAfterMs={1200_000} />
               <div className={`w-[6px] h-[6px] rounded-full ${anyRefreshing ? "bg-[var(--safe,#22c55e)] animate-pulse" : totalErrors > 0 ? "bg-red-500" : "bg-white/20"}`} />
               <span className="text-[7px] font-black uppercase tracking-wider opacity-40">
-                {anyRefreshing ? "SYNCING" : "LIVE"}
+                {isHistorical ? "PLAYBACK" : anyRefreshing ? "SYNCING" : "LIVE"}
               </span>
             </div>
             <div className="text-[8px] tabular-nums opacity-40 leading-none" title="Age of stalest feed">

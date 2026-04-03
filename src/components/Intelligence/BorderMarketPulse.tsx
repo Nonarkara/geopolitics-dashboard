@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Activity, Coins, ExternalLink, RefreshCw } from "lucide-react";
+import AnimatedNumber from "../Common/AnimatedNumber";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { fallbackMarketRadarResponse } from "../../lib/mock-data";
+import { formatBangkokDayLabel } from "../../lib/time-window";
 import type {
   EconomicIndicator,
   MarketRadarResponse,
@@ -61,7 +63,7 @@ function formatIndicatorChange(change: number | string) {
 }
 
 export default function BorderMarketPulse() {
-  const { timeWindow } = useTimeWindow();
+  const { timeWindow, buildUrl, isHistorical } = useTimeWindow();
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
@@ -69,11 +71,7 @@ export default function BorderMarketPulse() {
   useEffect(() => {
     const load = async () => {
       try {
-        let url = "/api/markets";
-        if (timeWindow) {
-          url += `?from=${encodeURIComponent(timeWindow.from)}&to=${encodeURIComponent(timeWindow.to)}`;
-        }
-        const response = await fetch(url, { cache: "no-store" });
+        const response = await fetch(buildUrl("/api/markets"), { cache: "no-store" });
         const nextPayload: unknown = await response.json();
 
         if (isMarketRadarResponse(nextPayload)) {
@@ -90,7 +88,7 @@ export default function BorderMarketPulse() {
           });
         }
       } catch {
-        setPayload(fallbackMarketRadarResponse);
+        setPayload(isHistorical ? { ...fallbackMarketRadarResponse, data: [], signals: [], aseanGdp: [], mode: "historical-empty" } : fallbackMarketRadarResponse);
       }
     };
 
@@ -100,7 +98,7 @@ export default function BorderMarketPulse() {
     }, 60_000);
 
     return () => clearInterval(interval);
-  }, [timeWindow]);
+  }, [buildUrl, isHistorical, timeWindow]);
 
   // Sparkline historical data for each indicator
   const [sparklines, setSparklines] = useState<Record<string, number[]>>({});
@@ -112,7 +110,11 @@ export default function BorderMarketPulse() {
     Promise.all(
       labels.slice(0, 5).map(async (label) => {
         try {
-          const res = await fetch(`/api/research/sparklines?metric=${encodeURIComponent(label)}&days=14`);
+          const url = buildUrl("/api/research/sparklines", {
+            metric: label,
+            days: 14,
+          });
+          const res = await fetch(url);
           const data = (await res.json()) as { values: number[] };
           return [label, data.values ?? []] as const;
         } catch {
@@ -124,7 +126,7 @@ export default function BorderMarketPulse() {
       for (const [label, values] of results) map[label] = [...values];
       setSparklines(map);
     });
-  }, [payload.data]);
+  }, [buildUrl, payload.data]);
 
   const primary = useMemo(
     () =>
@@ -145,16 +147,18 @@ export default function BorderMarketPulse() {
   return (
     <section
       data-testid="border-market-pulse"
-      className="flex h-full flex-col overflow-hidden border-r border-[var(--line)] bg-[linear-gradient(180deg,rgba(248,246,240,0.98)_0%,rgba(238,236,228,0.96)_100%)] select-none"
+      className="flex h-full flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#08090e_0%,#0c0f16_100%)] select-none"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-3 py-2">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div>
-          <div className="eyebrow mb-0.5">Market Pulse</div>
-          <div className="text-[10px] font-black uppercase tracking-[0.03em] text-[var(--ink)]">
-            Cross-border pricing with source links
+          <div className="eyebrow mb-0.5 text-white/90">Market Pulse</div>
+          <div className="text-[10px] font-black uppercase tracking-[0.03em] text-white/90">
+            {payload.mode === "historical-empty"
+              ? "No archived market snapshot for this playback day"
+              : "Cross-border pricing with source links"}
           </div>
         </div>
-        <div className="inline-flex items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+        <div className="inline-flex items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35">
           <FreshnessDot lastUpdated={payload.generatedAt} />
           <RefreshCw size={10} />
           {formatGeneratedAt(payload.generatedAt)}
@@ -162,6 +166,16 @@ export default function BorderMarketPulse() {
       </div>
 
       <div className="flex flex-1 flex-col gap-2.5 p-3">
+        {isHistorical && timeWindow ? (
+          <div className="rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
+            Playback window: {formatBangkokDayLabel(timeWindow.bangkokDay)} ICT
+          </div>
+        ) : null}
+        {payload.mode === "historical-empty" ? (
+          <div className="flex flex-1 items-center justify-center border border-dashed border-white/10 bg-white/[0.04] px-4 text-center text-[10px] font-black uppercase tracking-[0.12em] text-white/35">
+            No archived market data for this Bangkok command day.
+          </div>
+        ) : null}
         {primary ? (
           <div className="relative overflow-hidden border border-black bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),linear-gradient(135deg,#06090f_0%,#121722_100%)] p-3 text-white">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f97316_0%,#facc15_45%,#22c55e_100%)]" />
@@ -179,9 +193,7 @@ export default function BorderMarketPulse() {
                   {primary.label}
                 </div>
                 <div className="mt-1 flex items-end gap-2">
-                  <span className="text-[31px] font-black tabular-nums leading-none tracking-[-0.04em]">
-                    {formatIndicatorValue(primary)}
-                  </span>
+                  <AnimatedNumber value={typeof primary.value === 'number' ? primary.value : 0} format={(n) => formatIndicatorValue({...primary, value: n})} className="text-[31px] font-black tabular-nums leading-none tracking-[-0.04em]" />
                   {sparklines[primary.label]?.length > 2 && (
                     <Sparkline
                       data={sparklines[primary.label]}
@@ -229,76 +241,78 @@ export default function BorderMarketPulse() {
           </div>
         ) : null}
 
-        <div className="grid grid-cols-2 gap-2">
-          {secondary.slice(0, 4).map((indicator) => (
-            <div
-              key={indicator.label}
-              className="border border-[var(--line)] bg-[rgba(255,255,255,0.72)] p-2.5 backdrop-blur-sm"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[8px] font-black uppercase tracking-[0.16em] opacity-40">
-                  {indicator.category ?? "signal"}
-                </span>
-                <span
-                  className={`text-[8px] font-black tabular-nums ${
-                    indicator.up ? "text-[var(--safe)]" : "text-[var(--accent)]"
-                  }`}
-                >
-                  {formatIndicatorChange(indicator.change)}
-                </span>
-              </div>
-              <div className="mt-1.5 text-[10px] font-black uppercase tracking-tight">
-                {indicator.label}
-              </div>
-              <div className="flex items-end justify-between gap-1">
-                <div className="text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]">
-                  {formatIndicatorValue(indicator)}
-                </div>
-                {sparklines[indicator.label]?.length > 2 && (
-                  <Sparkline
-                    data={sparklines[indicator.label]}
-                    width={44}
-                    height={14}
-                    color={indicator.up ? "var(--safe)" : "var(--accent)"}
-                  />
-                )}
-              </div>
-              <div className="mt-1.5 flex items-center gap-1 text-[6px] font-mono uppercase tracking-[0.08em] opacity-35 border-t border-[var(--line-dim)] pt-1">
-                <span>{indicator.source ?? "FX API"}</span>
-                <span>·</span>
-                <span className="tabular-nums">{formatGeneratedAt(payload.generatedAt)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-auto border-t border-[var(--line-dim)] pt-2">
-          <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
-            <Activity size={10} className="text-[var(--tech)]" />
-            Source stack — verified providers
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {(
-              [
-                { label: "ExchangeRate API", url: "https://open.er-api.com" },
-                { label: "World Bank WDI", url: "https://data.worldbank.org" },
-                { label: "Binance", url: "https://api.binance.com" },
-              ] as const
-            ).map((source) => (
-              <a
-                key={source.label}
-                href={source.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center rounded-full border border-[var(--line)] bg-white/70 px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)] hover:text-[var(--ink)] hover:border-[var(--ink)] transition-colors"
+        {payload.mode !== "historical-empty" ? (
+          <div className="grid grid-cols-2 gap-2">
+            {secondary.slice(0, 4).map((indicator) => (
+              <div
+                key={indicator.label}
+                className="border border-white/10 bg-white/[0.04] p-2.5 backdrop-blur-sm"
               >
-                <Coins size={8} className="mr-1 opacity-60" />
-                {source.label}
-                <ExternalLink size={6} className="ml-0.5 opacity-30" />
-              </a>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[8px] font-black uppercase tracking-[0.16em] opacity-40">
+                    {indicator.category ?? "signal"}
+                  </span>
+                  <span
+                    className={`text-[8px] font-black tabular-nums ${
+                      indicator.up ? "text-[var(--safe)]" : "text-[var(--accent)]"
+                    }`}
+                  >
+                    {formatIndicatorChange(indicator.change)}
+                  </span>
+                </div>
+                <div className="mt-1.5 text-[10px] font-black uppercase tracking-tight">
+                  {indicator.label}
+                </div>
+                <div className="flex items-end justify-between gap-1">
+                  <AnimatedNumber value={typeof indicator.value === 'number' ? indicator.value : 0} format={(n) => formatIndicatorValue({...indicator, value: n})} className="text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]" />
+                  {sparklines[indicator.label]?.length > 2 && (
+                    <Sparkline
+                      data={sparklines[indicator.label]}
+                      width={44}
+                      height={14}
+                      color={indicator.up ? "var(--safe)" : "var(--accent)"}
+                    />
+                  )}
+                </div>
+                <div className="mt-1.5 flex items-center gap-1 border-t border-white/[0.06] pt-1 text-[6px] font-mono uppercase tracking-[0.08em] opacity-35">
+                  <span>{indicator.source ?? "FX API"}</span>
+                  <span>·</span>
+                  <span className="tabular-nums">{formatGeneratedAt(payload.generatedAt)}</span>
+                </div>
+              </div>
             ))}
           </div>
-        </div>
+        ) : null}
+
+        {payload.mode !== "historical-empty" ? (
+          <div className="mt-auto border-t border-white/[0.06] pt-2">
+            <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35">
+              <Activity size={10} className="text-[var(--tech)]" />
+              Source stack — verified providers
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {(
+                [
+                  { label: "ExchangeRate API", url: "https://open.er-api.com" },
+                  { label: "World Bank WDI", url: "https://data.worldbank.org" },
+                  { label: "Binance", url: "https://api.binance.com" },
+                ] as const
+              ).map((source) => (
+                <a
+                  key={source.label}
+                  href={source.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35 hover:border-white/40 hover:text-white transition-colors"
+                >
+                  <Coins size={8} className="mr-1 opacity-60" />
+                  {source.label}
+                  <ExternalLink size={6} className="ml-0.5 opacity-30" />
+                </a>
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
     </section>
   );

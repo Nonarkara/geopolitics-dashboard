@@ -1,40 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Clock } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import {
+  buildRecentBangkokDays,
+  formatBangkokDayLabel,
+  getBangkokTodayKey,
+} from "../../lib/time-window";
+import { useNow } from "../../hooks/useNow";
 
 interface DayBucket {
   date: string; // YYYY-MM-DD
   count: number;
 }
 
-function formatLabel(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00");
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-}
-
-function toISODate(d: Date): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function buildLast30Days(): string[] {
-  const days: string[] = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    days.push(toISODate(d));
-  }
-  return days;
-}
-
 export default function TimeMachine() {
-  const { timeWindow, setTimeWindow, isLive } = useTimeWindow();
+  const { bangkokDay, selectBangkokDay, clearTimeWindow, isLive, transitionState } = useTimeWindow();
   const [buckets, setBuckets] = useState<DayBucket[]>([]);
-  const days = buildLast30Days();
+  const now = useNow(60_000);
+  const days = useMemo(
+    () => buildRecentBangkokDays(30, now ?? new Date()),
+    [now],
+  );
 
   useEffect(() => {
+    if (days.length === 0) {
+      return;
+    }
+
     const from = days[0];
     const to = days[days.length - 1];
 
@@ -68,11 +63,65 @@ export default function TimeMachine() {
   }, []);
 
   const maxCount = Math.max(1, ...buckets.map((b) => b.count));
-  const today = toISODate(new Date());
-  const selectedDate = timeWindow?.from?.slice(0, 10) ?? null;
+  const today = getBangkokTodayKey(now ?? new Date());
+  const selectedDate = bangkokDay;
 
   return (
-    <div className="h-9 shrink-0 flex items-center bg-black border-t border-[var(--line)] px-4 gap-4 select-none">
+    <div className="relative h-9 shrink-0 flex items-center bg-black border-t border-[var(--line)] px-4 gap-4 select-none">
+      {/* TRANSITION OVERLAY */}
+      <AnimatePresence>
+        {transitionState === "entering-playback" && (
+          <motion.div
+            key="playback-wipe"
+            className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-[#f59e0b]/15"
+              initial={{ scaleX: 0, transformOrigin: "left" }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+            <motion.span
+              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[#f59e0b]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              Entering Playback
+            </motion.span>
+          </motion.div>
+        )}
+        {transitionState === "entering-live" && (
+          <motion.div
+            key="live-wipe"
+            className="absolute inset-0 z-50 flex items-center justify-center overflow-hidden"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-[#22c55e]/15"
+              initial={{ scaleX: 0, transformOrigin: "right" }}
+              animate={{ scaleX: 1 }}
+              transition={{ duration: 0.6, ease: "easeOut" }}
+            />
+            <motion.span
+              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[#22c55e]"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.3 }}
+            >
+              Live Feed Restored
+            </motion.span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* LEFT LABEL */}
       <div className="flex items-center gap-1.5 shrink-0">
         <Clock size={10} className="text-[var(--tech)]" />
@@ -94,14 +143,12 @@ export default function TimeMachine() {
             <button
               key={day}
               type="button"
-              title={`${formatLabel(day)} — ${count} signals`}
+              title={`${formatBangkokDayLabel(day)} — ${count} signals`}
+              aria-label={`Replay ${formatBangkokDayLabel(day)}`}
+              aria-pressed={isSelected}
+              data-testid={`time-machine-day-${day}`}
               className="group relative flex flex-col items-center justify-end w-[16px] h-full cursor-pointer"
-              onClick={() => {
-                setTimeWindow({
-                  from: `${day}T00:00:00Z`,
-                  to: `${day}T23:59:59Z`,
-                });
-              }}
+              onClick={() => selectBangkokDay(day)}
             >
               <div
                 className="w-[6px] rounded-[1px] transition-all duration-150"
@@ -126,14 +173,14 @@ export default function TimeMachine() {
       {/* SELECTED DATE LABEL */}
       {selectedDate && (
         <span className="text-[8px] font-mono tabular-nums uppercase tracking-wider text-white/50 shrink-0">
-          {formatLabel(selectedDate)}
+          {formatBangkokDayLabel(selectedDate)}
         </span>
       )}
 
       {/* LIVE PILL */}
       <button
         type="button"
-        onClick={() => setTimeWindow(null)}
+        onClick={clearTimeWindow}
         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest transition-all shrink-0 ${
           isLive
             ? "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]"
