@@ -1,8 +1,7 @@
 import { query } from "./db";
+import { loadStoredMarketIndicatorSnapshot } from "./history-store";
 import {
   fallbackBriefing,
-  fallbackEconomicIndicators,
-  fallbackIncidents,
   fallbackNews,
   fallbackTicker,
 } from "./mock-data";
@@ -27,16 +26,6 @@ interface IncidentRow {
   lat: number | null;
   location: string | null;
   event_date: string | null;
-}
-
-interface MarketIndicatorRow {
-  label: string;
-  value: number;
-  unit: string | null;
-  category: string | null;
-  source: string | null;
-  province: string | null;
-  previous_value: number | null;
 }
 
 function formatIndicatorValue(value: number | string, unit?: string | null) {
@@ -111,9 +100,9 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
         };
       });
 
-    return incidents.length > 0 ? incidents : fallbackIncidents;
+    return incidents;
   } catch {
-    return fallbackIncidents;
+    return [];
   }
 }
 
@@ -125,65 +114,12 @@ export async function loadThailandEconomics(): Promise<EconomicIndicator[]> {
       return indicators;
     }
   } catch {
-    // Fall through to DB-backed and mock values.
+    // Fall through to DB-backed values.
   }
 
-  try {
-    const res = await query<MarketIndicatorRow>(`
-      WITH ranked_market_data AS (
-        SELECT
-          indicator as label,
-          value,
-          unit,
-          category,
-          source,
-          province,
-          LAG(value) OVER (
-            PARTITION BY indicator, COALESCE(province, '')
-            ORDER BY ref_date, created_at
-          ) as previous_value,
-          ROW_NUMBER() OVER (
-            PARTITION BY indicator, COALESCE(province, '')
-            ORDER BY ref_date DESC, created_at DESC
-          ) as latest_rank
-        FROM market_data
-      )
-      SELECT
-        label,
-        value,
-        unit,
-        category,
-        source,
-        province,
-        previous_value
-      FROM ranked_market_data
-      WHERE latest_rank = 1
-      ORDER BY category NULLS LAST, label
-      LIMIT 10
-    `);
+  const storedSnapshot = await loadStoredMarketIndicatorSnapshot();
 
-    const indicators = res.rows.map((row) => {
-      const change =
-        row.previous_value === null
-          ? 0
-          : Number((row.value - row.previous_value).toFixed(2));
-
-      return {
-        label: row.label,
-        value: row.value,
-        unit: row.unit,
-        category: row.category,
-        source: row.source,
-        province: row.province,
-        change,
-        up: change >= 0,
-      };
-    });
-
-    return indicators.length > 0 ? indicators : fallbackEconomicIndicators;
-  } catch {
-    return fallbackEconomicIndicators;
-  }
+  return storedSnapshot?.data ?? [];
 }
 
 export function buildThailandNews(

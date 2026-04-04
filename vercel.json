@@ -2,5 +2,31 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "next build",
   "framework": "nextjs",
-  "regions": ["sin1"]
+  "regions": ["sin1"],
+  "crons": [
+    {
+      "path": "/api/cron/conflict-intel",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/environment-thermal",
+      "schedule": "15 0 * * *"
+    },
+    {
+      "path": "/api/cron/markets-macro",
+      "schedule": "25 0 * * *"
+    },
+    {
+      "path": "/api/cron/movements-maritime",
+      "schedule": "35 0 * * *"
+    },
+    {
+      "path": "/api/cron/daily-summary",
+      "schedule": "45 0 * * *"
+    },
+    {
+      "path": "/api/cron/maintenance-cleanup",
+      "schedule": "5 1 * * *"
+    }
+  ]
 }

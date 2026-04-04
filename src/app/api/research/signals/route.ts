@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server.js";
+import { getErrorMessage } from "../../../../lib/errors";
+import { createRequestId, parseIntegerParam } from "../../../../lib/http";
 import { querySignals } from "../../../../lib/signal-archive";
 
 /**
@@ -20,31 +22,72 @@ import { querySignals } from "../../../../lib/signal-archive";
  *   offset         - pagination offset
  */
 export async function GET(request: NextRequest) {
+  const requestId = createRequestId("signals");
   const { searchParams } = request.nextUrl;
-
-  const result = await querySignals({
-    region: searchParams.get("region") ?? undefined,
-    signal_type: searchParams.get("type") ?? undefined,
-    source_provider: searchParams.get("provider") ?? undefined,
-    from: searchParams.get("from") ?? undefined,
-    to: searchParams.get("to") ?? undefined,
-    keyword: searchParams.get("keyword") ?? undefined,
-    search: searchParams.get("search") ?? undefined,
-    limit: searchParams.has("limit") ? parseInt(searchParams.get("limit")!, 10) : undefined,
-    offset: searchParams.has("offset") ? parseInt(searchParams.get("offset")!, 10) : undefined,
+  const limit = parseIntegerParam(searchParams.get("limit"), {
+    defaultValue: 50,
+    min: 1,
+    max: 200,
+  });
+  const offset = parseIntegerParam(searchParams.get("offset"), {
+    defaultValue: 0,
+    min: 0,
+    max: 10_000,
   });
 
-  return NextResponse.json({
-    signals: result.signals,
-    total: result.total,
-    query: {
-      region: searchParams.get("region"),
-      type: searchParams.get("type"),
-      provider: searchParams.get("provider"),
-      from: searchParams.get("from"),
-      to: searchParams.get("to"),
-      keyword: searchParams.get("keyword"),
-      search: searchParams.get("search"),
-    },
-  });
+  try {
+    const result = await querySignals({
+      region: searchParams.get("region") ?? undefined,
+      signal_type: searchParams.get("type") ?? undefined,
+      source_provider: searchParams.get("provider") ?? undefined,
+      from: searchParams.get("from") ?? undefined,
+      to: searchParams.get("to") ?? undefined,
+      keyword: searchParams.get("keyword") ?? undefined,
+      search: searchParams.get("search") ?? undefined,
+      limit,
+      offset,
+    });
+
+    return NextResponse.json(
+      {
+        signals: result.signals,
+        total: result.total,
+        query: {
+          region: searchParams.get("region"),
+          type: searchParams.get("type"),
+          provider: searchParams.get("provider"),
+          from: searchParams.get("from"),
+          to: searchParams.get("to"),
+          keyword: searchParams.get("keyword"),
+          search: searchParams.get("search"),
+          limit,
+          offset,
+        },
+      },
+      {
+        headers: {
+          "cache-control": "no-store",
+          "x-request-id": requestId,
+        },
+      },
+    );
+  } catch (error: unknown) {
+    console.error(
+      `[${requestId}] Research signals route error:`,
+      getErrorMessage(error),
+    );
+
+    return NextResponse.json(
+      {
+        error: getErrorMessage(error),
+      },
+      {
+        status: 503,
+        headers: {
+          "cache-control": "no-store",
+          "x-request-id": requestId,
+        },
+      },
+    );
+  }
 }

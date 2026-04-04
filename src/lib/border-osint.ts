@@ -1,4 +1,3 @@
-import { fallbackNews, fallbackTicker } from "./mock-data";
 import { archiveSignalBatch, type ArchiveSignal } from "./signal-archive";
 import {
   BORDER_AREAS,
@@ -34,61 +33,6 @@ const UNHCR_POPULATION_URL =
   "https://api.unhcr.org/population/v1/population/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=2024&yearTo=2026&limit=10";
 const UNHCR_DEMOGRAPHICS_URL =
   "https://api.unhcr.org/population/v1/demographics/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=2024&yearTo=2026&limit=10";
-
-const FALLBACK_BORDER_INCIDENTS: IncidentFeature[] = [
-  {
-    id: "BORDER-001",
-    geometry: { coordinates: [98.5746, 16.7163] },
-    properties: {
-      title: "Cross-border shelling risk",
-      type: "Conflict spillover",
-      fatalities: 2,
-      notes:
-        "Artillery spillover concerns around Mae Sot and Myawaddy disrupted freight staging and forced a tighter security posture on the western gate.",
-      location: "Mae Sot / Myawaddy",
-      eventDate: "2026-03-15T03:40:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-002",
-    geometry: { coordinates: [98.6501, 16.9124] },
-    properties: {
-      title: "Shelter pressure rising",
-      type: "Displacement pressure",
-      fatalities: 0,
-      notes:
-        "Temporary shelters and screening teams in Tak province reported heavier intake pressure as movement from Karen State continued.",
-      location: "Tak province",
-      eventDate: "2026-03-15T02:10:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-003",
-    geometry: { coordinates: [102.5636, 13.6587] },
-    properties: {
-      title: "Checkpoint queue surge",
-      type: "Crossing pressure",
-      fatalities: 0,
-      notes:
-        "Passenger and customs queues lengthened on the Aranyaprathet / Poipet frontier, raising turnback and visibility concerns.",
-      location: "Aranyaprathet / Poipet",
-      eventDate: "2026-03-15T01:55:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-004",
-    geometry: { coordinates: [100.4186, 6.7483] },
-    properties: {
-      title: "Freight corridor congestion",
-      type: "Logistics pressure",
-      fatalities: 0,
-      notes:
-        "Coach and freight backlogs built on the Sadao / Bukit Kayu Hitam approaches, slowing southern corridor throughput.",
-      location: "Sadao / Bukit Kayu Hitam",
-      eventDate: "2026-03-14T23:35:00.000Z",
-    },
-  },
-];
 
 const FALLBACK_HUMANITARIAN: BorderHumanitarianSnapshot[] = [
   {
@@ -595,10 +539,23 @@ export async function loadBorderIncidents(): Promise<IncidentFeature[]> {
       BORDER_AREAS.some((area) => incidentMatchesBorderArea(area, incident)),
     );
 
-    return borderIncidents.length > 0 ? borderIncidents : FALLBACK_BORDER_INCIDENTS;
+    return borderIncidents;
   } catch {
-    return FALLBACK_BORDER_INCIDENTS;
+    return [];
   }
+}
+
+export function filterTruthfulBorderOsint(osint: BorderOsintResponse): BorderOsintResponse {
+  const gdeltSource = osint.sources.find((source) => source.id === "gdelt-doc-2");
+  const unhcrSource = osint.sources.find(
+    (source) => source.id === "unhcr-refugee-data-finder",
+  );
+
+  return {
+    ...osint,
+    signals: gdeltSource?.status === "live" ? osint.signals : [],
+    humanitarian: unhcrSource?.status === "live" ? osint.humanitarian : [],
+  };
 }
 
 export async function loadBorderOsint(): Promise<BorderOsintResponse> {
@@ -675,10 +632,6 @@ export function buildBorderNews(
     ...marketItems,
   ]).slice(0, 6);
 
-  if (news.length === 0) {
-    return fallbackNews;
-  }
-
   return {
     generatedAt: osint.generatedAt,
     news,
@@ -738,10 +691,6 @@ export function buildBorderTicker(
       delta: `${humanitarian.asOf} registered`,
       tone: humanitarian.count >= 50_000 ? "down" : "neutral",
     });
-  }
-
-  if (items.length === 0) {
-    return fallbackTicker;
   }
 
   return {

@@ -1,3 +1,5 @@
+# Legacy deployment reference only.
+# Primary production target is Vercel + Supabase Postgres + Vercel Cron.
 databases:
   - name: geopolitics-dashboard-db
     databaseName: geopolitics_dashboard

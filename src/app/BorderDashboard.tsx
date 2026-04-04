@@ -14,7 +14,7 @@ import DashboardArchitectureModal from "../components/Intelligence/DashboardArch
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
-import { TimeWindowProvider } from "../contexts/TimeWindowContext";
+import { TimeWindowProvider, useTimeWindow } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
@@ -31,7 +31,16 @@ function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
 }
 
 export default function BorderDashboard() {
+  return (
+    <TimeWindowProvider>
+      <BorderDashboardSurface />
+    </TimeWindowProvider>
+  );
+}
+
+function BorderDashboardSurface() {
   const dataExplorerEnabled = isDataExplorerEnabled();
+  const { buildUrl } = useTimeWindow();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
@@ -43,7 +52,7 @@ export default function BorderDashboard() {
 
     const loadBrief = async () => {
       try {
-        const response = await fetch("/api/border-command/brief", {
+        const response = await fetch(buildUrl("/api/border-command/brief"), {
           cache: "no-store",
         });
         const payload: unknown = await response.json();
@@ -65,11 +74,10 @@ export default function BorderDashboard() {
       active = false;
       clearInterval(interval);
     };
-  }, []);
+  }, [buildUrl]);
 
   return (
     <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
-      <TimeWindowProvider>
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
@@ -120,10 +128,13 @@ export default function BorderDashboard() {
         </div>
 
         {/* ROW 4: TICKER BAR */}
-        <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
-          <div className="flex items-center gap-3 mr-6 shrink-0">
-            <div className="animate-ping w-1.5 h-1.5 bg-[var(--accent)] rounded-full" />
-            <div className="text-[11px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
+        <div className="flex h-8 items-center overflow-hidden border-t border-white/10 bg-[linear-gradient(90deg,#07090d_0%,#0b1018_28%,#091018_100%)] px-4 text-white shrink-0">
+          <div className="mr-6 flex shrink-0 items-center gap-3">
+            <div className="animate-ping h-1.5 w-1.5 bg-[var(--accent)] rounded-full" />
+            <div className="text-[11px] font-black uppercase tracking-[0.2em]">Signal</div>
+          </div>
+          <div className="hidden lg:block mr-5 text-[8px] font-black uppercase tracking-[0.16em] text-white/32">
+            Market, field, archive, and narrative deltas
           </div>
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
@@ -134,7 +145,6 @@ export default function BorderDashboard() {
         {/* ROW 6: BORDER STATUS STRIP */}
         <BorderStatusStrip brief={brief} />
       </div>
-      </TimeWindowProvider>
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />

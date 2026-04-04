@@ -4,13 +4,17 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import AnimatedNumber from "../Common/AnimatedNumber";
-import type { BorderCommandBrief, BorderAreaStatus, ScoreBreakdown } from "../../types/dashboard";
+import type {
+  BorderAreaStatus,
+  BorderCommandBrief,
+  ScoreBreakdown,
+  TrafficIncident,
+} from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
 import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
 import { useNow } from "../../hooks/useNow";

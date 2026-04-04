@@ -8,9 +8,11 @@ import {
 } from "./border-regions";
 import {
   buildBorderMovements,
+  filterTruthfulBorderOsint,
   loadBorderIncidents,
   loadBorderOsint,
 } from "./border-osint";
+import { PlaybackApiError } from "./playback-api";
 import { loadThailandEconomics } from "./thailand-monitor";
 import type {
   BorderActionItem,
@@ -363,6 +365,20 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
     loadThailandEconomics(),
     loadBorderOsint(),
   ]);
+  const truthfulOsint = filterTruthfulBorderOsint(osint);
+
+  if (
+    incidents.length === 0 &&
+    indicators.length === 0 &&
+    truthfulOsint.signals.length === 0 &&
+    truthfulOsint.humanitarian.length === 0
+  ) {
+    throw new PlaybackApiError(
+      "LIVE_DATA_UNAVAILABLE",
+      "No live border-command inputs are available for the current cycle.",
+    );
+  }
+
   const cameras = listCriticalCameras();
   const leadIndicator = selectLeadIndicator(indicators);
   const areas = BORDER_AREAS.map((area) =>
@@ -370,8 +386,8 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
       area,
       incidents,
       cameras,
-      osint.signals,
-      osint.humanitarian,
+      truthfulOsint.signals,
+      truthfulOsint.humanitarian,
       leadIndicator,
     ),
   ).sort((left, right) => {

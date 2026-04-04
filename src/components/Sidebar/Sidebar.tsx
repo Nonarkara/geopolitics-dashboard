@@ -19,11 +19,10 @@ import {
   Wheat,
   Zap,
 } from "lucide-react";
-import type { BorderCommandBrief } from "../../types/dashboard";
+import type { BorderCommandBrief, TrafficIncident } from "../../types/dashboard";
 import type { CommodityPrice } from "../../app/api/border/commodities/route";
 import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
 import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { TrafficIncident } from "../../app/api/border/traffic/route";
 import type { RegionalDisaster } from "../../app/api/border/disasters/route";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import {

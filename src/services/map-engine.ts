@@ -11,6 +11,8 @@ import {
 import { getProvinceLabels } from "../lib/thai-provinces";
 import type {
   AirQualityPoint,
+  BorderOperationalCorridor,
+  BorderOperationalNode,
   ConflictZoneCollection,
   ConflictZoneProperties,
   FireEvent,
@@ -21,6 +23,7 @@ import type {
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
+  TrafficIncident,
   VesselPosition,
 } from "../types/dashboard";
 
@@ -580,6 +583,280 @@ export const createRegionalBorderLayer = (data: RegionBorderCollection) =>
     getLineWidth: 2000,
     lineWidthMinPixels: 1,
   });
+
+function buildCorridorFeatureCollection(corridors: BorderOperationalCorridor[]) {
+  return {
+    type: "FeatureCollection" as const,
+    features: corridors.map((corridor) => ({
+      type: "Feature" as const,
+      geometry: {
+        type: "LineString" as const,
+        coordinates: corridor.coordinates,
+      },
+      properties: corridor,
+    })),
+  };
+}
+
+function buildCorridorLabelPoints(corridors: BorderOperationalCorridor[]) {
+  return corridors.map((corridor) => {
+    const midpoint =
+      corridor.coordinates[Math.max(0, Math.floor(corridor.coordinates.length / 2) - 1)] ??
+      corridor.coordinates[0];
+
+    return {
+      id: corridor.id,
+      coordinates: midpoint,
+      label: corridor.shortLabel,
+      summary: corridor.summary,
+      emphasis: corridor.emphasis,
+    };
+  });
+}
+
+function buildOperationalNodeLabels(nodes: BorderOperationalNode[]) {
+  return nodes.map((node) => ({
+    id: node.id,
+    coordinates: node.coordinates,
+    label: node.shortLabel,
+    emphasis: node.emphasis,
+    allowsDeepZoom: node.allowsDeepZoom,
+  }));
+}
+
+function getCorridorColor(
+  corridor: BorderOperationalCorridor,
+  activeTheaterId: BorderOperationalCorridor["theaterId"] | null,
+): [number, number, number, number] {
+  const isDimmed = activeTheaterId !== null && corridor.theaterId !== activeTheaterId;
+
+  if (isDimmed) {
+    return [148, 163, 184, 80];
+  }
+
+  if (corridor.emphasis === "primary") {
+    return corridor.mode === "security"
+      ? [251, 191, 36, 228]
+      : [248, 113, 113, 228];
+  }
+
+  return [125, 211, 252, 186];
+}
+
+export function createOperationalCorridorLayers(
+  corridors: BorderOperationalCorridor[],
+  zoom: number,
+  activeTheaterId: BorderOperationalCorridor["theaterId"] | null,
+) {
+  if (!Array.isArray(corridors) || corridors.length === 0) {
+    return [];
+  }
+
+  const visibleCorridors =
+    activeTheaterId === null
+      ? corridors
+      : corridors.filter((corridor) => corridor.theaterId === activeTheaterId);
+
+  if (visibleCorridors.length === 0) {
+    return [];
+  }
+
+  const labelData =
+    zoom >= 8.1
+      ? buildCorridorLabelPoints(visibleCorridors)
+      : buildCorridorLabelPoints(
+          visibleCorridors.filter((corridor) => corridor.emphasis === "primary"),
+        );
+
+  return [
+    new GeoJsonLayer({
+      id: "operational-corridors",
+      data: buildCorridorFeatureCollection(visibleCorridors) as never,
+      pickable: false,
+      stroked: true,
+      filled: false,
+      lineWidthUnits: "pixels",
+      lineWidthMinPixels: 2,
+      lineWidthMaxPixels: 8,
+      getLineColor: (feature) =>
+        getCorridorColor(
+          (feature as { properties: BorderOperationalCorridor }).properties,
+          activeTheaterId,
+        ),
+      getLineWidth: (feature) =>
+        (feature as { properties: BorderOperationalCorridor }).properties.emphasis === "primary"
+          ? (zoom >= 10 ? 5 : 4)
+          : zoom >= 10
+            ? 3.5
+            : 2.5,
+      parameters: {
+        depthTest: false,
+      },
+    }),
+    new TextLayer({
+      id: "operational-corridor-labels",
+      data: labelData,
+      getPosition: (item) => item.coordinates,
+      getText: (item) => item.label,
+      getSize: (item) => (item.emphasis === "primary" ? 12 : 10),
+      getColor: (item) =>
+        item.emphasis === "primary"
+          ? [255, 255, 255, 232]
+          : [191, 219, 254, 196],
+      getTextAnchor: "middle" as const,
+      getAlignmentBaseline: "center" as const,
+      fontFamily: "Helvetica Neue, Arial, sans-serif",
+      fontWeight: "bold" as unknown as number,
+      fontSettings: { sdf: true },
+      outlineColor: [7, 10, 18, 220],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
+      billboard: false,
+      pickable: false,
+      visible: labelData.length > 0,
+    }),
+  ];
+}
+
+function getOperationalNodeColor(
+  node: BorderOperationalNode,
+): [number, number, number, number] {
+  if (node.type === "sez") {
+    return [248, 113, 113, 232];
+  }
+
+  if (node.type === "checkpoint" || node.type === "security") {
+    return [251, 191, 36, 228];
+  }
+
+  return [56, 189, 248, 224];
+}
+
+export function createOperationalNodeLayers(
+  nodes: BorderOperationalNode[],
+  zoom: number,
+  activeTheaterId: BorderOperationalNode["theaterId"] | null,
+  activeNodeId: string | null,
+) {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return [];
+  }
+
+  const visibleNodes =
+    activeTheaterId === null
+      ? nodes
+      : nodes.filter((node) => node.theaterId === activeTheaterId);
+
+  if (visibleNodes.length === 0) {
+    return [];
+  }
+
+  const labelNodes =
+    zoom >= 8.6
+      ? visibleNodes
+      : visibleNodes.filter((node) => node.emphasis === "primary");
+
+  return [
+    new ScatterplotLayer({
+      id: "operational-nodes",
+      data: visibleNodes,
+      pickable: false,
+      stroked: true,
+      filled: true,
+      getPosition: (node: BorderOperationalNode) => node.coordinates,
+      getRadius: (node: BorderOperationalNode) =>
+        activeNodeId === node.id || node.emphasis === "primary" ? 6000 : 4200,
+      radiusMinPixels: 4,
+      radiusMaxPixels: 16,
+      getFillColor: (node: BorderOperationalNode) => getOperationalNodeColor(node),
+      getLineColor: [255, 255, 255, 220],
+      lineWidthMinPixels: 1.5,
+    }),
+    new TextLayer({
+      id: "operational-node-labels",
+      data: buildOperationalNodeLabels(labelNodes),
+      getPosition: (item) => item.coordinates,
+      getText: (item) => item.label,
+      getSize: (item) =>
+        item.allowsDeepZoom || item.emphasis === "primary" ? 11 : 9,
+      getColor: (item) =>
+        item.allowsDeepZoom
+          ? [254, 215, 170, 236]
+          : [226, 232, 240, 212],
+      getTextAnchor: "start" as const,
+      getAlignmentBaseline: "center" as const,
+      getPixelOffset: [10, 0],
+      fontFamily: "Helvetica Neue, Arial, sans-serif",
+      fontWeight: "bold" as unknown as number,
+      fontSettings: { sdf: true },
+      outlineColor: [7, 10, 18, 220],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
+      billboard: false,
+      pickable: false,
+      visible: labelNodes.length > 0,
+    }),
+  ];
+}
+
+function getTrafficColor(incident: TrafficIncident): [number, number, number, number] {
+  if (incident.severity >= 4) {
+    return [239, 68, 68, 220];
+  }
+
+  if (incident.severity >= 2) {
+    return [249, 115, 22, 212];
+  }
+
+  return [251, 191, 36, 200];
+}
+
+export function createTrafficIncidentLayers(
+  incidents: TrafficIncident[],
+  zoom: number,
+) {
+  if (!Array.isArray(incidents) || incidents.length === 0) {
+    return [];
+  }
+
+  const labelIncidents = zoom >= 9.8 ? incidents.slice(0, 20) : [];
+
+  return [
+    new ScatterplotLayer({
+      id: "traffic-incidents",
+      data: incidents,
+      pickable: false,
+      stroked: true,
+      filled: true,
+      getPosition: (incident: TrafficIncident) => [incident.lng, incident.lat],
+      getRadius: 3800,
+      radiusMinPixels: 4,
+      radiusMaxPixels: 12,
+      getFillColor: (incident: TrafficIncident) => getTrafficColor(incident),
+      getLineColor: [255, 255, 255, 180],
+      lineWidthMinPixels: 1,
+    }),
+    new TextLayer({
+      id: "traffic-incident-labels",
+      data: labelIncidents,
+      getPosition: (incident: TrafficIncident) => [incident.lng, incident.lat],
+      getText: (incident: TrafficIncident) => incident.category.toUpperCase(),
+      getSize: 9,
+      getColor: [255, 244, 214, 212],
+      getTextAnchor: "start" as const,
+      getAlignmentBaseline: "center" as const,
+      getPixelOffset: [10, 0],
+      fontFamily: "SF Mono, JetBrains Mono, monospace",
+      fontSettings: { sdf: true },
+      outlineColor: [7, 10, 18, 220],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
+      billboard: false,
+      pickable: false,
+      visible: labelIncidents.length > 0,
+    }),
+  ];
+}
 
 function getConflictZoneFillColor(
   properties: ConflictZoneProperties,

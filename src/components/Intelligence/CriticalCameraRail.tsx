@@ -6,6 +6,9 @@ import { Camera, ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import type { PublicCamera } from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useCriticalCameras } from "./useCriticalCameras";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import { formatBangkokDayLabel } from "../../lib/time-window";
+import { useNow } from "../../hooks/useNow";
 
 function formatGeneratedAt(value: string | null) {
   if (!value) {
@@ -31,8 +34,12 @@ function formatAbsoluteTime(value: string) {
   return `${day} ${mon} ${time}`;
 }
 
-function formatRelativeAge(value: string) {
-  const diffMs = Math.max(0, Date.now() - new Date(value).getTime());
+function formatRelativeAge(value: string, nowMs: number | null) {
+  if (nowMs === null) {
+    return "(syncing)";
+  }
+
+  const diffMs = Math.max(0, nowMs - new Date(value).getTime());
   const diffMinutes = Math.round(diffMs / 60000);
 
   if (diffMinutes <= 1) {
@@ -75,7 +82,7 @@ function validationClass(validationState: PublicCamera["validationState"]) {
   return validationState === "candidate" ? "stat-pill warning" : "stat-pill safe";
 }
 
-function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
+function CriticalCameraCard({ camera, nowMs }: { camera: PublicCamera; nowMs: number | null }) {
   const [imageFailed, setImageFailed] = useState(false);
   const resolvedStatus = imageFailed ? "offline" : camera.status;
 
@@ -140,7 +147,7 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
         <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[8px] font-mono tabular-nums text-white/38">
           <span>
             {formatAbsoluteTime(camera.lastCheckedAt)}{" "}
-            <span className="text-white/25">{formatRelativeAge(camera.lastCheckedAt)}</span>
+            <span className="text-white/25">{formatRelativeAge(camera.lastCheckedAt, nowMs)}</span>
           </span>
           <a
             href={camera.sourcePageUrl}
@@ -159,7 +166,9 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
 }
 
 export default function CriticalCameraRail() {
+  const { isHistorical, timeWindow } = useTimeWindow();
   const { cameras, generatedAt, reload } = useCriticalCameras();
+  const nowMs = useNow(60_000);
   const verifiedCount = cameras.filter(
     (camera) => camera.validationState === "verified",
   ).length;
@@ -178,6 +187,11 @@ export default function CriticalCameraRail() {
           <div className="text-[11px] font-black uppercase tracking-[0.03em] text-white">
             Border chokepoints, scout coverage, and live visual confirmation
           </div>
+          {isHistorical && timeWindow ? (
+            <div className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[#fda4af]">
+              Live reference only during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -209,7 +223,7 @@ export default function CriticalCameraRail() {
         {cameras.length > 0 ? (
           <div className="no-scrollbar flex h-full gap-2.5 overflow-x-auto">
             {cameras.map((camera) => (
-              <CriticalCameraCard key={camera.id} camera={camera} />
+              <CriticalCameraCard key={camera.id} camera={camera} nowMs={nowMs} />
             ))}
           </div>
         ) : (

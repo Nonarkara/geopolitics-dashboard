@@ -42,6 +42,11 @@
   outline: none !important;
 }
 
+*:focus-visible {
+  outline: 2px solid var(--tech) !important;
+  outline-offset: 2px !important;
+}
+
 .theme-border body {
   background: var(--bg);
   color: var(--ink);
@@ -286,6 +291,15 @@
 
 .animate-marquee:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee,
+  .animate-sweep,
+  .signal-border[data-signal="critical"],
+  .live-badge::after {
+    animation: none !important;
+  }
 }
 
 @keyframes sweep {

@@ -1,6 +1,8 @@
 import { DASHBOARD_VERSION } from "./dashboard-version";
+import { loadCronJobStatuses } from "./cron-jobs";
 import { isDatabaseConfigured, query } from "./db";
 import { isDataExplorerEnabled } from "./feature-flags";
+import { getTimeoutSignal } from "./http";
 import { hasUsableMapboxToken } from "./mapbox";
 import type {
   DashboardDatasetCriticality,
@@ -415,7 +417,10 @@ function getDataExplorerState() {
 }
 
 export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayload> {
-  const datasets = await Promise.all(datasetDescriptors.map(loadDatasetStatus));
+  const [datasets, crons] = await Promise.all([
+    Promise.all(datasetDescriptors.map(loadDatasetStatus)),
+    loadCronJobStatuses(),
+  ]);
   const hasMapboxToken = hasUsableMapboxToken(
     process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
       process.env.MAPBOX_ACCESS_TOKEN,
@@ -433,19 +438,38 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
     (dataset) =>
       dataset.criticality === "optional" && degradedStates.has(dataset.state),
   );
+  const hasCronIssue = crons.some(
+    (cron) => cron.state === "stale" || cron.state === "missing" || cron.state === "failing",
+  );
+  const posture =
+    hasCoreIssue ? "fallback" : hasOptionalIssue || hasCronIssue ? "hybrid" : "live";
 
   return {
-    status: hasCoreIssue ? "degraded" : hasOptionalIssue ? "limited" : "operational",
+    status:
+      hasCoreIssue || hasCronIssue
+        ? "degraded"
+        : hasOptionalIssue
+          ? "limited"
+          : "operational",
     version: DASHBOARD_VERSION,
     signal_strength: computeSignalStrength(datasets),
     checkedAt: new Date().toISOString(),
+    posture,
     services: {
-      database: isDatabaseConfigured ? "configured" : "fallback",
+      app_runtime: process.env.VERCEL === "1" ? "vercel" : "local",
+      database: isDatabaseConfigured ? "supabase-postgres" : "fallback",
+      scheduler: process.env.CRON_SECRET?.trim()
+        ? hasCronIssue
+          ? "degraded"
+          : "vercel-cron"
+        : "unsecured",
       basemap: hasMapboxToken ? "configured" : "missing",
-      conflict_ingestion: hasConfiguredAcledRefresh() ? "configured" : "disabled",
       reference_dashboard: process.env.REFERENCE_DASHBOARD_URL
         ? "configured"
         : "default",
+      fallback_posture: posture,
+      conflict_refresh: hasConfiguredAcledRefresh() ? "configured" : "disabled",
+      thermal_refresh: hasConfiguredFirmsRefresh() ? "configured" : "disabled",
       intelligence_cache: isDatabaseConfigured ? "hybrid" : "memory",
       // determine ai_summary by probing local Ollama first, then OpenAI
       ai_summary: await (async () => {
@@ -458,10 +482,7 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
           try {
             const res = await fetch(url, {
               method: "GET",
-              signal:
-                typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-                  ? (AbortSignal as any).timeout(timeoutMs)
-                  : undefined,
+              signal: getTimeoutSignal(timeoutMs),
               ...opts,
             });
             return res.ok || res.status === 401 || res.status === 403;
@@ -484,8 +505,8 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
       mock_ingestion: process.env.ALLOW_MOCK_INGESTION === "true"
         ? "enabled"
         : "disabled",
-      thermal_ingestion: hasConfiguredFirmsRefresh() ? "configured" : "disabled",
     },
     datasets,
+    crons,
   };
 }

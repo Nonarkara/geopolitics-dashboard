@@ -10,6 +10,7 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "test:backend": "tsx --test tests/playback-backend.test.mts tests/vercel-runtime.test.mts",
     "test:ui": "playwright test",
     "ingest:all": "python3 ingestion/run_all.py",
     "ingest:list": "python3 ingestion/run_all.py --list",
@@ -57,6 +58,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   },
   "overrides": {

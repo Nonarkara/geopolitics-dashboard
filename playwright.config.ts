@@ -8,6 +8,12 @@ export default defineConfig({
   fullyParallel: false,
   retries: 0,
   workers: 1,
+  webServer: {
+    command: `npm run build && npm run start -- --port ${PORT}`,
+    url: `http://127.0.0.1:${PORT}`,
+    reuseExistingServer: !process.env.CI,
+    timeout: 120_000,
+  },
   use: {
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: "retain-on-failure",

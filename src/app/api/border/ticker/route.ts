@@ -1,49 +1,94 @@
-import { NextResponse } from "next/server";
-import { fallbackTicker } from "../../../../lib/mock-data";
+import { NextRequest } from "next/server.js";
+import { filterTruthfulBorderOsint } from "../../../../lib/border-osint";
 import {
-  buildBorderTicker,
-  loadBorderIncidents,
-  loadBorderOsint,
-} from "../../../../lib/border-osint";
-import { loadThailandEconomics } from "../../../../lib/thailand-monitor";
-import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
+  buildSnapshotKey,
+  logPlaybackSideEffectFailure,
+  noStoreJson,
+  PlaybackApiError,
+  playbackErrorResponse,
+  resolvePlaybackRequest,
+} from "../../../../lib/playback-api";
+import { borderTickerRouteDeps } from "../../../../lib/playback-route-deps";
+import type { ArchiveSignal } from "../../../../lib/signal-archive";
 
-export async function GET() {
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export async function GET(request: NextRequest) {
   try {
+    const playback = resolvePlaybackRequest(request.nextUrl.searchParams);
+
+    if (playback.mode === "historical") {
+      return noStoreJson(
+        await borderTickerRouteDeps.loadHistoricalBorderTicker(playback.timeWindow),
+      );
+    }
+
     const [incidents, indicators, osint] = await Promise.all([
-      loadBorderIncidents(),
-      loadThailandEconomics(),
-      loadBorderOsint(),
+      borderTickerRouteDeps.loadBorderIncidents(),
+      borderTickerRouteDeps.loadThailandEconomics(),
+      borderTickerRouteDeps.loadBorderOsint(),
     ]);
+    const truthfulOsint = filterTruthfulBorderOsint(osint);
 
-    const ticker = buildBorderTicker(incidents, indicators, osint);
+    if (
+      incidents.length === 0 &&
+      indicators.length === 0 &&
+      truthfulOsint.signals.length === 0 &&
+      truthfulOsint.humanitarian.length === 0
+    ) {
+      throw new PlaybackApiError(
+        "LIVE_DATA_UNAVAILABLE",
+        "No live border ticker inputs are available.",
+      );
+    }
 
-    // Archive ticker snapshot — aggregated summary metrics show the dashboard's
-    // operational picture at a point in time, valuable for trend reconstruction.
-    try {
-      const hourKey = new Date().toISOString().slice(0, 13);
-      const signals: ArchiveSignal[] = [{
-        external_id: `ticker-snapshot-${hourKey}`,
+    const ticker = borderTickerRouteDeps.buildBorderTicker(
+      incidents,
+      indicators,
+      truthfulOsint,
+    );
+
+    if (ticker.items.length === 0) {
+      throw new PlaybackApiError(
+        "LIVE_DATA_UNAVAILABLE",
+        "No truthful live ticker snapshot is available.",
+      );
+    }
+
+    const snapshotAt = ticker.generatedAt ?? new Date().toISOString();
+    const snapshotKey = buildSnapshotKey(snapshotAt);
+    const signals: ArchiveSignal[] = [
+      {
+        external_id: `ticker-snapshot-${snapshotKey}`,
         signal_type: "market",
         source_provider: "border-ticker-engine",
         title: `Ticker snapshot: ${ticker.items.length} indicators`,
-        summary: ticker.items.map(i => `${i.label}: ${i.value} (${i.delta})`).join(" | "),
-        published_at: ticker.generatedAt ?? new Date().toISOString(),
+        summary: ticker.items.map((item) => `${item.label}: ${item.value} (${item.delta})`).join(" | "),
+        published_at: snapshotAt,
         severity: "stable",
-        keywords: ticker.items.map(i => i.label.toLowerCase().replace(/\W+/g, "-")),
+        keywords: ticker.items.map((item) => item.label.toLowerCase().replace(/\W+/g, "-")),
         payload: {
+          snapshotKey,
           type: "ticker_snapshot",
           items: ticker.items,
-          generatedAt: ticker.generatedAt,
+          generatedAt: snapshotAt,
         },
-      }];
-      void archiveSignalBatch(signals);
-    } catch {
-      // Non-critical
-    }
+      },
+    ];
 
-    return NextResponse.json(ticker);
-  } catch {
-    return NextResponse.json(fallbackTicker, { status: 200 });
+    void borderTickerRouteDeps.archiveSignalBatch(signals).catch((error) => {
+      logPlaybackSideEffectFailure("border/ticker", "archiveSignalBatch", error, {
+        mode: "live",
+        snapshotAt,
+        snapshotKey,
+      });
+    });
+
+    return noStoreJson(
+      { ...ticker, generatedAt: snapshotAt, mode: "live" as const },
+    );
+  } catch (error) {
+    return playbackErrorResponse(error);
   }
 }
