@@ -5,28 +5,12 @@
   "regions": ["sin1"],
   "crons": [
     {
-      "path": "/api/cron/conflict-intel",
+      "path": "/api/cron/data-ingestion",
       "schedule": "5 0 * * *"
     },
     {
-      "path": "/api/cron/environment-thermal",
-      "schedule": "15 0 * * *"
-    },
-    {
-      "path": "/api/cron/markets-macro",
-      "schedule": "25 0 * * *"
-    },
-    {
-      "path": "/api/cron/movements-maritime",
-      "schedule": "35 0 * * *"
-    },
-    {
-      "path": "/api/cron/daily-summary",
+      "path": "/api/cron/daily-ops",
       "schedule": "45 0 * * *"
-    },
-    {
-      "path": "/api/cron/maintenance-cleanup",
-      "schedule": "5 1 * * *"
     }
   ]
 }
