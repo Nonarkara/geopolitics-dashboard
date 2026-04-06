@@ -83,6 +83,11 @@ function ScoreBar({ area, expanded, onToggle, history }: {
       </AnimatePresence>
       <div
         className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-sm -mx-1 px-1"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+        aria-expanded={expanded}
+        aria-label={`${label} score ${score} — click to ${expanded ? "collapse" : "expand"} breakdown`}
         onClick={onToggle}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

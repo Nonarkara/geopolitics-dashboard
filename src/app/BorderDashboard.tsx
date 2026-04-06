@@ -77,7 +77,7 @@ function BorderDashboardSurface() {
   }, [buildUrl]);
 
   return (
-    <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
+    <main id="dashboard-content" className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
@@ -96,12 +96,14 @@ function BorderDashboardSurface() {
         <div className="flex flex-1 min-h-0 connected-grid">
 
           {/* LEFT SIDEBAR */}
-          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
-            <Sidebar brief={brief} />
+          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden" aria-label="Intelligence briefing">
+            <ErrorBoundary name="Intelligence Briefing">
+              <Sidebar brief={brief} />
+            </ErrorBoundary>
           </aside>
 
           {/* CENTER: MAP */}
-          <div className="flex-1 min-w-0 grid-cell bg-[#111]">
+          <div className="flex-1 min-w-0 grid-cell bg-[#111]" aria-label="Tactical map — Thailand tri-border region">
             <ErrorBoundary name="Tactical Map Engine">
               <BorderMap onProvinceSelect={setSelectedProvince} />
             </ErrorBoundary>
@@ -109,21 +111,27 @@ function BorderDashboardSurface() {
         </div>
 
         {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
+        <div className="h-[280px] xl:h-[280px] max-xl:h-auto shrink-0 connected-grid bg-black overflow-hidden max-xl:flex-col" role="region" aria-label="Analytics strip">
 
           {/* MARKET PULSE */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderMarketPulse />
+          <div className="w-[340px] max-xl:w-full shrink-0 grid-cell overflow-hidden">
+            <ErrorBoundary name="Market Pulse">
+              <BorderMarketPulse />
+            </ErrorBoundary>
           </div>
 
           {/* CRITICAL CAMERA RAIL */}
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
-            <CriticalCameraRail />
+            <ErrorBoundary name="Camera Rail">
+              <CriticalCameraRail />
+            </ErrorBoundary>
           </div>
 
           {/* LIVE BORDER NEWS */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderNewsDesk />
+          <div className="w-[340px] max-xl:w-full shrink-0 grid-cell overflow-hidden">
+            <ErrorBoundary name="Border News Wire">
+              <BorderNewsDesk />
+            </ErrorBoundary>
           </div>
         </div>
 
@@ -140,11 +148,17 @@ function BorderDashboardSurface() {
         </div>
 
         {/* ROW 5: TIME MACHINE */}
-        <TimeMachine />
+        <ErrorBoundary name="Time Machine">
+          <TimeMachine />
+        </ErrorBoundary>
 
         {/* ROW 6: BORDER STATUS STRIP */}
-        <BorderStatusStrip brief={brief} />
+        <ErrorBoundary name="Border Status">
+          <BorderStatusStrip brief={brief} />
+        </ErrorBoundary>
       </div>
+
+      <div aria-live="polite" className="sr-only" id="live-announcer" />
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />

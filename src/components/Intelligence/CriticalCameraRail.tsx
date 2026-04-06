@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Camera, ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import type { PublicCamera } from "../../types/dashboard";
+import { CameraSkeleton } from "../Common/LoadingSkeleton";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useCriticalCameras } from "./useCriticalCameras";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
@@ -227,8 +228,10 @@ export default function CriticalCameraRail() {
             ))}
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center border border-white/10 bg-white/5">
-            <span className="eyebrow">Pulling public camera feeds</span>
+          <div className="flex gap-2 px-3 py-2">
+            <CameraSkeleton />
+            <CameraSkeleton />
+            <CameraSkeleton />
           </div>
         )}
       </div>

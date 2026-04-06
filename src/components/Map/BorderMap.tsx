@@ -541,7 +541,8 @@ export default function BorderMap({
     jumpToView(node.focusView as MapViewState);
   }, [jumpToView, operationsMap]);
 
-  const layers = useMemo(() => {
+  // Base map layers — change only when basemap selection changes
+  const baseLayers = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any[] = [];
 
@@ -567,7 +568,34 @@ export default function BorderMap({
       }
     }
 
-    // 4. Distance grid (from DrNon Toolkit)
+    return result.flat().filter(Boolean);
+  }, [activeBase, baseMapOpacity, activeOverlayIds]);
+
+  // Intelligence layers — change only when data changes
+  const intelligenceLayers = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
+
+    if (showRegionalFrame && regionBorders) {
+      result.push(createRegionalBorderLayer(regionBorders));
+    }
+    if (showZones && zones) result.push(createConflictZonesLayer(zones));
+    result.push(showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents, onProvinceSelect));
+    if (showFires) result.push(createFireLayer(fires));
+    if (showRefugees) result.push(createRefugeeLayer(refugees));
+    if (showFlights) result.push(createFlightPathsLayer(flights));
+    if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
+    if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
+
+    return result.flat().filter(Boolean);
+  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals]);
+
+  // UI/interaction layers — change on viewport (but these are lightweight)
+  const uiLayers = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
+
+    // Distance grid (from DrNon Toolkit)
     if (showGrid) {
       const gridBounds = {
         west: viewState.longitude - 6,
@@ -579,10 +607,6 @@ export default function BorderMap({
       if (gridLayer) result.push(gridLayer);
     }
 
-    // 5. Intelligence layers
-    if (showRegionalFrame && regionBorders) {
-      result.push(createRegionalBorderLayer(regionBorders));
-    }
     if (showOperationalSpines && operationsMap) {
       result.push(
         createOperationalCorridorLayers(
@@ -605,17 +629,13 @@ export default function BorderMap({
     if (showRoadAlerts && trafficIncidents.length > 0) {
       result.push(createTrafficIncidentLayers(trafficIncidents, viewState.zoom));
     }
-    if (showZones && zones) result.push(createConflictZonesLayer(zones));
-    result.push(showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents, onProvinceSelect));
-    if (showFires) result.push(createFireLayer(fires));
-    if (showRefugees) result.push(createRefugeeLayer(refugees));
-    if (showFlights) result.push(createFlightPathsLayer(flights));
-    if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
-    if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
     if (showLabels) result.push(createProvinceLabelsLayer());
 
     return result.flat().filter(Boolean);
-  }, [activeBase, baseMapOpacity, activeOverlayIds, showGrid, viewState.longitude, viewState.latitude, viewState.zoom, showRegionalFrame, regionBorders, showOperationalSpines, operationsMap, activeTheater, showOperationalNodes, selectedOperationalNodeId, showRoadAlerts, trafficIncidents, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showLabels]);
+  }, [viewState.longitude, viewState.latitude, viewState.zoom, showGrid, showOperationalSpines, operationsMap, activeTheater, showOperationalNodes, selectedOperationalNodeId, showRoadAlerts, trafficIncidents, showLabels]);
+
+  // Combine all layer groups
+  const layers = [...baseLayers, ...intelligenceLayers, ...uiLayers];
 
   const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;

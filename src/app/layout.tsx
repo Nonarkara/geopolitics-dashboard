@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
+import SkipLink from "../components/Common/SkipLink";
 
 const metadataBase = (() => {
   const candidate =
@@ -60,6 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="overflow-hidden antialiased">
+        <SkipLink />
         {children}
       </body>
     </html>

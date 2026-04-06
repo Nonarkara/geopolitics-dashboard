@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Newspaper, RefreshCw } from "lucide-react";
+import LoadingSkeleton from "../Common/LoadingSkeleton";
 import { fallbackNews } from "../../lib/mock-data";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
@@ -44,6 +45,8 @@ function formatHeaderTime(value: string) {
 export default function BorderNewsDesk() {
   const { timeWindow, buildUrl, isHistorical } = useTimeWindow();
   const [news, setNews] = useState<NewsResponse>(fallbackNews);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
     const load = async () => {
@@ -53,6 +56,7 @@ export default function BorderNewsDesk() {
 
         if (isNewsResponse(payload)) {
           setNews(payload);
+          if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
         }
       } catch {
         setNews(isHistorical ? { ...fallbackNews, news: [], mode: "historical-empty" } : fallbackNews);
@@ -86,6 +90,12 @@ export default function BorderNewsDesk() {
         </div>
       </div>
 
+      {!hasLoaded ? (
+        <div className="flex h-full flex-col gap-2 p-2.5">
+          <LoadingSkeleton variant="list" />
+          <LoadingSkeleton variant="list" count={3} className="space-y-1.5" />
+        </div>
+      ) : (
       <div className="min-h-0 flex-1 overflow-y-auto p-2.5 no-scrollbar">
         {isHistorical && timeWindow ? (
           <div className="mb-2 rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
@@ -246,6 +256,7 @@ export default function BorderNewsDesk() {
           </div>
         )}
       </div>
+      )}
     </section>
   );
 }
