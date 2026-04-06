@@ -18,6 +18,7 @@ JOB_SCRIPTS = OrderedDict(
         ("gkg", "gkg_ingest.py"),
         ("vessels", "vessel_ingest.py"),
         ("imf-dbnomics", "imf_dbnomics_ingest.py"),
+        ("sheets-sync", "sheets_sync.py"),
         ("daily-summary", "build_daily_summary.py"),
     ]
 )
