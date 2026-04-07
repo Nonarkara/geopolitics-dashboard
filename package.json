@@ -51,6 +51,7 @@
     "tailwindcss": "^4"
   },
   "devDependencies": {
+    "@netlify/plugin-nextjs": "^5.15.9",
     "@playwright/test": "^1.58.2",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
