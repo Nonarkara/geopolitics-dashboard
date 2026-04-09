@@ -7,15 +7,15 @@ import AnimatedNumber from "../Common/AnimatedNumber";
 import type {
   BorderAreaStatus,
   BorderCommandBrief,
+  CommodityPrice,
+  RegionalDisaster,
+  RiverDischarge,
   ScoreBreakdown,
+  SeismicEvent,
   TrafficIncident,
 } from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
-import type { CommodityPrice } from "../../app/api/border/commodities/route";
-import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
-import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { RegionalDisaster } from "../../app/api/border/disasters/route";
 import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
 import { useNow } from "../../hooks/useNow";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";

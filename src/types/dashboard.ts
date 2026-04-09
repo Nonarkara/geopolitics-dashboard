@@ -763,6 +763,52 @@ export interface VesselTrackingResponse {
   vesselCount: number;
 }
 
+/* ── Border Feed Types (shared across API routes + components) ── */
+
+export interface CommodityPrice {
+  id: string;
+  name: string;
+  nameEn: string;
+  price: number;
+  unit: string;
+  market: string;
+  date: string;
+}
+
+export interface RiverDischarge {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  currentDischarge: number;
+  forecastPeak: number;
+  forecastPeakDate: string;
+  trend: "rising" | "falling" | "stable";
+  riskLevel: "low" | "moderate" | "high" | "critical";
+}
+
+export interface SeismicEvent {
+  id: string;
+  magnitude: number;
+  place: string;
+  lat: number;
+  lng: number;
+  depth: number;
+  time: string;
+  url: string;
+}
+
+export interface RegionalDisaster {
+  id: string;
+  title: string;
+  type: string;
+  alertLevel: string;
+  lat: number;
+  lng: number;
+  date: string;
+  source: string;
+}
+
 export type MapOverlayKind = "raster" | "vector";
 export type MapOverlayFamily =
   | "imagery"

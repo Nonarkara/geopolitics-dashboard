@@ -20,11 +20,7 @@ import {
   Wheat,
   Zap,
 } from "lucide-react";
-import type { BorderCommandBrief, TrafficIncident } from "../../types/dashboard";
-import type { CommodityPrice } from "../../app/api/border/commodities/route";
-import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
-import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { RegionalDisaster } from "../../app/api/border/disasters/route";
+import type { BorderCommandBrief, CommodityPrice, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import {
   formatBangkokDayLabel,
