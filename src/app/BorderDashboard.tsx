@@ -45,7 +45,7 @@ function BorderDashboardSurface() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
-  const isStatic = typeof window !== "undefined" && window.location.hostname.endsWith(".github.io");
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
 
   const [brief, setBrief] = useState<BorderCommandBrief | null>(isStatic ? {
     generatedAt: new Date().toISOString(),

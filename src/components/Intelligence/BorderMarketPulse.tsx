@@ -68,7 +68,7 @@ export default function BorderMarketPulse() {
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
-  const isStatic = typeof window !== "undefined" && window.location.hostname.endsWith(".github.io");
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
   const [hasLoaded, setHasLoaded] = useState(isStatic);
   const hasLoadedRef = useRef(isStatic);
 

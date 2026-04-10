@@ -45,7 +45,7 @@ function formatHeaderTime(value: string) {
 export default function BorderNewsDesk() {
   const { timeWindow, buildUrl, isHistorical } = useTimeWindow();
   const [news, setNews] = useState<NewsResponse>(fallbackNews);
-  const isStatic = typeof window !== "undefined" && window.location.hostname.endsWith(".github.io");
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
   const [hasLoaded, setHasLoaded] = useState(isStatic);
   const hasLoadedRef = useRef(isStatic);
 
