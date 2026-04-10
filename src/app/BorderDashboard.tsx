@@ -121,10 +121,21 @@ function BorderDashboardSurface() {
           </aside>
 
           {/* CENTER: MAP */}
-          <div className="flex-1 min-w-0 grid-cell bg-[#111]" aria-label="Tactical map — Thailand tri-border region">
-            <ErrorBoundary name="Tactical Map Engine">
-              <BorderMap onProvinceSelect={setSelectedProvince} />
-            </ErrorBoundary>
+          <div className="flex-1 min-w-0 grid-cell bg-[#0a1628] relative overflow-hidden" aria-label="Tactical map — Thailand tri-border region">
+            {/* Static satellite image — always visible as background, covered by DeckGL when WebGL works */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=92,4,108,23&bboxSR=4326&size=1200,800&imageSR=4326&format=jpg&f=image"
+              alt="Thailand tri-border region"
+              className="absolute inset-0 w-full h-full object-cover opacity-60"
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/30 via-transparent to-[#08090e]/60 pointer-events-none z-[1]" />
+            <div className="absolute inset-0 z-[2]">
+              <ErrorBoundary name="Tactical Map Engine">
+                <BorderMap onProvinceSelect={setSelectedProvince} />
+              </ErrorBoundary>
+            </div>
           </div>
         </div>
 
