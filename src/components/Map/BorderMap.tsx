@@ -713,6 +713,7 @@ export default function BorderMap({
         }
         controller={true}
         layers={layers}
+        style={{ position: "absolute", inset: "0" }}
       >
         {hasMapboxToken ? (
           <MapboxMap
@@ -725,9 +726,7 @@ export default function BorderMap({
               [THAILAND_BORDER_BOUNDS.east, THAILAND_BORDER_BOUNDS.north],
             ]}
           />
-        ) : (
-          <div className="absolute inset-0 border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0)_100%)] pointer-events-none" />
-        )}
+        ) : null}
       </DeckGL>
 
       {/* ── Layer Control Panel ─────────────────────────────── */}

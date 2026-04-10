@@ -45,9 +45,27 @@ function BorderDashboardSurface() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
-  const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
+  const isStatic = typeof window !== "undefined" && window.location.hostname.endsWith(".github.io");
+
+  const [brief, setBrief] = useState<BorderCommandBrief | null>(isStatic ? {
+    generatedAt: new Date().toISOString(),
+    headline: "Static demo — connect to live database for real-time data",
+    summary: "This is a static preview of the Thailand Geopolitical Watch V6.0 dashboard. In production, this briefing updates every 60 seconds with live conflict, market, and environmental intelligence from 17 data sources across the Myanmar, Cambodia, and Malaysia frontiers.",
+    overallPosture: "watch" as const,
+    overallScore: 62,
+    overallScoreMethod: "weighted-composite",
+    areas: [
+      { id: "myanmar-frontier", label: "Myanmar Frontier", counterpart: "Myanmar military", posture: "priority" as const, score: 78, scoreBreakdown: { baseScore: 58, baseScoreRationale: "Chronic conflict baseline", contributions: [], rawTotal: 78, clampedScore: 78, formula: "base + factors" }, incidentCount: 4, fatalityCount: 2, verifiedCameras: 3, candidateCameras: 2, summary: "Elevated activity around Mae Sot / Myawaddy corridor", watchpoints: ["Conflict spillover", "Humanitarian pressure"], signals: [], recommendedAction: "Maintain heightened posture" },
+      { id: "cambodia-frontier", label: "Cambodia Frontier", counterpart: "Cambodia border", posture: "watch" as const, score: 50, scoreBreakdown: { baseScore: 34, baseScoreRationale: "Queue monitoring baseline", contributions: [], rawTotal: 50, clampedScore: 50, formula: "base + factors" }, incidentCount: 1, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Normal crossing pressure at Aranyaprathet-Poipet", watchpoints: ["Queue visibility", "Casino traffic"], signals: [], recommendedAction: "Standard monitoring" },
+      { id: "malaysia-frontier", label: "Malaysia Frontier", counterpart: "Malaysia border", posture: "watch" as const, score: 45, scoreBreakdown: { baseScore: 42, baseScoreRationale: "Southern corridor baseline", contributions: [], rawTotal: 45, clampedScore: 45, formula: "base + factors" }, incidentCount: 0, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Standard freight and passenger flow at Sadao", watchpoints: ["Freight pressure", "Security tempo"], signals: [], recommendedAction: "Routine observation" },
+    ],
+    topConcerns: [],
+    actionQueue: [],
+    sources: ["ACLED", "GDELT", "UNHCR", "Open-Meteo", "NASA FIRMS"],
+  } : null);
 
   useEffect(() => {
+    if (isStatic) return; // Skip API fetches on static export
     let active = true;
 
     const loadBrief = async () => {
