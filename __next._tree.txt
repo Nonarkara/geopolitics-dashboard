@@ -1,0 +1,2 @@
+:HL["/geopolitics-dashboard/_next/static/css/5dac0168b90500f8.css","style"]
+0:{"tree":{"name":"","param":null,"prefetchHints":16,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":0,"slots":null}}},"staleTime":300,"buildId":"fyl4nQBFdwnU8J4D9qMi0"}
