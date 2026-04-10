@@ -706,13 +706,29 @@ export default function BorderMap({
           ) : null}
         </div>
       </div>
+      {/* Static fallback map when no Mapbox token (GitHub Pages) */}
+      {!hasMapboxToken && (
+        <div className="absolute inset-0 z-0 overflow-hidden bg-[#0a1628]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=92,4,108,23&bboxSR=4326&size=1200,800&imageSR=4326&format=jpg&f=image"
+            alt="Thailand border region satellite imagery"
+            className="w-full h-full object-cover opacity-70"
+            loading="eager"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-[#08090e]/80" />
+          <div className="absolute bottom-4 left-4 text-[8px] font-mono uppercase tracking-widest text-white/20">
+            Static preview — ESRI World Imagery
+          </div>
+        </div>
+      )}
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: nv }) =>
           setViewState(clampViewState(nv as MapViewState, operationsMap))
         }
         controller={true}
-        layers={layers}
+        layers={hasMapboxToken ? layers : []}
         style={{ position: "absolute", inset: "0" }}
       >
         {hasMapboxToken ? (
