@@ -166,6 +166,9 @@ export function createRasterTileLayer({
   opacity?: number;
   onTileError?: (error: unknown) => void;
 }) {
+  // No custom getTileData — let Deck.gl's built-in loaders.gl ImageLoader
+  // handle tile fetching via <img> elements (bypasses CORS restrictions,
+  // works on GitHub Pages static export and all browsers).
   return new TileLayer({
     id,
     data,
@@ -174,35 +177,20 @@ export function createRasterTileLayer({
     tileSize: 256,
     opacity,
     onTileError,
-    getTileData: async (tile: TileDataRequest) => {
-      if (!tile.url) return null;
-      try {
-        const response = await fetch(tile.url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const blob = await response.blob();
-        return await createImageBitmap(blob);
-      } catch (e) {
-        if (onTileError) onTileError(e);
-        return null;
-      }
-    },
     renderSubLayers: (props) => {
-      const { data: image, tile, ...layerProps } = props;
-      const bounds = extractTileBounds(tile);
-
-      if (!image || !bounds) {
-        return null;
-      }
-
-      const { west, south, east, north } = bounds;
-      const layerId = typeof layerProps.id === "string" ? layerProps.id : id;
-
+      const { data: image, tile } = props;
+      if (!image || !tile) return null;
+      const { west, south, east, north } = tile.bbox as {
+        west: number;
+        south: number;
+        east: number;
+        north: number;
+      };
       return new BitmapLayer({
-        ...layerProps,
-        id: `${layerId}-bitmap`,
+        ...props,
+        id: `${id}-${tile.index.x}-${tile.index.y}-${tile.index.z}`,
         data: undefined,
         image,
-        opacity,
         bounds: [west, south, east, north],
       });
     },
