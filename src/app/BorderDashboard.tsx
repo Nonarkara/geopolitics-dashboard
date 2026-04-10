@@ -14,6 +14,7 @@ import DashboardArchitectureModal from "../components/Intelligence/DashboardArch
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
+import DashboardScaler from "../components/Common/DashboardScaler";
 import { TimeWindowProvider, useTimeWindow } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
@@ -95,7 +96,8 @@ function BorderDashboardSurface() {
   }, [buildUrl]);
 
   return (
-    <main id="dashboard-content" className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
+    <DashboardScaler>
+    <main id="dashboard-content" className="relative flex h-[1080px] w-[1920px] flex-col overflow-hidden bg-black theme-border">
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
@@ -200,5 +202,6 @@ function BorderDashboardSurface() {
         />
       ) : null}
     </main>
+    </DashboardScaler>
   );
 }
