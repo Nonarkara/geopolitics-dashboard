@@ -131,7 +131,26 @@ export default function TimeMachine() {
       </div>
 
       {/* CENTER: DAY CELLS */}
-      <div className="flex items-end gap-[2px] h-6 flex-1 justify-center">
+      <div
+        className="flex items-end gap-[2px] h-6 flex-1 justify-center"
+        role="listbox"
+        aria-label="Select historical date"
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            const currentIdx = selectedDate ? days.indexOf(selectedDate) : -1;
+            const nextIdx = e.key === "ArrowRight"
+              ? Math.min(days.length - 1, currentIdx + 1)
+              : Math.max(0, currentIdx - 1);
+            if (nextIdx >= 0 && nextIdx < days.length) {
+              selectBangkokDay(days[nextIdx]);
+              const container = e.currentTarget;
+              const buttons = container.querySelectorAll<HTMLButtonElement>('[role="option"]');
+              buttons[nextIdx]?.focus();
+            }
+          }
+        }}
+      >
         {days.map((day, i) => {
           const bucket = buckets[i];
           const count = bucket?.count ?? 0;
@@ -143,9 +162,11 @@ export default function TimeMachine() {
             <button
               key={day}
               type="button"
+              role="option"
               title={`${formatBangkokDayLabel(day)} — ${count} signals`}
               aria-label={`Replay ${formatBangkokDayLabel(day)}`}
-              aria-pressed={isSelected}
+              aria-selected={isSelected}
+              tabIndex={isSelected ? 0 : -1}
               data-testid={`time-machine-day-${day}`}
               className="group relative flex flex-col items-center justify-end w-[16px] h-full cursor-pointer"
               onClick={() => selectBangkokDay(day)}

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { query } from "./db";
 import { getErrorMessage } from "./errors";
+import { getTimeoutSignal } from "./http";
 import {
   loadCachedIntelligencePayload,
   storeCachedIntelligencePayload,
@@ -1317,10 +1318,7 @@ async function summarizeWithOpenAi(
           { role: "user", content: buildSummaryUserContent(definition, items) },
         ],
       }),
-      signal:
-        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-          ? (AbortSignal as any).timeout(timeoutMs)
-          : undefined,
+      signal: getTimeoutSignal(timeoutMs),
     });
 
     if (!response.ok) return null;
@@ -1356,10 +1354,7 @@ async function summarizeWithOllama(
           { role: "user", content: buildSummaryUserContent(definition, items) },
         ],
       }),
-      signal:
-        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-          ? (AbortSignal as any).timeout(timeoutMs)
-          : undefined,
+      signal: getTimeoutSignal(timeoutMs),
     });
 
     if (!response.ok) return null;

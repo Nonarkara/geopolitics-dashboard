@@ -1,6 +1,15 @@
 import path from "node:path";
 
+const isStaticExport = process.env.NEXT_OUTPUT === "export";
+
 const nextConfig = {
+  ...(isStaticExport
+    ? {
+        output: "export",
+        basePath: "/geopolitics-dashboard",
+        images: { unoptimized: true },
+      }
+    : {}),
   transpilePackages: [
     "@deck.gl/core",
     "@deck.gl/layers",
@@ -22,6 +31,8 @@ const nextConfig = {
       "",
     NEXT_PUBLIC_ENABLE_DATA_EXPLORER:
       process.env.NEXT_PUBLIC_ENABLE_DATA_EXPLORER ?? "",
+    NEXT_PUBLIC_STATIC_EXPORT:
+      process.env.NEXT_PUBLIC_STATIC_EXPORT ?? "",
   },
   async headers() {
     return [

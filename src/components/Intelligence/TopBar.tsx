@@ -56,21 +56,27 @@ export default function TopBar({
   }, []);
 
   return (
-    <header className="flex h-20 w-full items-stretch justify-between border-b border-white/10 bg-[#08090e] select-none">
-      <div className="flex items-center gap-4 border-r border-white/10 px-6">
-        <Shield size={20} className="text-[var(--accent)]" strokeWidth={3} />
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="text-[12px] font-black tracking-tight leading-none text-white/90">
+    <header className="flex h-20 w-full items-stretch justify-between border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(255,59,48,0.12),transparent_24%),linear-gradient(180deg,#08090e_0%,#090b11_100%)] select-none">
+      <div className="flex items-center gap-4 border-r border-white/10 px-5">
+        <div className="flex h-11 w-11 items-center justify-center border border-[rgba(255,59,48,0.22)] bg-[rgba(255,59,48,0.08)]">
+          <Shield size={18} className="text-[var(--accent)]" strokeWidth={3} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <div className="text-[13px] font-black tracking-[-0.02em] leading-none text-white/92">
               THAILAND GEOPOLITICAL WATCH
             </div>
             <DashboardVersionBadge className="border-white/15 text-white/60" />
           </div>
-          <div className="mt-1 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
-            Myanmar / Cambodia / Malaysia
+          <div className="mt-1 flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
+            <span>Myanmar</span>
+            <span className="h-[3px] w-[3px] bg-white/20" />
+            <span>Cambodia</span>
+            <span className="h-[3px] w-[3px] bg-white/20" />
+            <span>Southern theatre</span>
           </div>
         </div>
-        <div className="h-10 w-px bg-white/10 shrink-0" />
+        <div className="hidden 2xl:block h-10 w-px bg-white/10 shrink-0" />
         <LogoStrip />
       </div>
 
@@ -86,6 +92,9 @@ export default function TopBar({
             </span>
             <span className="text-[10px] font-black tabular-nums text-white/40">
               {brief ? <><AnimatedNumber value={brief.overallScore} format={(n) => Math.round(n).toString()} className="tabular-nums" />/100</> : "--/100"}
+            </span>
+            <span className="inline-flex items-center border border-white/10 bg-white/[0.04] px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/55">
+              {isHistorical ? "Archive playback" : "Live command"}
             </span>
             {isHistorical && timeWindow ? (
               <span className="inline-flex items-center border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.2)]">
@@ -132,7 +141,7 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-3 border-l border-white/10 px-6">
+      <div className="flex items-center gap-3 border-l border-white/10 px-5">
         <div className="text-right">
           <div className="text-[22px] font-black tracking-[-0.05em] tabular-nums text-white/90">
             {time}

@@ -9,7 +9,6 @@
 import { querySignals, detectEscalation } from "../../lib/signal-archive";
 import { query, isDatabaseConfigured } from "../../lib/db";
 import { generateNarrative } from "../../lib/ai-narrative";
-import { DASHBOARD_VERSION } from "../../lib/dashboard-version";
 
 interface MarketRow {
   label: string;
@@ -83,7 +82,10 @@ export default async function BriefingPage() {
       generatedAt: new Date().toISOString(),
       signalCount: 0,
     })),
-    querySignals({ from: from24h, limit: 10 }),
+    querySignals({ from: from24h, limit: 10 }).catch(() => ({
+      signals: [],
+      total: 0,
+    })),
     detectEscalation("myanmar-frontier"),
     detectEscalation("cambodia-frontier"),
     detectEscalation("malaysia-frontier"),
@@ -225,6 +227,7 @@ export default async function BriefingPage() {
         {/* STATIC MAP THUMBNAIL */}
         {mapboxToken && !mapboxToken.includes('your_') && (
           <div className="mb-8">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/100.85,14.2,5.5,0/800x400@2x?access_token=${mapboxToken}`}
               alt="Thailand border region"

@@ -111,7 +111,11 @@ function toneClasses(tone: ArchitectureLayerTone) {
 function stateBadgeClasses(value: string) {
   switch (value) {
     case "live":
+    case "healthy":
+    case "operational":
     case "configured":
+    case "vercel":
+    case "vercel-cron":
     case "secured":
       return "border-[#14532d] bg-[rgba(34,197,94,0.16)] text-[#86efac]";
     case "on_demand":
@@ -120,6 +124,8 @@ function stateBadgeClasses(value: string) {
       return "border-[#0f3d5e] bg-[rgba(14,165,233,0.14)] text-[#7dd3fc]";
     case "stale":
     case "limited":
+    case "degraded":
+    case "failing":
     case "fallback":
     case "missing":
     case "unprotected":
@@ -577,7 +583,7 @@ function RuntimeTab({
 
         {statusPayload ? (
           <>
-            <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            <div className="mt-4 grid gap-4 xl:grid-cols-4">
               <SummaryCard
                 icon={<Network size={18} />}
                 label="Runtime status"
@@ -595,6 +601,12 @@ function RuntimeTab({
                 label="Service flags"
                 value={String(Object.keys(statusPayload.services).length)}
                 helper="These flags capture security posture, optional integrations, and fail-safe switches."
+              />
+              <SummaryCard
+                icon={<RefreshCw size={18} />}
+                label="Cron groups"
+                value={`${statusPayload.crons?.filter((cron) => cron.state === "healthy").length ?? 0}/${statusPayload.crons?.length ?? 0}`}
+                helper="Grouped Vercel cron jobs are counted healthy only when the last recorded run is both recent and successful."
               />
             </div>
             <div className="mt-4 grid gap-4 xl:grid-cols-2">
@@ -618,6 +630,49 @@ function RuntimeTab({
                 </article>
               ))}
             </div>
+            {statusPayload.crons?.length ? (
+              <div className="mt-6">
+                <div className="eyebrow">Cron Freshness</div>
+                <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
+                  These grouped Vercel cron entries are the only supported production scheduler story. Missing or stale runs are treated as real degradation, not hidden behind cached success.
+                </p>
+                <div className="mt-4 grid gap-4 xl:grid-cols-2">
+                  {statusPayload.crons.map((cron) => (
+                    <article
+                      key={cron.id}
+                      className="rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                          <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                            {cron.label}
+                          </h3>
+                          <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">
+                            {cron.cadence}
+                          </p>
+                        </div>
+                        <span
+                          className={`rounded-sm border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
+                            cron.state,
+                          )}`}
+                        >
+                          {cron.state}
+                        </span>
+                      </div>
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Pill>Last {formatRuntimeTimestamp(cron.lastRunAt)}</Pill>
+                        {cron.ageMinutes !== null ? (
+                          <Pill>Age {formatRuntimeAge(cron.ageMinutes)}</Pill>
+                        ) : null}
+                      </div>
+                      <p className="mt-3 text-[12px] leading-5 text-[var(--muted)]">
+                        {cron.details}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div className="mt-6">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>

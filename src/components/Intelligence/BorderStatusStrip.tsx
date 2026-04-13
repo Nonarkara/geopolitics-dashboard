@@ -4,14 +4,18 @@ import { useCallback, useEffect, useState } from "react";
 import { RefreshCw, ExternalLink } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import AnimatedNumber from "../Common/AnimatedNumber";
-import type { BorderCommandBrief, BorderAreaStatus, ScoreBreakdown } from "../../types/dashboard";
+import type {
+  BorderAreaStatus,
+  BorderCommandBrief,
+  CommodityPrice,
+  RegionalDisaster,
+  RiverDischarge,
+  ScoreBreakdown,
+  SeismicEvent,
+  TrafficIncident,
+} from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
-import type { CommodityPrice } from "../../app/api/border/commodities/route";
-import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
-import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { TrafficIncident } from "../../app/api/border/traffic/route";
-import type { RegionalDisaster } from "../../app/api/border/disasters/route";
 import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
 import { useNow } from "../../hooks/useNow";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
@@ -79,6 +83,11 @@ function ScoreBar({ area, expanded, onToggle, history }: {
       </AnimatePresence>
       <div
         className="flex items-center gap-2 min-w-0 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-sm -mx-1 px-1"
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+        aria-expanded={expanded}
+        aria-label={`${label} score ${score} — click to ${expanded ? "collapse" : "expand"} breakdown`}
         onClick={onToggle}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
 import { fallbackTicker } from "../../lib/mock-data";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import type { TickerResponse } from "../../types/dashboard";
 
 function isTickerResponse(value: unknown): value is TickerResponse {
@@ -19,29 +20,44 @@ export default function SignalTicker({
 }: {
   endpoint?: string;
 }) {
+  const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
   const [ticker, setTicker] = useState<TickerResponse>(fallbackTicker);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch(endpoint, { cache: "no-store" });
+        const response = await fetch(buildUrl(endpoint), { cache: "no-store" });
         const payload: unknown = await response.json();
 
         if (isTickerResponse(payload)) {
           setTicker(payload);
         }
       } catch {
-        setTicker(fallbackTicker);
+        setTicker(isHistorical ? { ...fallbackTicker, items: [], mode: "historical-empty" } : fallbackTicker);
       }
     };
 
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [endpoint]);
+  }, [buildUrl, endpoint, isHistorical]);
+
+  if (ticker.items.length === 0) {
+    return (
+      <div
+        className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-white/55"
+        role="status"
+        aria-live="polite"
+      >
+        {ticker.mode === "historical-empty" && timeWindow
+          ? `No archived ticker snapshot for ${timeWindow.bangkokDay} ICT`
+          : "Synchronizing signal ticker"}
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center gap-0 animate-marquee whitespace-nowrap">
+    <div className="flex items-center gap-0 animate-marquee whitespace-nowrap" role="status" aria-live="polite">
       {[...ticker.items, ...ticker.items].map((item, idx) => {
         const Icon =
           item.tone === "up"

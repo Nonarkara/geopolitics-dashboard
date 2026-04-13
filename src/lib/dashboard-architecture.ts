@@ -190,13 +190,13 @@ export const architectureLayers: ArchitectureLayer[] = [
     title: "Storage and Cache Layer",
     tone: "storage",
     summary:
-      "Dual-storage architecture: PostgreSQL for analytical tables, Supabase for real-time news persistence and feed health telemetry.",
+      "Single-backbone architecture: Supabase Postgres stores operational state, history, refresh telemetry, and archival playback snapshots.",
     bullets: [
-      "Operational tables include `events`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
-      "Supabase stores `news_items`, `feed_health`, and `data_snapshots` with Realtime subscriptions for instant UI updates.",
-      "Intelligence and convergence use memory or hybrid cache paths to avoid hard failures during upstream outages.",
+      "Core tables include `events`, `fire_events`, `rainfall_data`, `market_data`, `macro_country_snapshots`, `air_quality_snapshots`, `country_economic_indicators`, `signal_archive`, `feed_health`, and `data_snapshots`.",
+      "Realtime and snapshot telemetry still live inside the same Supabase project rather than in a second production store.",
+      "Intelligence and convergence can still keep memory-backed stale-safe payloads, but production truth is written back to Postgres-first tables.",
       "Static assets include regional GeoJSON, manual screenshots, and deterministic overlay catalogs.",
-      "Graceful degradation: dashboard operates identically when Supabase env vars are not configured.",
+      "Graceful degradation is still available for local development, but production posture assumes the Supabase backbone is configured.",
     ],
   },
   {
@@ -262,20 +262,21 @@ export const resiliencePatterns = [
   "Every external fetch path is wrapped with a timeout and a fallback branch.",
   "Mapbox is optional. The map uses a 7-level basemap fallback chain (Mapbox → OSM → LongDo → ESRI → CartoDB → Stadia → gradient) from the DrNon Global Satellite Toolkit.",
   "Intelligence and convergence can serve cached or synthesized payloads when feeds fail.",
-  "Database-backed routes degrade to mock snapshots instead of returning empty screens.",
+  "Playback routes fail closed on invalid windows and storage failures instead of silently leaking live data.",
+  "Grouped Vercel cron routes record their own freshness snapshots so scheduler health is observable in `/api/status`.",
   "Overlay metadata is generated locally, so control surfaces stay usable even when imagery providers are slow.",
   "V5.0 real-time refresh: shared useFetch hook exposes isRefreshing, lastRefreshed, and manual refresh. Bottom strip shows live feed health with per-source status dots.",
-  "Supabase is optional: all Supabase calls no-op gracefully when env vars are not configured. Dashboard works identically without it.",
+  "Supabase remains the single production backbone; missing config is treated as a degraded local-only posture, not an equivalent production mode.",
 ];
 
 export const storageNotes = [
   "Primary analytical storage: Postgres via `query()` in `src/lib/db.ts`.",
-  "Primary operational tables: `events`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache, `market_data`, `air_quality_snapshots`, and `macro_country_snapshots`.",
-  "Supplementary real-time storage: Supabase for `news_items`, `feed_health`, `data_snapshots` with Realtime subscriptions.",
+  "Primary operational tables: `events`, `fire_events`, `rainfall_data`, `market_data`, `air_quality_snapshots`, `macro_country_snapshots`, `country_economic_indicators`, `signal_archive`, `feed_health`, and `data_snapshots`.",
+  "Supplementary live features such as Realtime still run inside the same Supabase project rather than a second production data tier.",
   "Hybrid caches: intelligence cache and area convergence snapshots.",
   "Static assets: `public/data/*.geojson`, `public/manual/*`, and generated overlay catalog metadata.",
-  "Runtime feature gates: `DATABASE_URL`, `REFERENCE_DASHBOARD_URL`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `OPENAI_API_KEY`.",
-  "Optional Supabase gates: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.",
+  "Runtime feature gates: `DATABASE_URL`, `CRON_SECRET`, `REFERENCE_DASHBOARD_URL`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `OPENAI_API_KEY`.",
+  "Supabase gates: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.",
 ];
 
 export const internalApiCategoryOrder: InternalApiCategory[] = [
@@ -292,10 +293,40 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     path: "/api/status",
     category: "System",
     purpose:
-      "Reports runtime posture for database, basemap, reference dashboard, cache mode, and AI summary configuration.",
+      "Reports Vercel-first runtime posture for app health, database readiness, grouped cron freshness, per-dataset freshness, fallback posture, and AI summary configuration.",
     consumers: ["Architecture modal", "ops diagnostics", "external health checks"],
-    upstreams: ["Environment configuration", "Mapbox token guard"],
-    fallback: "Returns service states such as `fallback` or `missing` instead of failing.",
+    upstreams: ["Environment configuration", "Mapbox token guard", "data_snapshots", "feed_health"],
+    fallback: "Returns a degraded but truthful runtime envelope with `no-store` semantics instead of caching stale success.",
+  },
+  {
+    path: "/api/cron/conflict-intel",
+    category: "System",
+    purpose:
+      "Grouped Vercel-cron entrypoint that warms command brief, border OSINT, news, ticker, and intelligence package caches.",
+    consumers: ["Vercel Cron", "operators triggering controlled warmups"],
+    upstreams: ["Internal intelligence and border routes"],
+    fallback:
+      "Requires `Authorization: Bearer ${CRON_SECRET}` in production and records success or failure in `data_snapshots` plus `feed_health`.",
+  },
+  {
+    path: "/api/cron/environment-thermal",
+    category: "System",
+    purpose:
+      "Grouped Vercel-cron entrypoint that refreshes environment, disaster, and thermal surfaces.",
+    consumers: ["Vercel Cron"],
+    upstreams: ["Internal environment and disaster routes"],
+    fallback:
+      "Records scheduler truth in `data_snapshots` instead of hiding freshness gaps.",
+  },
+  {
+    path: "/api/cron/markets-macro",
+    category: "System",
+    purpose:
+      "Grouped Vercel-cron entrypoint that warms market, macro, and commodity surfaces backed by stored snapshots.",
+    consumers: ["Vercel Cron"],
+    upstreams: ["Internal market and commodity routes"],
+    fallback:
+      "Records partial failure details in the cron payload instead of pretending the whole group refreshed cleanly.",
   },
   {
     path: "/api/sources",
@@ -470,7 +501,7 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
       "Postgres `market_data` and `macro_country_snapshots`",
     ],
     fallback:
-      "Returns the latest stored market and macro snapshots when live feeds fail, then falls back to packaged market and ASEAN GDP values.",
+      "Returns the latest stored market and macro snapshots when live feeds fail and otherwise fails closed with a 503 instead of serving packaged demo indicators.",
   },
   {
     path: "/api/economics",
@@ -507,7 +538,8 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
       "Builds the border news desk from GDELT narrative matches, UNHCR displacement context, field incidents, and markets.",
     consumers: ["BorderNewsDesk"],
     upstreams: ["Border OSINT cache", "border incidents", "reference markets"],
-    fallback: "Returns `fallbackNews` if border curation fails.",
+    fallback:
+      "Historical mode serves archive snapshots, and live mode fails closed on real backend failure instead of returning packaged demo headlines.",
   },
   {
     path: "/api/border/ticker",
@@ -516,7 +548,8 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
       "Builds the tri-border ticker with FX, field pressure, narrative volume, and humanitarian context.",
     consumers: ["SignalTicker"],
     upstreams: ["Border OSINT cache", "border incidents", "reference markets"],
-    fallback: "Returns `fallbackTicker` if border ticker synthesis fails.",
+    fallback:
+      "Historical mode serves archive snapshots, and live mode fails closed on real backend failure instead of returning packaged demo ticker items.",
   },
   {
     path: "/api/border-command/brief",
@@ -1167,13 +1200,12 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
   },
   {
     id: "supabase",
-    label: "Supabase (Realtime + Storage)",
-    category: "Optional",
+    label: "Supabase Postgres Backbone",
+    category: "Research & Reference",
     description:
-      "Optional real-time persistence layer for news items, feed health telemetry, and data snapshots. Enables Supabase Realtime subscriptions for instant dashboard updates.",
-    surfaces: ["News desk (Realtime)", "bottom status strip (feed health)", "data persistence"],
+      "Primary production database for operational tables, archives, scheduler telemetry, and optional realtime subscriptions. This is the single source of truth for deployment-grade data.",
+    surfaces: ["Data persistence", "feed health", "scheduler telemetry", "historical playback"],
     endpoints: ["NEXT_PUBLIC_SUPABASE_URL (configured per deployment)"],
-    optional: true,
   },
   {
     id: "longdo-traffic",

@@ -2,32 +2,61 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { MapViewState } from "@deck.gl/core";
-import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
+import { luma } from "@luma.gl/core";
+import { webgl2Adapter } from "@luma.gl/webgl";
 import {
-  Globe, Layers, Flame, Maximize2, Compass, Zap, Eye, Plane, Users, Target, Check, Grid3x3, Ship, Radio
+  Building2, Check, Compass, Eye, Flame, Globe, Grid3x3, Layers, MapPinned, Maximize2, Plane, Radio, Route, Ship, Target, Truck, Users, Zap
 } from "lucide-react";
 import CommandTooltip from "../Common/CommandTooltip";
 import { BASE_MAP_TOOLTIPS, OVERLAY_TOOLTIPS, INTEL_TOGGLE_TOOLTIPS } from "../../lib/tooltip-catalog";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import { formatBangkokDayLabel } from "../../lib/time-window";
 import {
-  createFireLayer, createHeatmapLayer, createIncidentLayer, createRasterTileLayer, createGIBSLayer, createFlightPathsLayer, createRefugeeLayer, createConflictZonesLayer, createProvinceLabelsLayer, createKilometerGridLayer, createVesselLayer, createSignalPulseLayer
+  createConflictZonesLayer,
+  createFireLayer,
+  createFlightPathsLayer,
+  createGIBSLayer,
+  createHeatmapLayer,
+  createIncidentLayer,
+  createKilometerGridLayer,
+  createOperationalCorridorLayers,
+  createOperationalNodeLayers,
+  createProvinceLabelsLayer,
+  createRasterTileLayer,
+  createRefugeeLayer,
+  createRegionalBorderLayer,
+  createSignalPulseLayer,
+  createTrafficIncidentLayers,
+  createVesselLayer,
 } from "../../services/map-engine";
 import type {
+  BorderOperationalMapResponse,
+  ConflictZoneCollection,
   DashboardDatasetStatus,
   DashboardStatusPayload,
   FireEvent,
   IncidentFeature,
+  RegionBorderCollection,
+  TrafficIncident,
   ProvinceSelection,
   FlightData,
   RefugeeMovement,
-  ConflictZoneCollection,
   VesselPosition,
 } from "../../types/dashboard";
+import { haversineKm } from "../../lib/border-regions";
 import { getUsableMapboxToken } from "../../lib/mapbox";
+import { resolveAppUrl } from "../../lib/app-url";
 
+const DeckGL = dynamic(
+  () => import("@deck.gl/react").then((module) => module.default),
+  { ssr: false },
+);
 const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
 const RAW_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 const MAPBOX_TOKEN = getUsableMapboxToken(RAW_TOKEN);
+
+luma.registerAdapters([webgl2Adapter]);
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85, latitude: 14.2, zoom: 6.25, pitch: 40, bearing: 0,
@@ -37,20 +66,131 @@ const THAILAND_BORDER_BOUNDS = {
   west: 94.5, east: 107.5, south: 4.5, north: 22.5,
 } as const;
 const MIN_BORDER_ZOOM = 5.6;
-const MAX_BORDER_ZOOM = 12.5;
+const GENERAL_MAX_BORDER_ZOOM = 12.5;
+const DEEP_MAX_BORDER_ZOOM = 15.8;
+const DEEP_ZOOM_NODE_RADIUS_KM = 55;
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(maximum, Math.max(minimum, value));
 }
 
-function clampViewState(viewState: MapViewState): MapViewState {
+function isRegionBorderCollection(value: unknown): value is RegionBorderCollection {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    (value as { type?: string }).type === "FeatureCollection" &&
+    "features" in value &&
+    Array.isArray((value as { features?: unknown[] }).features)
+  );
+}
+
+function isConflictZoneCollection(value: unknown): value is ConflictZoneCollection {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "type" in value &&
+    (value as { type?: string }).type === "FeatureCollection" &&
+    "features" in value &&
+    Array.isArray((value as { features?: unknown[] }).features)
+  );
+}
+
+function isTrafficIncident(value: unknown): value is TrafficIncident {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof (value as { id?: unknown }).id === "string" &&
+    "lat" in value &&
+    typeof (value as { lat?: unknown }).lat === "number" &&
+    "lng" in value &&
+    typeof (value as { lng?: unknown }).lng === "number" &&
+    "category" in value &&
+    typeof (value as { category?: unknown }).category === "string"
+  );
+}
+
+function isBorderOperationalMapResponse(
+  value: unknown,
+): value is BorderOperationalMapResponse {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "theaters" in value &&
+    Array.isArray((value as { theaters?: unknown[] }).theaters) &&
+    "nodes" in value &&
+    Array.isArray((value as { nodes?: unknown[] }).nodes) &&
+    "corridors" in value &&
+    Array.isArray((value as { corridors?: unknown[] }).corridors) &&
+    "nationalView" in value &&
+    typeof (value as { nationalView?: unknown }).nationalView === "object" &&
+    value !== null
+  );
+}
+
+function resolveViewportMaxZoom(
+  viewState: Pick<MapViewState, "longitude" | "latitude">,
+  operationsMap: BorderOperationalMapResponse | null,
+) {
+  if (!operationsMap) {
+    return GENERAL_MAX_BORDER_ZOOM;
+  }
+
+  const center: [number, number] = [viewState.longitude, viewState.latitude];
+
+  for (const node of operationsMap.nodes) {
+    if (
+      node.allowsDeepZoom &&
+      haversineKm(center, node.coordinates) <= DEEP_ZOOM_NODE_RADIUS_KM
+    ) {
+      return DEEP_MAX_BORDER_ZOOM;
+    }
+  }
+
+  for (const theater of operationsMap.theaters) {
+    const theaterCenter: [number, number] = [
+      theater.focusView.longitude,
+      theater.focusView.latitude,
+    ];
+
+    if (haversineKm(center, theaterCenter) <= theater.deepZoomRadiusKm) {
+      return clamp(theater.deepZoom, GENERAL_MAX_BORDER_ZOOM, DEEP_MAX_BORDER_ZOOM);
+    }
+  }
+
+  return GENERAL_MAX_BORDER_ZOOM;
+}
+
+function clampViewState(
+  viewState: MapViewState,
+  operationsMap: BorderOperationalMapResponse | null = null,
+): MapViewState {
   return {
     ...viewState,
     longitude: clamp(viewState.longitude, THAILAND_BORDER_BOUNDS.west, THAILAND_BORDER_BOUNDS.east),
     latitude: clamp(viewState.latitude, THAILAND_BORDER_BOUNDS.south, THAILAND_BORDER_BOUNDS.north),
-    zoom: clamp(viewState.zoom, MIN_BORDER_ZOOM, MAX_BORDER_ZOOM),
+    zoom: clamp(
+      viewState.zoom,
+      MIN_BORDER_ZOOM,
+      resolveViewportMaxZoom(viewState, operationsMap),
+    ),
     pitch: clamp(viewState.pitch ?? INITIAL_VIEW_STATE.pitch ?? 0, 0, 60),
   };
+}
+
+async function fetchJson<T>(url: string, fallback: T): Promise<T> {
+  try {
+    const response = await fetch(resolveAppUrl(url), { cache: "no-store" });
+
+    if (!response.ok) {
+      return fallback;
+    }
+
+    return (await response.json()) as T;
+  } catch {
+    return fallback;
+  }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -241,15 +381,24 @@ function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: stri
 
 export default function BorderMap({
   onProvinceSelect,
+  flyToTheater,
 }: {
   onProvinceSelect?: (p: ProvinceSelection) => void;
+  flyToTheater?: string | null;
 }) {
-  const [viewState, setViewState] = useState(() => clampViewState(INITIAL_VIEW_STATE));
+  const { isHistorical, timeWindow } = useTimeWindow();
+  const [viewState, setViewState] = useState(() =>
+    clampViewState(INITIAL_VIEW_STATE, null),
+  );
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [showFires, setShowFires] = useState(true);
   const [showFlights, setShowFlights] = useState(true);
   const [showRefugees, setShowRefugees] = useState(true);
   const [showZones, setShowZones] = useState(true);
+  const [showRegionalFrame, setShowRegionalFrame] = useState(true);
+  const [showOperationalSpines, setShowOperationalSpines] = useState(true);
+  const [showOperationalNodes, setShowOperationalNodes] = useState(true);
+  const [showRoadAlerts, setShowRoadAlerts] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [showGrid, setShowGrid] = useState(false);
   const [showVessels, setShowVessels] = useState(false);
@@ -257,13 +406,20 @@ export default function BorderMap({
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
+  const [activeTheaterId, setActiveTheaterId] = useState<
+    "national" | "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south"
+  >("national");
+  const [selectedOperationalNodeId, setSelectedOperationalNodeId] = useState<string | null>(null);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
   const [flights, setFlights] = useState<FlightData[]>([]);
   const [refugees, setRefugees] = useState<RefugeeMovement[]>([]);
+  const [regionBorders, setRegionBorders] = useState<RegionBorderCollection | null>(null);
   const [zones, setZones] = useState<ConflictZoneCollection | null>(null);
   const [vessels, setVessels] = useState<VesselPosition[]>([]);
+  const [trafficIncidents, setTrafficIncidents] = useState<TrafficIncident[]>([]);
+  const [operationsMap, setOperationsMap] = useState<BorderOperationalMapResponse | null>(null);
   const [recentSignals, setRecentSignals] = useState<{ id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[]>([]);
   const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
 
@@ -272,27 +428,43 @@ export default function BorderMap({
   useEffect(() => {
     const load = async () => {
       try {
-        const [inc, fir, flt, ref, zn, runtimeStatus, ves, sig] = await Promise.all([
-          fetch("/api/border/incidents", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
-          fetch("/api/fires", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
-          fetch("/api/flights", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
-          fetch("/api/border/movements", { cache: 'no-store' }).then(res => res.json()).catch(() => []),
-          fetch("/api/map/overlays", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
-          fetch("/api/status", { cache: 'no-store' }).then(res => res.json()).catch(() => null),
-          fetch("/api/border/vessels", { cache: 'no-store' }).then(res => res.json()).catch(() => ({ vessels: [] })),
-          fetch(`/api/research/signals?from=${new Date(Date.now() - 86400000).toISOString()}&limit=100`, { cache: 'no-store' }).then(res => res.json()).catch(() => ({ signals: [] })),
+        const [inc, fir, flt, ref, borders, zn, runtimeStatus, ves, traffic, operations, sig] = await Promise.all([
+          fetchJson<IncidentFeature[]>("/api/border/incidents", []),
+          fetchJson<FireEvent[]>("/api/fires", []),
+          fetchJson<FlightData[]>("/api/flights", []),
+          fetchJson<RefugeeMovement[]>("/api/border/movements", []),
+          fetchJson<unknown>("/data/region_borders.geojson", null),
+          fetchJson<unknown>("/data/conflict_zones.geojson", null),
+          fetchJson<unknown>("/api/status", null),
+          fetchJson<{ vessels?: VesselPosition[] }>("/api/border/vessels", { vessels: [] }),
+          fetchJson<unknown>("/api/border/traffic", []),
+          fetchJson<unknown>("/api/border/operations-map", null),
+          fetchJson<{ signals?: { id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[] }>(
+            `/api/research/signals?from=${new Date(Date.now() - 86400000).toISOString()}&limit=100`,
+            { signals: [] },
+          ),
         ]);
-        setIncidents(inc || []);
-        setFires(fir || []);
-        setFlights(flt || []);
-        setRefugees(ref || []);
-        setZones(zn || null);
+
+        setIncidents(Array.isArray(inc) ? inc : []);
+        setFires(Array.isArray(fir) ? fir : []);
+        setFlights(Array.isArray(flt) ? flt : []);
+        setRefugees(Array.isArray(ref) ? ref : []);
+        setRegionBorders(isRegionBorderCollection(borders) ? borders : null);
+        setZones(isConflictZoneCollection(zn) ? zn : null);
         setVessels(ves?.vessels || []);
+        setTrafficIncidents(
+          Array.isArray(traffic)
+            ? traffic.filter(isTrafficIncident)
+            : [],
+        );
+        setOperationsMap(
+          isBorderOperationalMapResponse(operations) ? operations : null,
+        );
         setRecentSignals((sig?.signals || []).filter((s: { lat?: number; lng?: number }) => s.lat && s.lng));
         setFeedAlerts(
           buildFeedAlerts(
             isDashboardStatusPayload(runtimeStatus) ? runtimeStatus : null,
-            ["conflict_events", "fires"],
+            ["conflict_events", "fires", "traffic"],
           ),
         );
       } catch (e) {
@@ -314,8 +486,80 @@ export default function BorderMap({
   }, []);
 
   const activeBase = useMemo(() => BASE_MAPS.find(b => b.id === activeBaseId) || BASE_MAPS[0], [activeBaseId]);
+  const activeTheater = useMemo(
+    () =>
+      activeTheaterId === "national"
+        ? null
+        : operationsMap?.theaters.find((theater) => theater.id === activeTheaterId) ?? null,
+    [activeTheaterId, operationsMap],
+  );
+  const focusNodes = useMemo(() => {
+    if (!operationsMap) {
+      return [];
+    }
 
-  const layers = useMemo(() => {
+    if (activeTheaterId === "national") {
+      return operationsMap.nodes.filter((node) => node.emphasis === "primary");
+    }
+
+    return operationsMap.nodes.filter((node) => node.theaterId === activeTheaterId);
+  }, [activeTheaterId, operationsMap]);
+  const selectedOperationalNode = useMemo(
+    () =>
+      operationsMap?.nodes.find((node) => node.id === selectedOperationalNodeId) ?? null,
+    [operationsMap, selectedOperationalNodeId],
+  );
+  const deepZoomUnlocked = useMemo(
+    () => resolveViewportMaxZoom(viewState, operationsMap) > GENERAL_MAX_BORDER_ZOOM,
+    [viewState, operationsMap],
+  );
+
+  const jumpToView = useCallback(
+    (nextView: MapViewState) => {
+      setViewState(clampViewState(nextView, operationsMap));
+    },
+    [operationsMap],
+  );
+
+  const focusNationalFrame = useCallback(() => {
+    setActiveTheaterId("national");
+    setSelectedOperationalNodeId(null);
+    jumpToView((operationsMap?.nationalView ?? INITIAL_VIEW_STATE) as MapViewState);
+  }, [jumpToView, operationsMap]);
+
+  const focusTheater = useCallback((theaterId: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south") => {
+    const theater = operationsMap?.theaters.find((item) => item.id === theaterId);
+
+    if (!theater) {
+      return;
+    }
+
+    setActiveTheaterId(theater.id);
+    setSelectedOperationalNodeId(null);
+    jumpToView(theater.focusView as MapViewState);
+  }, [jumpToView, operationsMap]);
+
+  // Handle external fly-to-theater requests from TheaterPanel clicks
+  useEffect(() => {
+    if (flyToTheater) {
+      focusTheater(flyToTheater as "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south");
+    }
+  }, [flyToTheater, focusTheater]);
+
+  const focusNode = useCallback((nodeId: string) => {
+    const node = operationsMap?.nodes.find((item) => item.id === nodeId);
+
+    if (!node) {
+      return;
+    }
+
+    setActiveTheaterId(node.theaterId);
+    setSelectedOperationalNodeId(node.id);
+    jumpToView(node.focusView as MapViewState);
+  }, [jumpToView, operationsMap]);
+
+  // Base map layers — change only when basemap selection changes
+  const baseLayers = useMemo(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result: any[] = [];
 
@@ -341,7 +585,34 @@ export default function BorderMap({
       }
     }
 
-    // 4. Distance grid (from DrNon Toolkit)
+    return result.flat().filter(Boolean);
+  }, [activeBase, baseMapOpacity, activeOverlayIds]);
+
+  // Intelligence layers — change only when data changes
+  const intelligenceLayers = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
+
+    if (showRegionalFrame && regionBorders) {
+      result.push(createRegionalBorderLayer(regionBorders));
+    }
+    if (showZones && zones) result.push(createConflictZonesLayer(zones));
+    result.push(showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents, onProvinceSelect));
+    if (showFires) result.push(createFireLayer(fires));
+    if (showRefugees) result.push(createRefugeeLayer(refugees));
+    if (showFlights) result.push(createFlightPathsLayer(flights));
+    if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
+    if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
+
+    return result.flat().filter(Boolean);
+  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals]);
+
+  // UI/interaction layers — change on viewport (but these are lightweight)
+  const uiLayers = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any[] = [];
+
+    // Distance grid (from DrNon Toolkit)
     if (showGrid) {
       const gridBounds = {
         west: viewState.longitude - 6,
@@ -353,34 +624,56 @@ export default function BorderMap({
       if (gridLayer) result.push(gridLayer);
     }
 
-    // 5. Intelligence layers
-    if (showZones && zones) result.push(createConflictZonesLayer(zones));
-    result.push(showHeatmap ? createHeatmapLayer(incidents) : createIncidentLayer(incidents, onProvinceSelect));
-    if (showFires) result.push(createFireLayer(fires));
-    if (showRefugees) result.push(createRefugeeLayer(refugees));
-    if (showFlights) result.push(createFlightPathsLayer(flights));
-    if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
-    if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
+    if (showOperationalSpines && operationsMap) {
+      result.push(
+        createOperationalCorridorLayers(
+          operationsMap.corridors,
+          viewState.zoom,
+          activeTheater?.id ?? null,
+        ),
+      );
+    }
+    if (showOperationalNodes && operationsMap) {
+      result.push(
+        createOperationalNodeLayers(
+          operationsMap.nodes,
+          viewState.zoom,
+          activeTheater?.id ?? null,
+          selectedOperationalNodeId,
+        ),
+      );
+    }
+    if (showRoadAlerts && trafficIncidents.length > 0) {
+      result.push(createTrafficIncidentLayers(trafficIncidents, viewState.zoom));
+    }
     if (showLabels) result.push(createProvinceLabelsLayer());
 
     return result.flat().filter(Boolean);
-  }, [activeBase, baseMapOpacity, activeOverlayIds, showGrid, viewState.longitude, viewState.latitude, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showLabels]);
+  }, [viewState.longitude, viewState.latitude, viewState.zoom, showGrid, showOperationalSpines, operationsMap, activeTheater, showOperationalNodes, selectedOperationalNodeId, showRoadAlerts, trafficIncidents, showLabels]);
 
-  const activeLayersCount = [showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
+  // Combine all layer groups
+  const layers = [...baseLayers, ...intelligenceLayers, ...uiLayers];
+
+  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
     setShowHeatmap(false);
-    setShowFires(false);
-    setShowFlights(false);
-    setShowRefugees(false);
-    setShowZones(false);
-    setShowLabels(false);
+    setShowFires(true);
+    setShowFlights(true);
+    setShowRefugees(true);
+    setShowZones(true);
+    setShowRegionalFrame(true);
+    setShowOperationalSpines(true);
+    setShowOperationalNodes(true);
+    setShowRoadAlerts(true);
+    setShowLabels(true);
     setShowGrid(false);
     setShowVessels(false);
     setShowSignalPulse(false);
     setActiveOverlayIds(new Set());
     setActiveBaseId("ESRI");
+    focusNationalFrame();
   };
 
   // Group overlays by category for display
@@ -405,34 +698,39 @@ export default function BorderMap({
         }}
       />
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute left-[25%] top-[23%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
-          Mae Sot
-        </div>
-        <div className="absolute left-[69%] top-[48%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
-          Aranyaprathet
-        </div>
-        <div className="absolute left-[56%] top-[73%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
-          Sadao
-        </div>
-        <div className="absolute right-6 top-6 max-w-[220px] border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
+        <div className="absolute right-6 top-6 max-w-[260px] border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
           <div className="text-[8px] font-black uppercase tracking-[0.22em] text-white/45">
-            Thailand Border Focus
+            Tri-Border Operations
           </div>
           <div className="mt-1 font-black uppercase tracking-[0.08em] text-white">
-            Myanmar / Cambodia / Malaysia
+            {selectedOperationalNode?.label ?? activeTheater?.label ?? "Thailand / neighbor frame"}
           </div>
           <div className="mt-1">
-            Powered by DrNon Global Satellite Toolkit — {BASE_MAPS.length} basemaps, {DATA_OVERLAYS.length} overlays.
+            {selectedOperationalNode?.usage ?? activeTheater?.summary ?? "Zoom guardrails stay tight until the viewport reaches a real conflict theater or SEZ."}
           </div>
+          <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black uppercase tracking-[0.14em]">
+            <span className={`border px-2 py-1 ${deepZoomUnlocked ? "border-[#f97316]/40 bg-[#f97316]/10 text-[#fdba74]" : "border-white/10 bg-white/5 text-white/45"}`}>
+              {deepZoomUnlocked ? "Deep zoom unlocked" : "Strategic frame only"}
+            </span>
+            <span className="border border-white/10 bg-white/5 px-2 py-1 text-white/55">
+              Max zoom {resolveViewportMaxZoom(viewState, operationsMap).toFixed(1)}x
+            </span>
+          </div>
+          {isHistorical && timeWindow ? (
+            <div className="mt-2 border-t border-white/10 pt-2 text-[8px] font-black uppercase tracking-[0.18em] text-[#fda4af]">
+              Map and overlay feeds stay live during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}.
+            </div>
+          ) : null}
         </div>
       </div>
       <DeckGL
         viewState={viewState}
         onViewStateChange={({ viewState: nv }) =>
-          setViewState(clampViewState(nv as MapViewState))
+          setViewState(clampViewState(nv as MapViewState, operationsMap))
         }
         controller={true}
         layers={layers}
+        style={{ position: "absolute", inset: "0" }}
       >
         {hasMapboxToken ? (
           <MapboxMap
@@ -445,13 +743,75 @@ export default function BorderMap({
               [THAILAND_BORDER_BOUNDS.east, THAILAND_BORDER_BOUNDS.north],
             ]}
           />
-        ) : (
-          <div className="absolute inset-0 border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.02)_0%,rgba(255,255,255,0)_100%)] pointer-events-none" />
-        )}
+        ) : null}
       </DeckGL>
 
       {/* ── Layer Control Panel ─────────────────────────────── */}
       <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 w-72">
+
+        <div className="bg-white border border-black overflow-hidden">
+          <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
+            <MapPinned size={11} className="text-[var(--accent)]" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operations Focus</span>
+            <span className="text-[8px] font-mono opacity-40 ml-auto">
+              {activeTheater?.counterpart ?? "THA+"}
+            </span>
+          </div>
+          <div className="grid grid-cols-2 gap-[1px] bg-black/10 p-[1px]">
+            <button
+              onClick={focusNationalFrame}
+              className={`px-2 py-2 text-left transition-all ${activeTheaterId === "national" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+            >
+              <div className="text-[9px] font-black uppercase tracking-[0.14em]">National frame</div>
+              <div className="mt-0.5 text-[6px] uppercase tracking-[0.18em] opacity-50">
+                Thailand + neighbors only
+              </div>
+            </button>
+            {(operationsMap?.theaters ?? []).map((theater) => (
+              <button
+                key={theater.id}
+                onClick={() => focusTheater(theater.id)}
+                className={`px-2 py-2 text-left transition-all ${activeTheaterId === theater.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+              >
+                <div className="text-[9px] font-black uppercase tracking-[0.14em]">{theater.label}</div>
+                <div className="mt-0.5 text-[6px] uppercase tracking-[0.18em] opacity-50">
+                  {theater.counterpart} theater
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="border-t border-black/10 px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-[7px] font-black uppercase tracking-[0.22em] opacity-40">
+                Deep zoom gates
+              </div>
+              <div className={`text-[7px] font-black uppercase tracking-[0.18em] ${deepZoomUnlocked ? "text-[#ea580c]" : "text-black/35"}`}>
+                {deepZoomUnlocked ? "unlocked" : "locked"}
+              </div>
+            </div>
+            <div className="mt-2 grid grid-cols-2 gap-[1px] bg-black/10 p-[1px]">
+              {focusNodes.map((node) => (
+                <button
+                  key={node.id}
+                  onClick={() => focusNode(node.id)}
+                  className={`px-2 py-2 text-left transition-all ${selectedOperationalNodeId === node.id ? "bg-[#111827] text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                >
+                  <div className="text-[8px] font-black uppercase tracking-[0.14em]">
+                    {node.shortLabel}
+                  </div>
+                  <div className="mt-0.5 text-[5.5px] uppercase tracking-[0.18em] opacity-50">
+                    {node.type.replace("-", " ")}
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-[8px] leading-relaxed text-black/55">
+              {selectedOperationalNode?.summary ??
+                activeTheater?.summary ??
+                "Conflict theaters and SEZ gates unlock the maximum zoom. Everywhere else stays on the strategic frame."}
+            </div>
+          </div>
+        </div>
 
         {/* ── BASE MAP (radio — choose one) ── */}
         <div className="bg-white border border-black overflow-hidden">
@@ -513,6 +873,24 @@ export default function BorderMap({
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="flex bg-white h-8 border border-black overflow-hidden divide-x divide-black">
+          {[
+            { active: showRegionalFrame, set: setShowRegionalFrame, label: "FRAME", icon: Globe },
+            { active: showOperationalSpines, set: setShowOperationalSpines, label: "SPINE", icon: Route },
+            { active: showOperationalNodes, set: setShowOperationalNodes, label: "NODE", icon: Building2 },
+            { active: showRoadAlerts, set: setShowRoadAlerts, label: "ROAD", icon: Truck },
+          ].map((toggle) => (
+            <button
+              key={toggle.label}
+              onClick={() => toggle.set(!toggle.active)}
+              className={`flex-1 flex items-center justify-center gap-1 transition-all ${toggle.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
+            >
+              <toggle.icon size={9} />
+              <span className="text-[6.5px] font-black tracking-wider">{toggle.label}</span>
+            </button>
+          ))}
         </div>
 
         {/* ── Intelligence Overlays ── */}
@@ -583,8 +961,9 @@ export default function BorderMap({
           <div className="flex gap-6">
             {[
               { label: "SIGNALS", val: incidents?.length || 0 },
+              { label: "ROAD", val: trafficIncidents?.length || 0 },
               { label: "THERMAL", val: fires?.length || 0 },
-              { label: "TRAFFIC", val: flights?.length || 0 },
+              { label: "AIR", val: flights?.length || 0 },
               { label: "FLOW", val: refugees?.length || 0 },
               { label: "VESSEL", val: vessels?.length || 0 },
               { label: "PULSE", val: recentSignals?.length || 0 },
@@ -599,10 +978,25 @@ export default function BorderMap({
       </div>
 
       <div className="absolute bottom-6 right-6 z-40 flex flex-col gap-1">
-        <button onClick={() => setViewState(clampViewState(INITIAL_VIEW_STATE))} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+        <button onClick={focusNationalFrame} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
           <Compass size={14} strokeWidth={3} />
         </button>
-        <button className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
+        <button
+          onClick={() => {
+            if (selectedOperationalNode) {
+              focusNode(selectedOperationalNode.id);
+              return;
+            }
+
+            if (activeTheater) {
+              focusTheater(activeTheater.id);
+              return;
+            }
+
+            focusNationalFrame();
+          }}
+          className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all"
+        >
           <Maximize2 size={14} strokeWidth={3} />
         </button>
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
+import { useNow } from "../../hooks/useNow";
 
 interface ProvenanceBadgeProps {
   source: string;
@@ -83,13 +84,24 @@ export function FreshnessDot({
   staleAfterMs?: number;
   offlineAfterMs?: number;
 }) {
+  const now = useNow(30_000);
+
   if (!lastUpdated) {
     return (
       <span className="inline-block w-1.5 h-1.5 rounded-full bg-white/20" title="No data" />
     );
   }
 
-  const ageMs = Date.now() - new Date(lastUpdated).getTime();
+  if (now === null) {
+    return (
+      <span
+        className="inline-block w-1.5 h-1.5 rounded-full bg-white/20"
+        title="Syncing freshness state"
+      />
+    );
+  }
+
+  const ageMs = now - new Date(lastUpdated).getTime();
 
   if (ageMs < staleAfterMs) {
     return (

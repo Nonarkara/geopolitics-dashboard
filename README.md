@@ -1,73 +1,83 @@
-# Phuket Dashboard
+# Thailand Geopolitical Watch
 
-Map-first monitoring dashboard for Phuket and nearby provinces, focused on tourism demand, road safety, rainfall, monsoon pressure, air quality, mobility, and local economy. The frontend is a Next.js app; the data layer is PostgreSQL/PostGIS plus Python ingestion scripts. This repo was cloned from the Geopolitics Dashboard system and retargeted as a Phuket-focused starter.
+Tri-border command dashboard for Thailand's Myanmar, Cambodia, and southern frontier theatres. The product combines an operations-first map, live command surfaces, and Bangkok-day playback for archived intelligence review.
+
+This repository is now `Vercel-first`:
+
+- `Vercel` hosts the Next.js application
+- `Supabase Postgres` is the single production data backbone
+- `Vercel Cron` drives grouped refresh routes under `/api/cron/*`
+- `Render` remains legacy infrastructure only, not the primary deployment story
 
 ## Stack
 
 - Next.js 16 App Router
 - React 19 + TypeScript
 - Deck.gl + react-map-gl
-- PostgreSQL + PostGIS
-- Python ingestion for market, fire, rainfall, mobility, and reference datasets
+- Supabase Postgres
+- Supabase Realtime / PostgREST where justified
+- Playwright + Node test runner
 
-## Prerequisites
+## Product Shape
 
-- Node.js 20+
-- npm
-- PostgreSQL with PostGIS installed
-- Python 3.9+ if you want to run ingestion
+- `THAILAND GEOPOLITICAL WATCH` is the executive shell
+- The map is intentionally theater-specific, not generic:
+  - Myanmar frontier
+  - Cambodia frontier
+  - southern theatre
+- Historical playback is canonicalized on Bangkok command days and propagated through the core command surfaces
+- Unsupported live-only panels stay labeled as `live reference` during playback instead of faking archival truth
 
 ## Environment
 
-To set up your local environment, create a `.env` file from the example:
+Create a local `.env` from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-### Required Configuration
+Core variables:
 
-> [!IMPORTANT]
-> You must provide your own API keys in the `.env` file. These are **not included** in the repository for security.
+- `DATABASE_URL`: Supabase Postgres connection string
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`
+- `CRON_SECRET`: bearer secret required for Vercel cron routes in production
 
-- `DATABASE_URL`: Your PostgreSQL + PostGIS connection string
-- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: [Mapbox](https://www.mapbox.com/) public token for the map engine
-- `FIRMS_KEY`: (Optional but recommended) [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/api/config/realtime/) key for live fire ingestion
-- `ACLED_USERNAME` and `ACLED_PASSWORD`: (Optional) current myACLED OAuth credentials for coded conflict-event ingestion
-- `ACLED_EMAIL` and `ACLED_KEY`: legacy ACLED variables kept only for compatibility checks; they are no longer the preferred API auth path
-- `OPENAI_API_KEY`: [OpenAI](https://platform.openai.com/) key for automated intelligence summaries
-- `REFERENCE_DASHBOARD_URL`: (Optional) URL to an external data feed
-- `NEXT_PUBLIC_ENABLE_DATA_EXPLORER`: (Optional) `true` only if you explicitly want the browser-facing database explorer/export tools visible in the UI
-- `DATA_EXPLORER_ENABLED`: (Optional) `true` only if you explicitly want the `/api/data/*` routes enabled on the server
-- `DATA_EXPLORER_TOKEN`: (Recommended when the explorer is enabled) bearer token required for `/api/data/*` access
-- `ALLOW_MOCK_INGESTION`: Keep this `false` in any real environment so failed ingest jobs do not write demo rows into your database
-- `INGEST_REQUEST_TIMEOUT_SECONDS`: Optional request timeout for Python ingestion jobs; defaults to `30`
+Optional upstreams and enrichers:
 
-## Setup
+- `FIRMS_KEY`
+- `ACLED_USERNAME`
+- `ACLED_PASSWORD`
+- `OPENAI_API_KEY`
+- `OPENAI_BASE_URL`
+- `OPENAI_MODEL`
+- `OLLAMA_HOST`
+- `OLLAMA_MODEL`
+- `REFERENCE_DASHBOARD_URL`
 
-Install frontend dependencies:
+Admin / diagnostics:
+
+- `NEXT_PUBLIC_ENABLE_DATA_EXPLORER`
+- `DATA_EXPLORER_ENABLED`
+- `DATA_EXPLORER_TOKEN`
+- `ALLOW_MOCK_INGESTION=false` in any real environment
+
+## Local Run
+
+Install dependencies:
 
 ```bash
 npm install
 ```
 
-Initialize the database schema:
+Apply schema and migrations:
 
 ```bash
-./scripts/setup-db.sh
+npm run db:schema
+npm run db:migrate
 ```
-
-If `psql` is not installed locally, run `db/schema.sql` in your managed PostgreSQL/PostGIS console instead.
-
-Install ingestion dependencies if needed:
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r ingestion/requirements.txt
-```
-
-## Run
 
 Start the app:
 
@@ -77,97 +87,117 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-The UI can still render with fallback data if the database is not populated yet, and it can also pull incidents, package sources, and market cards from the external reference dashboard.
+## Vercel Cron
 
-## Ingestion
+The production scheduler is the grouped Vercel-cron layer defined in [vercel.json](/Users/non/Projects/dashboards/geopolitics-dashboard/vercel.json).
 
-Run whichever scripts you need:
+Current grouped jobs:
 
-```bash
-python ingestion/acled_ingest.py
-python ingestion/hdx_ingest.py
-python ingestion/firms_ingest.py
-python ingestion/rainfall_ingest.py
-```
+- `/api/cron/conflict-intel`
+- `/api/cron/environment-thermal`
+- `/api/cron/markets-macro`
+- `/api/cron/movements-maritime`
+- `/api/cron/daily-summary`
+- `/api/cron/maintenance-cleanup`
 
-Or warm the full pipeline in one shot:
+These routes:
 
-```bash
-python3 ingestion/run_all.py
-```
+- require `Authorization: Bearer ${CRON_SECRET}` in production
+- record run snapshots into `data_snapshots`
+- record health into `feed_health`
+- expose one operational response contract:
+  - `startedAt`
+  - `completedAt`
+  - `ok`
+  - `updatedSources`
+  - `updatedTables`
+  - `warnings`
+  - `errors`
 
-List the available one-shot jobs:
+The schedules in `vercel.json` are intentionally `daily` and hobby-safe by default. If the linked Vercel project is on Pro, tighten the cadence there by editing the same cron entries rather than reintroducing a second scheduler system.
 
-```bash
-npm run ingest:list
-```
+## Status and Runtime Truth
 
-Current source posture for the one-shot bootstrap:
+`/api/status` reports:
 
-- `ingestion/hdx_ingest.py` now warms reference markets, ASEAN GDP snapshots, and best-effort country profile caches from ExchangeRate API, Binance, and World Bank
-- `ingestion/rainfall_ingest.py` now uses Open-Meteo archive data instead of the blocked HDX rainfall endpoint
-- `ingestion/air_quality_ingest.py` warms the stored Open-Meteo air-quality cache so `/api/status` can track that table honestly
-- `ingestion/refugee_ingest.py` now uses the public UNHCR population API instead of the blocked HDX refugee endpoint
-- `ingestion/acled_ingest.py` expects current ACLED OAuth credentials; without `ACLED_PASSWORD`, it skips cleanly as an optional feed
-- `ingestion/firms_ingest.py` skips cleanly when `FIRMS_KEY` is absent, because thermal hotspots are optional
+- app runtime posture
+- database connectivity
+- basemap readiness
+- per-dataset freshness
+- grouped cron freshness
+- live vs hybrid vs fallback posture
+
+This route is `no-store` and intended for operator diagnostics, architecture review, and deployment smoke tests.
+
+## Database Backbone
+
+Production data lives in Supabase Postgres. Core tables include:
+
+- `events`
+- `fire_events`
+- `rainfall_data`
+- `market_data`
+- `macro_country_snapshots`
+- `air_quality_snapshots`
+- `country_economic_indicators`
+- `intelligence_package_snapshots`
+- `signal_archive`
+- `feed_health`
+- `data_snapshots`
+- `vessel_positions`
+
+This is the system of record for both live operational state and historical playback.
+
+## Playback
+
+Playback routes accept canonical Bangkok-day windows via `from` and `to`:
+
+- `/api/border-command/brief`
+- `/api/border-command/narrative`
+- `/api/markets`
+- `/api/border/news`
+- `/api/border/ticker`
+- `/api/research/sparklines`
+
+Rules:
+
+- `from` and `to` must be present together
+- they must match one exact Bangkok command day window
+- invalid playback params return `400`
+- archive/store failures return `503`
+- genuine no-data playback returns `200` with `mode: "historical-empty"`
 
 ## Quality Checks
 
+Backend and build verification:
+
 ```bash
-npm run lint
+npm run test:backend
 npm run build
-npm audit --omit=dev --audit-level=high
 ```
 
-## Render Deployment
-
-This repo now includes a production-shaped `render.yaml` Blueprint:
-
-- one Node web service
-- one managed Postgres database
-- five Python cron jobs for conflict, fires, rainfall, market, and refugee ingestion
-
-Default production posture in the Blueprint:
-
-- `ALLOW_MOCK_INGESTION=false`, so failed jobs fail loudly instead of polluting the database with demo data
-- ACLED is treated as an optional feed unless valid OAuth credentials are configured
-- `NEXT_PUBLIC_ENABLE_DATA_EXPLORER=false` and `DATA_EXPLORER_ENABLED=false`, so admin-ish DB routes stay off unless you explicitly enable them
-- `DATA_EXPLORER_TOKEN` is generated automatically even when the explorer remains off
-
-What you still need to set in Render:
-
-- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for a real basemap
-- `OPENAI_API_KEY` if you want AI summaries
-- `FIRMS_KEY` for live NASA FIRMS ingestion
-- `ACLED_USERNAME` and `ACLED_PASSWORD` if you want ACLED-backed conflict ingestion
-
-Blueprint notes:
-
-- The web and cron services are pinned to `starter` plans and the database to `basic-256mb` so the app does not sleep like a demo. Change those if you want a cheaper test posture.
-- Market and World Bank endpoints can still fetch live on demand even before the database is warm, but conflict, fire, and rainfall surfaces need the cron jobs and database to stay truly fresh.
-- During bootstrap, country profile cache warming is best-effort; the app can still fetch those World Bank metrics on demand.
-- `/api/status` now reports dataset freshness so operators can see when the system is on live snapshots, on-demand fetches, or fallback posture.
-
-To deploy with the Blueprint flow, push the repo to GitHub, GitLab, or Bitbucket, then create the Render Blueprint from that repo.
-
-If you want the database warm immediately after setup instead of waiting for the first cron cycle, run:
+Browser verification:
 
 ```bash
-npm run bootstrap:production
+npm run test:ui -- tests/border-dashboard.spec.ts
 ```
 
-That applies `db/schema.sql` to `DATABASE_URL` and then runs the full ingestion sequence once.
+Targeted lint:
 
-## Data Flow
+```bash
+npx eslint src/app/api/cron src/lib/cron-jobs.ts src/lib/runtime-status.ts
+```
 
-1. Python scripts fetch external data and write normalized rows to Postgres.
-2. Next.js API routes combine Postgres data, RSS/search feeds, and reference APIs into cached intelligence packages.
-3. React components fetch those routes and render map overlays, charts, package panels, and live signal cards.
+## Deployment
 
-## Database Notes
+Recommended release path:
 
-- Core longitudinal tables: `events`, `market_data`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache
-- Live snapshot tables: `air_quality_snapshots`, `macro_country_snapshots`
-- `/api/markets` now persists live FX/BTC reference indicators plus ASEAN GDP snapshots when `DATABASE_URL` is configured
-- `/api/air-quality` now persists live AQI/PM2.5 station observations and falls back to the latest stored snapshots before using static defaults
-# V5.1.0 — Thailand Geopolitical Watch
+1. Push a feature branch
+2. Open a PR
+3. Verify the Vercel preview deployment
+4. Smoke-check `/`, `/api/status`, playback routes, and `/api/cron/*`
+5. Merge to production
+
+## Legacy Render Note
+
+`render.yaml` is retained only as legacy reference / migration scaffolding. It is not the primary production path anymore. Do not maintain parallel scheduler logic on Render and Vercel unless you are explicitly performing a migration rollback.

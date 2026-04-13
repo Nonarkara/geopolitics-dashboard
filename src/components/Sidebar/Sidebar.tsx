@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import LoadingSkeleton from "../Common/LoadingSkeleton";
 import {
   AlertTriangle,
   ArrowRight,
@@ -19,12 +20,7 @@ import {
   Wheat,
   Zap,
 } from "lucide-react";
-import type { BorderCommandBrief } from "../../types/dashboard";
-import type { CommodityPrice } from "../../app/api/border/commodities/route";
-import type { RiverDischarge } from "../../app/api/border/flood-risk/route";
-import type { SeismicEvent } from "../../app/api/border/earthquakes/route";
-import type { TrafficIncident } from "../../app/api/border/traffic/route";
-import type { RegionalDisaster } from "../../app/api/border/disasters/route";
+import type { BorderCommandBrief, CommodityPrice, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import {
   formatBangkokDayLabel,
@@ -116,6 +112,8 @@ function useFetch<T>(url: string, interval: number): T | null {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      // Don't poll when tab is hidden
+      if (document.hidden) return;
       try {
         const res = await fetch(url, { cache: "no-store" });
         const json = await res.json() as T;
@@ -143,6 +141,8 @@ export default function Sidebar({ brief }: SidebarProps) {
   useEffect(() => {
     let active = true;
     const load = async () => {
+      // Don't poll when tab is hidden
+      if (document.hidden) return;
       try {
         const res = await fetch(buildUrl("/api/border-command/narrative"), { cache: "no-store" });
         const json = await res.json();
@@ -217,6 +217,13 @@ export default function Sidebar({ brief }: SidebarProps) {
         )}
       </div>
 
+      {!brief ? (
+        <div className="p-4 space-y-4">
+          <LoadingSkeleton variant="text" />
+          <LoadingSkeleton variant="bar" count={3} className="space-y-2" />
+          <LoadingSkeleton variant="list" count={2} className="space-y-2" />
+        </div>
+      ) : (
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
         {isHistorical && timeWindow ? (
           <section className="border border-white/15 bg-black px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/75">
@@ -574,6 +581,7 @@ export default function Sidebar({ brief }: SidebarProps) {
           </div>
         </section>
       </div>
+      )}
 
       <div className="p-3 bg-white/[0.03] border-t border-white/10 flex items-center justify-between shrink-0">
         <div className="text-[11px] font-black opacity-15 uppercase tracking-[0.4em]">

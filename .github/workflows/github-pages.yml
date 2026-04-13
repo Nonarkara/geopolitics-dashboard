@@ -1,0 +1,65 @@
+name: Deploy Static Demo to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci
+
+      # Remove API routes and server-only pages that use force-dynamic
+      # The dashboard degrades gracefully to mock/fallback data without them
+      - name: Prepare for static export
+        run: |
+          rm -rf src/app/api
+          rm -rf src/app/briefing
+          # Remove server-only imports from components that reference API utils
+          # The client components don't import from api/ directly, so this is safe
+
+      - name: Build static export
+        run: npx next build --webpack
+        env:
+          NEXT_OUTPUT: export
+          NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+          NEXT_PUBLIC_STATIC_EXPORT: "true"
+          NEXT_PUBLIC_SUPABASE_URL: ""
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+          NODE_ENV: production
+
+      - name: Add .nojekyll
+        run: touch out/.nojekyll
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./out
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

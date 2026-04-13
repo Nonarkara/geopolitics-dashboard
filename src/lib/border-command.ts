@@ -2,15 +2,17 @@ import { listCriticalCameras } from "./critical-cameras";
 import {
   BORDER_AREAS,
   haversineKm,
-  incidentMatchesBorderArea,
+  isClosestBorderArea,
   normalizeBorderText,
   type BorderAreaConfig,
 } from "./border-regions";
 import {
   buildBorderMovements,
+  filterTruthfulBorderOsint,
   loadBorderIncidents,
   loadBorderOsint,
 } from "./border-osint";
+import { PlaybackApiError } from "./playback-api";
 import { loadThailandEconomics } from "./thailand-monitor";
 import type {
   BorderActionItem,
@@ -142,13 +144,21 @@ function buildAreaSummary(
     return "Passenger and customs surges around Aranyaprathet need a tighter watch before they turn into a wider provincial issue.";
   }
 
+  if (area.id === "deep-south") {
+    if (incidents.length > 0) {
+      return `${incidents.length} security incidents across Pattani, Yala, and Narathiwat are keeping the deep-south insurgency belt at ${posture}. IED and ambush activity requires sustained ISOC Region 4 attention.`;
+    }
+
+    return "The deep-south insurgency belt is in a lower-tempo phase, but BRN/PULO activity can escalate without warning — maintain checkpoint discipline and communal tension monitoring.";
+  }
+
   if (candidateCameras > 0 && verifiedCameras <= 1) {
     return narrativeCount > 0
       ? `Southern corridor flow remains active, and ${narrativeCount} narrative corroborations are still leaning too heavily on proxy visibility south of Hat Yai.`
       : "Southern corridor flow remains active, but the command picture is still relying too heavily on proxy visibility south of Hat Yai.";
   }
 
-  return "Freight, coach, and security pressure on the Malaysia-facing corridor remains manageable but needs daily discipline.";
+  return "Freight, coach, and customs pressure on the Malaysia trade corridor remains manageable but needs daily discipline.";
 }
 
 function buildSignals(
@@ -196,7 +206,7 @@ function buildAreaStatus(
   leadIndicator?: EconomicIndicator,
 ): BorderAreaStatus {
   const matchedIncidents = incidents.filter((incident) =>
-    incidentMatchesBorderArea(area, incident),
+    isClosestBorderArea(area, incident),
   );
   const matchedCameras = cameras.filter((camera) => cameraMatchesArea(area, camera));
   const matchedNarratives = narratives.filter((signal) =>
@@ -363,6 +373,20 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
     loadThailandEconomics(),
     loadBorderOsint(),
   ]);
+  const truthfulOsint = filterTruthfulBorderOsint(osint);
+
+  if (
+    incidents.length === 0 &&
+    indicators.length === 0 &&
+    truthfulOsint.signals.length === 0 &&
+    truthfulOsint.humanitarian.length === 0
+  ) {
+    throw new PlaybackApiError(
+      "LIVE_DATA_UNAVAILABLE",
+      "No live border-command inputs are available for the current cycle.",
+    );
+  }
+
   const cameras = listCriticalCameras();
   const leadIndicator = selectLeadIndicator(indicators);
   const areas = BORDER_AREAS.map((area) =>
@@ -370,8 +394,8 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
       area,
       incidents,
       cameras,
-      osint.signals,
-      osint.humanitarian,
+      truthfulOsint.signals,
+      truthfulOsint.humanitarian,
       leadIndicator,
     ),
   ).sort((left, right) => {

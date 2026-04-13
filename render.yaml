@@ -1,3 +1,5 @@
+# Legacy deployment reference only.
+# Primary production target is Vercel + Supabase Postgres + Vercel Cron.
 databases:
   - name: geopolitics-dashboard-db
     databaseName: geopolitics_dashboard
@@ -276,6 +278,27 @@ services:
         value: "false"
       - key: INGEST_REQUEST_TIMEOUT_SECONDS
         value: "30"
+
+  - type: cron
+    name: geopolitics-sheets-sync
+    runtime: python
+    plan: starter
+    region: oregon
+    branch: main
+    schedule: "*/15 * * * *"
+    buildCommand: pip install -r ingestion/requirements.txt
+    startCommand: python ingestion/sheets_sync.py
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: geopolitics-dashboard-db
+          property: connectionString
+      - key: GOOGLE_SHEETS_ID
+        sync: false
+      - key: GOOGLE_SHEETS_CREDENTIALS
+        sync: false
+      - key: GOOGLE_SHEETS_TAB
+        value: "Signal Archive"
 
   - type: cron
     name: geopolitics-daily-summary

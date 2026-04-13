@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Activity, Coins, ExternalLink, RefreshCw } from "lucide-react";
+import LoadingSkeleton from "../Common/LoadingSkeleton";
 import AnimatedNumber from "../Common/AnimatedNumber";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
@@ -67,6 +68,9 @@ export default function BorderMarketPulse() {
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+  const [hasLoaded, setHasLoaded] = useState(isStatic);
+  const hasLoadedRef = useRef(isStatic);
 
   useEffect(() => {
     const load = async () => {
@@ -76,6 +80,7 @@ export default function BorderMarketPulse() {
 
         if (isMarketRadarResponse(nextPayload)) {
           setPayload(nextPayload);
+          if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
           return;
         }
 
@@ -86,6 +91,7 @@ export default function BorderMarketPulse() {
             data: nextPayload,
             signals: nextPayload,
           });
+          if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
         }
       } catch {
         setPayload(isHistorical ? { ...fallbackMarketRadarResponse, data: [], signals: [], aseanGdp: [], mode: "historical-empty" } : fallbackMarketRadarResponse);
@@ -165,6 +171,15 @@ export default function BorderMarketPulse() {
         </div>
       </div>
 
+      {!hasLoaded ? (
+        <div className="flex flex-1 flex-col gap-2.5 p-3">
+          <LoadingSkeleton variant="card" />
+          <div className="grid grid-cols-2 gap-2">
+            <LoadingSkeleton variant="card" />
+            <LoadingSkeleton variant="card" />
+          </div>
+        </div>
+      ) : (
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         {isHistorical && timeWindow ? (
           <div className="rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
@@ -314,6 +329,7 @@ export default function BorderMarketPulse() {
           </div>
         ) : null}
       </div>
+      )}
     </section>
   );
 }

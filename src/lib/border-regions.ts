@@ -3,7 +3,8 @@ import type { Coordinates, IncidentFeature } from "../types/dashboard";
 export type BorderAreaId =
   | "myanmar-frontier"
   | "cambodia-frontier"
-  | "malaysia-frontier";
+  | "malaysia-frontier"
+  | "deep-south";
 
 export type BorderAreaConfig = {
   id: BorderAreaId;
@@ -81,31 +82,60 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
     id: "malaysia-frontier",
     label: "Malaysia frontier",
     counterpart: "Malaysia",
-    center: [6.7483, 100.4186],
-    radiusKm: 360,
+    center: [100.4186, 7.0084],
+    radiusKm: 200,
     aliases: [
       "hat yai",
       "sadao",
       "padang besar",
-      "sungai kolok",
-      "su-ngai kolok",
-      "narathiwat",
       "songkhla",
-      "yala",
-      "betong",
       "bukit kayu hitam",
       "kelantan",
       "malaysia",
     ],
-    baseScore: 42,
-    baseScoreRationale: "Southern corridor security and freight flow baseline — intermittent security incidents",
+    baseScore: 38,
+    baseScoreRationale: "Southern trade corridor baseline — freight and coach flow monitoring with routine security posture",
     watchpoints: [
       "Coach and freight pressure on Hat Yai / Sadao approaches",
-      "Southern security tempo near Sungai Kolok and Narathiwat",
+      "Rail-road coupling efficiency on the Malaysia corridor",
       "Weather-driven disruption on the southbound logistics spine",
     ],
     actionTitle: "Keep the southern corridor moving",
-    actionOwner: "Transport + security command",
+    actionOwner: "Transport + customs",
+  },
+  {
+    id: "deep-south",
+    label: "Deep South (Patani)",
+    counterpart: "BRN / separatist groups",
+    center: [101.28, 6.54],
+    radiusKm: 180,
+    aliases: [
+      "pattani",
+      "yala",
+      "narathiwat",
+      "sungai kolok",
+      "su-ngai kolok",
+      "betong",
+      "brn",
+      "pulo",
+      "mara patani",
+      "deep south",
+      "insurgency",
+      "separatist",
+      "rangae",
+      "bacho",
+      "ruso",
+    ],
+    baseScore: 52,
+    baseScoreRationale: "Persistent Malay-Muslim insurgency baseline — Southeast Asia's longest-running separatist conflict with recurrent IED, ambush, and communal incidents",
+    watchpoints: [
+      "BRN / PULO insurgent activity tempo and IED incidents",
+      "Targeted attacks on schools, teachers, and government officials",
+      "Communal tension indicators between Buddhist and Muslim communities",
+      "Security force deployment shifts and checkpoint escalation",
+    ],
+    actionTitle: "Maintain Deep South security posture",
+    actionOwner: "ISOC Region 4 + security command",
   },
 ];
 
@@ -142,6 +172,34 @@ export function incidentMatchesBorderArea(
     haversineKm(area.center, coordinates) <= area.radiusKm ||
     area.aliases.some((alias) => text.includes(alias))
   );
+}
+
+/**
+ * Assign an incident to the closest matching area when it falls in overlapping
+ * radii (e.g. malaysia-frontier and deep-south). Returns true only if this area
+ * is the best match.
+ */
+export function isClosestBorderArea(
+  area: BorderAreaConfig,
+  incident: IncidentFeature,
+) {
+  if (!incidentMatchesBorderArea(area, incident)) return false;
+
+  const distance = haversineKm(area.center, incident.geometry.coordinates);
+
+  for (const candidate of BORDER_AREAS) {
+    if (candidate.id === area.id) continue;
+    if (!incidentMatchesBorderArea(candidate, incident)) continue;
+
+    const candidateDistance = haversineKm(
+      candidate.center,
+      incident.geometry.coordinates,
+    );
+
+    if (candidateDistance < distance) return false;
+  }
+
+  return true;
 }
 
 export function resolveBorderAreaByText(text: string) {

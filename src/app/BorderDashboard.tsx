@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
 import BorderNewsDesk from "../components/Intelligence/BorderNewsDesk";
 import TopBar from "../components/Intelligence/TopBar";
@@ -9,14 +9,17 @@ import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
 import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
+import TheaterStrip from "../components/Theater/TheaterStrip";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
-import { TimeWindowProvider } from "../contexts/TimeWindowContext";
+import DashboardScaler from "../components/Common/DashboardScaler";
+import { TimeWindowProvider, useTimeWindow } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
+import type { BorderAreaId } from "../lib/border-regions";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
 
 function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
@@ -31,19 +34,48 @@ function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
 }
 
 export default function BorderDashboard() {
+  return (
+    <TimeWindowProvider>
+      <BorderDashboardSurface />
+    </TimeWindowProvider>
+  );
+}
+
+function BorderDashboardSurface() {
   const dataExplorerEnabled = isDataExplorerEnabled();
+  const { buildUrl } = useTimeWindow();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
-  const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
+  const [flyToTheater, setFlyToTheater] = useState<BorderAreaId | null>(null);
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+
+  const [brief, setBrief] = useState<BorderCommandBrief | null>(isStatic ? {
+    generatedAt: new Date().toISOString(),
+    headline: "Static demo — connect to live database for real-time data",
+    summary: "This is a static preview of the Thailand Geopolitical Watch V7.0 dashboard. In production, this briefing updates every 60 seconds with live conflict, market, and environmental intelligence from 17 data sources across the Myanmar, Cambodia, Deep South, and Malaysia frontiers.",
+    overallPosture: "watch" as const,
+    overallScore: 78,
+    overallScoreMethod: "weighted-composite",
+    areas: [
+      { id: "myanmar-frontier", label: "Myanmar Frontier", counterpart: "Myanmar military", posture: "priority" as const, score: 78, scoreBreakdown: { baseScore: 58, baseScoreRationale: "Chronic conflict baseline", contributions: [], rawTotal: 78, clampedScore: 78, formula: "base + factors" }, incidentCount: 4, fatalityCount: 2, verifiedCameras: 3, candidateCameras: 2, summary: "Elevated activity around Mae Sot / Myawaddy corridor", watchpoints: ["Conflict spillover around Mae Sot / Myawaddy", "Shelter and humanitarian pressure in Tak"], signals: [], recommendedAction: "Maintain heightened posture" },
+      { id: "cambodia-frontier", label: "Cambodia Frontier", counterpart: "Cambodia border", posture: "watch" as const, score: 50, scoreBreakdown: { baseScore: 34, baseScoreRationale: "Queue monitoring baseline", contributions: [], rawTotal: 50, clampedScore: 50, formula: "base + factors" }, incidentCount: 1, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Normal crossing pressure at Aranyaprathet-Poipet", watchpoints: ["Queue visibility gap at Aranyaprathet / Poipet", "Cross-border passenger and casino-linked traffic surges"], signals: [], recommendedAction: "Standard monitoring" },
+      { id: "deep-south", label: "Deep South (Patani)", counterpart: "BRN / separatist groups", posture: "watch" as const, score: 58, scoreBreakdown: { baseScore: 52, baseScoreRationale: "Insurgency baseline", contributions: [], rawTotal: 58, clampedScore: 58, formula: "base + factors" }, incidentCount: 2, fatalityCount: 1, verifiedCameras: 1, candidateCameras: 2, summary: "Low-level insurgent activity continues across Pattani-Yala-Narathiwat belt", watchpoints: ["BRN / PULO insurgent activity tempo and IED incidents", "Targeted attacks on schools, teachers, and government officials", "Communal tension indicators", "Security force deployment shifts"], signals: [], recommendedAction: "Maintain Deep South security posture" },
+      { id: "malaysia-frontier", label: "Malaysia Corridor", counterpart: "Malaysia border", posture: "stable" as const, score: 40, scoreBreakdown: { baseScore: 38, baseScoreRationale: "Trade corridor baseline", contributions: [], rawTotal: 40, clampedScore: 40, formula: "base + factors" }, incidentCount: 0, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Standard freight and passenger flow at Sadao", watchpoints: ["Coach and freight pressure on Hat Yai / Sadao approaches", "Rail-road coupling efficiency"], signals: [], recommendedAction: "Routine observation" },
+    ],
+    topConcerns: [],
+    actionQueue: [],
+    sources: ["ACLED", "GDELT", "UNHCR", "Open-Meteo", "NASA FIRMS"],
+  } : null);
 
   useEffect(() => {
+    if (isStatic) return;
     let active = true;
 
     const loadBrief = async () => {
       try {
-        const response = await fetch("/api/border-command/brief", {
+        const response = await fetch(buildUrl("/api/border-command/brief"), {
           cache: "no-store",
         });
         const payload: unknown = await response.json();
@@ -65,11 +97,16 @@ export default function BorderDashboard() {
       active = false;
       clearInterval(interval);
     };
+  }, [buildUrl]);
+
+  const handleFlyToTheater = useCallback((theaterId: BorderAreaId) => {
+    setFlyToTheater(theaterId);
+    setTimeout(() => setFlyToTheater(null), 100);
   }, []);
 
   return (
-    <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
-      <TimeWindowProvider>
+    <DashboardScaler>
+    <main id="dashboard-content" className="relative flex h-[1080px] w-[1920px] flex-col overflow-hidden bg-black theme-border">
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
@@ -84,57 +121,97 @@ export default function BorderDashboard() {
           />
         </header>
 
-        {/* ROW 2: PRIMARY SURFACE */}
+        {/* ROW 2: PRIMARY SURFACE — Sidebar + Map + Theater Strip */}
         <div className="flex flex-1 min-h-0 connected-grid">
 
-          {/* LEFT SIDEBAR */}
-          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
-            <Sidebar brief={brief} />
+          {/* LEFT SIDEBAR — Border Command Posture + Priority Board */}
+          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden" aria-label="Intelligence briefing">
+            <ErrorBoundary name="Intelligence Briefing">
+              <Sidebar brief={brief} />
+            </ErrorBoundary>
           </aside>
 
           {/* CENTER: MAP */}
-          <div className="flex-1 min-w-0 grid-cell bg-[#111]">
-            <ErrorBoundary name="Tactical Map Engine">
-              <BorderMap onProvinceSelect={setSelectedProvince} />
-            </ErrorBoundary>
+          <div className="flex-1 min-w-0 grid-cell bg-[#0a1628] relative overflow-hidden" aria-label="Strategic map — Thailand quad-border region">
+            {/* Static satellite image — always visible as background, covered by DeckGL when WebGL works */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=92,4,108,23&bboxSR=4326&size=1200,800&imageSR=4326&format=jpg&f=image"
+              alt="Thailand quad-border region"
+              className="absolute inset-0 w-full h-full object-cover opacity-60"
+              loading="eager"
+            />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/30 via-transparent to-[#08090e]/60 pointer-events-none z-[1]" />
+            <div className="absolute inset-0 z-[2]">
+              <ErrorBoundary name="Tactical Map Engine">
+                <BorderMap
+                  onProvinceSelect={setSelectedProvince}
+                  flyToTheater={flyToTheater}
+                />
+              </ErrorBoundary>
+            </div>
           </div>
+
+          {/* RIGHT: THEATER SPLIT-SCREEN STRIP */}
+          <aside className="hidden w-[300px] shrink-0 xl:flex grid-cell flex-col overflow-hidden" aria-label="Theater recon split-screen">
+            <ErrorBoundary name="Theater Recon">
+              <TheaterStrip
+                areas={brief?.areas ?? []}
+                onFlyTo={handleFlyToTheater}
+              />
+            </ErrorBoundary>
+          </aside>
         </div>
 
-        {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
+        {/* ROW 3: ANALYTICS STRIP — Market Pulse + Camera Rail + News Wire */}
+        <div className="h-[280px] xl:h-[280px] max-xl:h-auto shrink-0 connected-grid bg-black overflow-hidden max-xl:flex-col" role="region" aria-label="Analytics strip">
 
           {/* MARKET PULSE */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderMarketPulse />
+          <div className="w-[340px] max-xl:w-full shrink-0 grid-cell overflow-hidden">
+            <ErrorBoundary name="Market Pulse">
+              <BorderMarketPulse />
+            </ErrorBoundary>
           </div>
 
           {/* CRITICAL CAMERA RAIL */}
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
-            <CriticalCameraRail />
+            <ErrorBoundary name="Camera Rail">
+              <CriticalCameraRail />
+            </ErrorBoundary>
           </div>
 
           {/* LIVE BORDER NEWS */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderNewsDesk />
+          <div className="w-[340px] max-xl:w-full shrink-0 grid-cell overflow-hidden">
+            <ErrorBoundary name="Border News Wire">
+              <BorderNewsDesk />
+            </ErrorBoundary>
           </div>
         </div>
 
         {/* ROW 4: TICKER BAR */}
-        <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
-          <div className="flex items-center gap-3 mr-6 shrink-0">
-            <div className="animate-ping w-1.5 h-1.5 bg-[var(--accent)] rounded-full" />
-            <div className="text-[11px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
+        <div className="flex h-8 items-center overflow-hidden border-t border-white/10 bg-[linear-gradient(90deg,#07090d_0%,#0b1018_28%,#091018_100%)] px-4 text-white shrink-0">
+          <div className="mr-6 flex shrink-0 items-center gap-3">
+            <div className="animate-ping h-1.5 w-1.5 bg-[var(--accent)] rounded-full" />
+            <div className="text-[11px] font-black uppercase tracking-[0.2em]">Signal</div>
+          </div>
+          <div className="hidden lg:block mr-5 text-[8px] font-black uppercase tracking-[0.16em] text-white/32">
+            Market, field, archive, and narrative deltas
           </div>
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
         {/* ROW 5: TIME MACHINE */}
-        <TimeMachine />
+        <ErrorBoundary name="Time Machine">
+          <TimeMachine />
+        </ErrorBoundary>
 
         {/* ROW 6: BORDER STATUS STRIP */}
-        <BorderStatusStrip brief={brief} />
+        <ErrorBoundary name="Border Status">
+          <BorderStatusStrip brief={brief} />
+        </ErrorBoundary>
       </div>
-      </TimeWindowProvider>
+
+      <div aria-live="polite" className="sr-only" id="live-announcer" />
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
@@ -147,5 +224,6 @@ export default function BorderDashboard() {
         />
       ) : null}
     </main>
+    </DashboardScaler>
   );
 }
