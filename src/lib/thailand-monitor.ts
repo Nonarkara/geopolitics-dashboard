@@ -2,6 +2,7 @@ import { query } from "./db";
 import { loadStoredMarketIndicatorSnapshot } from "./history-store";
 import {
   fallbackBriefing,
+  fallbackIncidents,
   fallbackNews,
   fallbackTicker,
 } from "./mock-data";
@@ -102,7 +103,7 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
 
     return incidents;
   } catch {
-    return [];
+    return fallbackIncidents;
   }
 }
 

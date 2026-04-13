@@ -6,22 +6,11 @@
  * via supabase-server.ts. This wrapper exists for complex analytical queries
  * (PostGIS, window functions, CTEs) that can't be expressed via PostgREST.
  *
- * Migration note: This replaces the former raw `pg` Pool connection.
- * The `query()` signature is unchanged so existing call sites work as-is.
+ * The `pg` module is imported lazily so that routes which don't need the
+ * database (e.g. fires via NASA FIRMS, flights via OpenSky) are not
+ * affected by missing native Node.js modules on edge runtimes.
  */
 
-import { Pool } from "pg";
-
-/**
- * Connection string — now points to Supabase's direct connection.
- *
- * Supabase provides two Postgres endpoints:
- *   - Transaction pooler (port 6543) — for serverless/short-lived connections
- *   - Direct (port 5432) — for migrations and long-running queries
- *
- * For Next.js API routes on Vercel, the pooler is ideal.
- * Set DATABASE_URL to your Supabase connection string.
- */
 const connectionString = process.env.DATABASE_URL?.trim();
 
 interface QueryResult<T> {
@@ -46,6 +35,8 @@ interface ConnectablePool {
   on(event: "error", listener: (error: Error) => void): void;
   on(event: "connect", listener: (client: DatabaseClient) => void): void;
 }
+
+export const isDatabaseConfigured = Boolean(connectionString);
 
 function getIntegerEnv(name: string, fallback: number) {
   const raw = process.env[name]?.trim();
@@ -83,59 +74,72 @@ function executeQuery<T>(
   return executor.query(text, params) as Promise<QueryResult<T>>;
 }
 
-const poolConfig = connectionString
-  ? ({
-      connectionString,
-      application_name: "geopolitics-dashboard",
-      max: getIntegerEnv("DATABASE_POOL_MAX", 10),
-      maxUses: getIntegerEnv("DATABASE_POOL_MAX_USES", 7_500),
-      idleTimeoutMillis: getIntegerEnv("DATABASE_IDLE_TIMEOUT_MS", 30_000),
-      connectionTimeoutMillis: getIntegerEnv(
-        "DATABASE_CONNECTION_TIMEOUT_MS",
-        10_000,
-      ),
-      statement_timeout: getIntegerEnv(
-        "DATABASE_STATEMENT_TIMEOUT_MS",
-        20_000,
-      ),
-      query_timeout: getIntegerEnv("DATABASE_QUERY_TIMEOUT_MS", 15_000),
-      allowExitOnIdle: process.env.NODE_ENV === "test",
-      keepAlive: true,
-      ssl: shouldUseSsl(connectionString)
-        ? { rejectUnauthorized: false }
-        : undefined,
-    } as unknown as ConstructorParameters<typeof Pool>[0])
-  : null;
+/* ── Lazy pool initialization ─────────────────────────────── */
 
-const pool = (poolConfig ? new Pool(poolConfig) : null) as ConnectablePool | null;
+let _pool: ConnectablePool | null = null;
+let _poolInitialized = false;
 
-export const isDatabaseConfigured = Boolean(connectionString);
-
-pool?.on("error", (error) => {
-  console.error("Unexpected idle database client error:", error);
-});
-
-function requirePool() {
-  if (!pool) {
+async function getPool(): Promise<ConnectablePool> {
+  if (!connectionString) {
     throw new Error(
       "DATABASE_URL is not configured — set it to your Supabase connection string",
     );
   }
 
-  return pool;
+  if (_poolInitialized && _pool) {
+    return _pool;
+  }
+
+  // Dynamic import — only loads `pg` when a database query is actually needed.
+  // This prevents crashes on runtimes where `pg`'s native dependencies
+  // (net, tls, dns) are unavailable (e.g. Cloudflare Workers).
+  const { Pool } = await import("pg");
+
+  const poolConfig = {
+    connectionString,
+    application_name: "geopolitics-dashboard",
+    max: getIntegerEnv("DATABASE_POOL_MAX", 10),
+    maxUses: getIntegerEnv("DATABASE_POOL_MAX_USES", 7_500),
+    idleTimeoutMillis: getIntegerEnv("DATABASE_IDLE_TIMEOUT_MS", 30_000),
+    connectionTimeoutMillis: getIntegerEnv(
+      "DATABASE_CONNECTION_TIMEOUT_MS",
+      10_000,
+    ),
+    statement_timeout: getIntegerEnv(
+      "DATABASE_STATEMENT_TIMEOUT_MS",
+      20_000,
+    ),
+    query_timeout: getIntegerEnv("DATABASE_QUERY_TIMEOUT_MS", 15_000),
+    allowExitOnIdle: process.env.NODE_ENV === "test",
+    keepAlive: true,
+    ssl: shouldUseSsl(connectionString)
+      ? { rejectUnauthorized: false }
+      : undefined,
+  };
+
+  _pool = new Pool(poolConfig) as unknown as ConnectablePool;
+  _poolInitialized = true;
+
+  _pool.on("error", (error) => {
+    console.error("Unexpected idle database client error:", error);
+  });
+
+  return _pool;
 }
 
 export const query = async <T = Record<string, unknown>>(
   text: string,
   params?: readonly unknown[],
 ) => {
-  return executeQuery<T>(requirePool(), text, params);
+  const pool = await getPool();
+  return executeQuery<T>(pool, text, params);
 };
 
 export async function withDatabaseTransaction<T>(
   handler: (executor: DatabaseExecutor) => Promise<T>,
 ) {
-  const client = await requirePool().connect();
+  const pool = await getPool();
+  const client = await pool.connect();
 
   try {
     await client.query("BEGIN");
@@ -160,4 +164,4 @@ export async function withDatabaseTransaction<T>(
   }
 }
 
-export default pool;
+export default null;

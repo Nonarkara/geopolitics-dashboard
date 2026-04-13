@@ -723,5 +723,11 @@ export function buildBorderMovements(osint: BorderOsintResponse): RefugeeMovemen
       count: 18_200,
       label: "18,200 daily freight and coach movements through Sadao / Hat Yai",
     },
+    {
+      source: [101.9623, 6.0298],
+      target: [101.2506, 6.8672],
+      count: 3_200,
+      label: "3,200 daily security movements across Pattani-Yala-Narathiwat corridor",
+    },
   ];
 }

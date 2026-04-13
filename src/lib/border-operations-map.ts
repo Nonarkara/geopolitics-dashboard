@@ -51,20 +51,37 @@ const BORDER_OPERATION_THEATERS: BorderOperationalTheater[] = [
   },
   {
     id: "malaysia-frontier",
-    label: "Southern frontier",
+    label: "Malaysia corridor",
     counterpart: "Malaysia",
     summary:
-      "Southern freight and security theater from Sadao through Hat Yai to Sungai Kolok, where rail-road coupling matters every day.",
+      "Southern freight and trade corridor from Sadao through Hat Yai to Padang Besar, where rail-road coupling and customs throughput matter every day.",
     focusView: {
-      longitude: 100.82,
-      latitude: 6.84,
-      zoom: 8.6,
+      longitude: 100.47,
+      latitude: 7.0,
+      zoom: 9.2,
       pitch: 47,
       bearing: 10,
     },
-    deepZoomRadiusKm: 185,
-    generalZoom: 8.6,
+    deepZoomRadiusKm: 140,
+    generalZoom: 9.2,
     deepZoom: 15.8,
+  },
+  {
+    id: "deep-south",
+    label: "Deep South (Patani)",
+    counterpart: "BRN / separatist groups",
+    summary:
+      "Malay-Muslim insurgency belt spanning Pattani, Yala, and Narathiwat provinces — Southeast Asia's longest-running separatist conflict with persistent IED, ambush, and communal tension.",
+    focusView: {
+      longitude: 101.28,
+      latitude: 6.54,
+      zoom: 9.0,
+      pitch: 45,
+      bearing: 5,
+    },
+    deepZoomRadiusKm: 120,
+    generalZoom: 9.0,
+    deepZoom: 15.0,
   },
 ];
 
@@ -251,14 +268,14 @@ const BORDER_OPERATION_NODES: BorderOperationalNode[] = [
   },
   {
     id: "sungai-kolok-security",
-    theaterId: "malaysia-frontier",
+    theaterId: "deep-south",
     label: "Sungai Kolok security gate",
     shortLabel: "KOLOK",
     type: "security",
     coordinates: [101.9623, 6.0298],
-    summary: "Security-sensitive gate where local tempo and movement screening need close attention.",
+    summary: "Security-sensitive border gate in the heart of the insurgency zone where screening tempo and movement control are critical.",
     usage:
-      "Useful when the southern story stops being freight-only and starts leaning into security tempo and screening discipline.",
+      "Primary crossing for Narathiwat province — security incidents and checkpoint escalation are monitored here first.",
     focusView: {
       longitude: 101.9696,
       latitude: 6.0261,
@@ -267,6 +284,46 @@ const BORDER_OPERATION_NODES: BorderOperationalNode[] = [
       bearing: 14,
     },
     allowsDeepZoom: true,
+    emphasis: "primary",
+  },
+  {
+    id: "betong-checkpoint",
+    theaterId: "deep-south",
+    label: "Betong checkpoint",
+    shortLabel: "BETONG",
+    type: "checkpoint",
+    coordinates: [101.0718, 5.7708],
+    summary: "Southernmost Thai town and strategic checkpoint on the Yala-Malaysia frontier.",
+    usage:
+      "Monitors cross-border movement in the western deep-south flank and serves as an indicator of insurgent lateral mobility.",
+    focusView: {
+      longitude: 101.075,
+      latitude: 5.774,
+      zoom: 12.0,
+      pitch: 46,
+      bearing: 8,
+    },
+    allowsDeepZoom: true,
+    emphasis: "secondary",
+  },
+  {
+    id: "pattani-security-command",
+    theaterId: "deep-south",
+    label: "Pattani security command",
+    shortLabel: "PATTANI",
+    type: "security",
+    coordinates: [101.2506, 6.8672],
+    summary: "Provincial security command center for the Pattani insurgency zone — ISOC Region 4 coordination point.",
+    usage:
+      "Central node for monitoring insurgent activity, IED incidents, and communal tension across the three southern provinces.",
+    focusView: {
+      longitude: 101.255,
+      latitude: 6.87,
+      zoom: 11.5,
+      pitch: 44,
+      bearing: 6,
+    },
+    allowsDeepZoom: false,
     emphasis: "primary",
   },
 ];
@@ -282,6 +339,10 @@ function resolvePrimaryFlowLabel(
 
   if (theaterId === "cambodia-frontier") {
     return liveFlows[1]?.label ?? fallback;
+  }
+
+  if (theaterId === "deep-south") {
+    return liveFlows[3]?.label ?? fallback;
   }
 
   return liveFlows[2]?.label ?? fallback;
@@ -392,9 +453,9 @@ export function buildBorderOperationsMapResponse(
     },
     {
       id: "kolok-security-spine",
-      theaterId: "malaysia-frontier",
+      theaterId: "deep-south",
       label: "Sungai Kolok security spine",
-      shortLabel: "SECURITY",
+      shortLabel: "KOLOK SPINE",
       coordinates: [
         [101.9623, 6.0298],
         [101.8896, 6.1614],
@@ -403,9 +464,26 @@ export function buildBorderOperationsMapResponse(
       ],
       mode: "security",
       summary:
-        "Security-sensitive southern line where screening tempo can dominate the corridor story.",
+        "Security-sensitive deep-south line linking Sungai Kolok through Narathiwat to Pattani — the insurgency's operational spine.",
       usage:
-        "Track when the southern picture shifts from freight pressure into local screening, security tempo, and diversion control.",
+        "Track IED incidents, checkpoint escalations, and insurgent activity tempo across the three southern border provinces.",
+      emphasis: "primary",
+    },
+    {
+      id: "deep-south-interior-spine",
+      theaterId: "deep-south",
+      label: "Pattani-Yala interior spine",
+      shortLabel: "INTERIOR",
+      coordinates: [
+        [101.2506, 6.8672],
+        [101.2791, 6.5397],
+        [101.0718, 5.7708],
+      ],
+      mode: "security",
+      summary:
+        "Interior corridor connecting Pattani command through Yala to Betong — insurgent lateral mobility route.",
+      usage:
+        "Monitor when insurgent activity shifts between provinces and whether security force redeployments are keeping pace.",
       emphasis: "secondary",
     },
   ];

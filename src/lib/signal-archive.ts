@@ -248,10 +248,9 @@ export const signalArchiveDeps = {
 
 export async function querySignals(params: SignalQueryParams): Promise<SignalQueryResult> {
   if (!signalArchiveDeps.isDatabaseConfigured()) {
-    throw new PlaybackApiError(
-      "ARCHIVE_UNAVAILABLE",
-      "Signal archive is not configured for playback queries.",
-    );
+    // Return empty result instead of throwing — allows the dashboard to
+    // function without a database on Cloudflare Workers.
+    return { signals: [], total: 0 };
   }
 
   const limit = parseIntegerParam(params.limit, {

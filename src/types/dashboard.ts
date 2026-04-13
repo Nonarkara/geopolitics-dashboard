@@ -91,7 +91,7 @@ export type BorderOperationalNodeType =
   | "security";
 
 export interface BorderOperationalTheater {
-  id: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier";
+  id: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south";
   label: string;
   counterpart: string;
   summary: string;

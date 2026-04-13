@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
 import BorderNewsDesk from "../components/Intelligence/BorderNewsDesk";
 import TopBar from "../components/Intelligence/TopBar";
@@ -9,6 +9,7 @@ import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
 import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
+import TheaterStrip from "../components/Theater/TheaterStrip";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
@@ -18,6 +19,7 @@ import DashboardScaler from "../components/Common/DashboardScaler";
 import { TimeWindowProvider, useTimeWindow } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
+import type { BorderAreaId } from "../lib/border-regions";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
 
 function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
@@ -46,19 +48,21 @@ function BorderDashboardSurface() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [flyToTheater, setFlyToTheater] = useState<BorderAreaId | null>(null);
   const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
 
   const [brief, setBrief] = useState<BorderCommandBrief | null>(isStatic ? {
     generatedAt: new Date().toISOString(),
     headline: "Static demo — connect to live database for real-time data",
-    summary: "This is a static preview of the Thailand Geopolitical Watch V6.0 dashboard. In production, this briefing updates every 60 seconds with live conflict, market, and environmental intelligence from 17 data sources across the Myanmar, Cambodia, and Malaysia frontiers.",
+    summary: "This is a static preview of the Thailand Geopolitical Watch V7.0 dashboard. In production, this briefing updates every 60 seconds with live conflict, market, and environmental intelligence from 17 data sources across the Myanmar, Cambodia, Deep South, and Malaysia frontiers.",
     overallPosture: "watch" as const,
-    overallScore: 62,
+    overallScore: 78,
     overallScoreMethod: "weighted-composite",
     areas: [
-      { id: "myanmar-frontier", label: "Myanmar Frontier", counterpart: "Myanmar military", posture: "priority" as const, score: 78, scoreBreakdown: { baseScore: 58, baseScoreRationale: "Chronic conflict baseline", contributions: [], rawTotal: 78, clampedScore: 78, formula: "base + factors" }, incidentCount: 4, fatalityCount: 2, verifiedCameras: 3, candidateCameras: 2, summary: "Elevated activity around Mae Sot / Myawaddy corridor", watchpoints: ["Conflict spillover", "Humanitarian pressure"], signals: [], recommendedAction: "Maintain heightened posture" },
-      { id: "cambodia-frontier", label: "Cambodia Frontier", counterpart: "Cambodia border", posture: "watch" as const, score: 50, scoreBreakdown: { baseScore: 34, baseScoreRationale: "Queue monitoring baseline", contributions: [], rawTotal: 50, clampedScore: 50, formula: "base + factors" }, incidentCount: 1, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Normal crossing pressure at Aranyaprathet-Poipet", watchpoints: ["Queue visibility", "Casino traffic"], signals: [], recommendedAction: "Standard monitoring" },
-      { id: "malaysia-frontier", label: "Malaysia Frontier", counterpart: "Malaysia border", posture: "watch" as const, score: 45, scoreBreakdown: { baseScore: 42, baseScoreRationale: "Southern corridor baseline", contributions: [], rawTotal: 45, clampedScore: 45, formula: "base + factors" }, incidentCount: 0, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Standard freight and passenger flow at Sadao", watchpoints: ["Freight pressure", "Security tempo"], signals: [], recommendedAction: "Routine observation" },
+      { id: "myanmar-frontier", label: "Myanmar Frontier", counterpart: "Myanmar military", posture: "priority" as const, score: 78, scoreBreakdown: { baseScore: 58, baseScoreRationale: "Chronic conflict baseline", contributions: [], rawTotal: 78, clampedScore: 78, formula: "base + factors" }, incidentCount: 4, fatalityCount: 2, verifiedCameras: 3, candidateCameras: 2, summary: "Elevated activity around Mae Sot / Myawaddy corridor", watchpoints: ["Conflict spillover around Mae Sot / Myawaddy", "Shelter and humanitarian pressure in Tak"], signals: [], recommendedAction: "Maintain heightened posture" },
+      { id: "cambodia-frontier", label: "Cambodia Frontier", counterpart: "Cambodia border", posture: "watch" as const, score: 50, scoreBreakdown: { baseScore: 34, baseScoreRationale: "Queue monitoring baseline", contributions: [], rawTotal: 50, clampedScore: 50, formula: "base + factors" }, incidentCount: 1, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Normal crossing pressure at Aranyaprathet-Poipet", watchpoints: ["Queue visibility gap at Aranyaprathet / Poipet", "Cross-border passenger and casino-linked traffic surges"], signals: [], recommendedAction: "Standard monitoring" },
+      { id: "deep-south", label: "Deep South (Patani)", counterpart: "BRN / separatist groups", posture: "watch" as const, score: 58, scoreBreakdown: { baseScore: 52, baseScoreRationale: "Insurgency baseline", contributions: [], rawTotal: 58, clampedScore: 58, formula: "base + factors" }, incidentCount: 2, fatalityCount: 1, verifiedCameras: 1, candidateCameras: 2, summary: "Low-level insurgent activity continues across Pattani-Yala-Narathiwat belt", watchpoints: ["BRN / PULO insurgent activity tempo and IED incidents", "Targeted attacks on schools, teachers, and government officials", "Communal tension indicators", "Security force deployment shifts"], signals: [], recommendedAction: "Maintain Deep South security posture" },
+      { id: "malaysia-frontier", label: "Malaysia Corridor", counterpart: "Malaysia border", posture: "stable" as const, score: 40, scoreBreakdown: { baseScore: 38, baseScoreRationale: "Trade corridor baseline", contributions: [], rawTotal: 40, clampedScore: 40, formula: "base + factors" }, incidentCount: 0, fatalityCount: 0, verifiedCameras: 2, candidateCameras: 1, summary: "Standard freight and passenger flow at Sadao", watchpoints: ["Coach and freight pressure on Hat Yai / Sadao approaches", "Rail-road coupling efficiency"], signals: [], recommendedAction: "Routine observation" },
     ],
     topConcerns: [],
     actionQueue: [],
@@ -66,7 +70,7 @@ function BorderDashboardSurface() {
   } : null);
 
   useEffect(() => {
-    if (isStatic) return; // Skip API fetches on static export
+    if (isStatic) return;
     let active = true;
 
     const loadBrief = async () => {
@@ -95,6 +99,11 @@ function BorderDashboardSurface() {
     };
   }, [buildUrl]);
 
+  const handleFlyToTheater = useCallback((theaterId: BorderAreaId) => {
+    setFlyToTheater(theaterId);
+    setTimeout(() => setFlyToTheater(null), 100);
+  }, []);
+
   return (
     <DashboardScaler>
     <main id="dashboard-content" className="relative flex h-[1080px] w-[1920px] flex-col overflow-hidden bg-black theme-border">
@@ -112,10 +121,10 @@ function BorderDashboardSurface() {
           />
         </header>
 
-        {/* ROW 2: PRIMARY SURFACE */}
+        {/* ROW 2: PRIMARY SURFACE — Sidebar + Map + Theater Strip */}
         <div className="flex flex-1 min-h-0 connected-grid">
 
-          {/* LEFT SIDEBAR */}
+          {/* LEFT SIDEBAR — Border Command Posture + Priority Board */}
           <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden" aria-label="Intelligence briefing">
             <ErrorBoundary name="Intelligence Briefing">
               <Sidebar brief={brief} />
@@ -123,25 +132,38 @@ function BorderDashboardSurface() {
           </aside>
 
           {/* CENTER: MAP */}
-          <div className="flex-1 min-w-0 grid-cell bg-[#0a1628] relative overflow-hidden" aria-label="Tactical map — Thailand tri-border region">
+          <div className="flex-1 min-w-0 grid-cell bg-[#0a1628] relative overflow-hidden" aria-label="Strategic map — Thailand quad-border region">
             {/* Static satellite image — always visible as background, covered by DeckGL when WebGL works */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/export?bbox=92,4,108,23&bboxSR=4326&size=1200,800&imageSR=4326&format=jpg&f=image"
-              alt="Thailand tri-border region"
+              alt="Thailand quad-border region"
               className="absolute inset-0 w-full h-full object-cover opacity-60"
               loading="eager"
             />
             <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628]/30 via-transparent to-[#08090e]/60 pointer-events-none z-[1]" />
             <div className="absolute inset-0 z-[2]">
               <ErrorBoundary name="Tactical Map Engine">
-                <BorderMap onProvinceSelect={setSelectedProvince} />
+                <BorderMap
+                  onProvinceSelect={setSelectedProvince}
+                  flyToTheater={flyToTheater}
+                />
               </ErrorBoundary>
             </div>
           </div>
+
+          {/* RIGHT: THEATER SPLIT-SCREEN STRIP */}
+          <aside className="hidden w-[300px] shrink-0 xl:flex grid-cell flex-col overflow-hidden" aria-label="Theater recon split-screen">
+            <ErrorBoundary name="Theater Recon">
+              <TheaterStrip
+                areas={brief?.areas ?? []}
+                onFlyTo={handleFlyToTheater}
+              />
+            </ErrorBoundary>
+          </aside>
         </div>
 
-        {/* ROW 3: ANALYTICS STRIP */}
+        {/* ROW 3: ANALYTICS STRIP — Market Pulse + Camera Rail + News Wire */}
         <div className="h-[280px] xl:h-[280px] max-xl:h-auto shrink-0 connected-grid bg-black overflow-hidden max-xl:flex-col" role="region" aria-label="Analytics strip">
 
           {/* MARKET PULSE */}

@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import type { MapViewState } from "@deck.gl/core";
-import DeckGL from "@deck.gl/react";
 import dynamic from "next/dynamic";
+import { luma } from "@luma.gl/core";
+import { webgl2Adapter } from "@luma.gl/webgl";
 import {
   Building2, Check, Compass, Eye, Flame, Globe, Grid3x3, Layers, MapPinned, Maximize2, Plane, Radio, Route, Ship, Target, Truck, Users, Zap
 } from "lucide-react";
@@ -45,10 +46,17 @@ import type {
 } from "../../types/dashboard";
 import { haversineKm } from "../../lib/border-regions";
 import { getUsableMapboxToken } from "../../lib/mapbox";
+import { resolveAppUrl } from "../../lib/app-url";
 
+const DeckGL = dynamic(
+  () => import("@deck.gl/react").then((module) => module.default),
+  { ssr: false },
+);
 const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
 const RAW_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 const MAPBOX_TOKEN = getUsableMapboxToken(RAW_TOKEN);
+
+luma.registerAdapters([webgl2Adapter]);
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85, latitude: 14.2, zoom: 6.25, pitch: 40, bearing: 0,
@@ -173,7 +181,7 @@ function clampViewState(
 
 async function fetchJson<T>(url: string, fallback: T): Promise<T> {
   try {
-    const response = await fetch(url, { cache: "no-store" });
+    const response = await fetch(resolveAppUrl(url), { cache: "no-store" });
 
     if (!response.ok) {
       return fallback;
@@ -373,8 +381,10 @@ function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: stri
 
 export default function BorderMap({
   onProvinceSelect,
+  flyToTheater,
 }: {
   onProvinceSelect?: (p: ProvinceSelection) => void;
+  flyToTheater?: string | null;
 }) {
   const { isHistorical, timeWindow } = useTimeWindow();
   const [viewState, setViewState] = useState(() =>
@@ -397,7 +407,7 @@ export default function BorderMap({
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
   const [activeTheaterId, setActiveTheaterId] = useState<
-    "national" | "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier"
+    "national" | "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south"
   >("national");
   const [selectedOperationalNodeId, setSelectedOperationalNodeId] = useState<string | null>(null);
 
@@ -517,7 +527,7 @@ export default function BorderMap({
     jumpToView((operationsMap?.nationalView ?? INITIAL_VIEW_STATE) as MapViewState);
   }, [jumpToView, operationsMap]);
 
-  const focusTheater = useCallback((theaterId: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier") => {
+  const focusTheater = useCallback((theaterId: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south") => {
     const theater = operationsMap?.theaters.find((item) => item.id === theaterId);
 
     if (!theater) {
@@ -528,6 +538,13 @@ export default function BorderMap({
     setSelectedOperationalNodeId(null);
     jumpToView(theater.focusView as MapViewState);
   }, [jumpToView, operationsMap]);
+
+  // Handle external fly-to-theater requests from TheaterPanel clicks
+  useEffect(() => {
+    if (flyToTheater) {
+      focusTheater(flyToTheater as "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south");
+    }
+  }, [flyToTheater, focusTheater]);
 
   const focusNode = useCallback((nodeId: string) => {
     const node = operationsMap?.nodes.find((item) => item.id === nodeId);
@@ -712,7 +729,7 @@ export default function BorderMap({
           setViewState(clampViewState(nv as MapViewState, operationsMap))
         }
         controller={true}
-        layers={hasMapboxToken ? layers : []}
+        layers={layers}
         style={{ position: "absolute", inset: "0" }}
       >
         {hasMapboxToken ? (
