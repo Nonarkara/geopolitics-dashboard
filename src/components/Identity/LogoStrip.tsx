@@ -22,13 +22,13 @@ export default function LogoStrip({ className }: { className?: string }) {
         Backed by
       </div>
       <div className="h-8 w-px bg-white/10 shrink-0" />
-      <div className="relative h-9 w-24 shrink-0">
+      <div className="relative h-9 w-24 shrink-0 bg-white/95 rounded-sm p-1">
         <Image
           src={PRIMARY_LOGO.src}
           alt={PRIMARY_LOGO.alt}
           fill
           sizes="96px"
-          className="object-contain opacity-55 brightness-0 invert"
+          className="object-contain p-1"
         />
       </div>
       <div className="hidden md:block h-7 w-px bg-white/10 shrink-0" />
@@ -36,7 +36,7 @@ export default function LogoStrip({ className }: { className?: string }) {
         {SECONDARY_LOGOS.map((logo, i) => (
           <div
             key={i}
-            className="relative h-5 w-11 shrink-0 grayscale opacity-35 brightness-0 invert transition-all hover:opacity-70"
+            className="relative h-6 w-12 shrink-0 bg-white/95 rounded-sm p-[2px] opacity-80 transition-all hover:opacity-100"
           >
             <Image
               src={logo.src}

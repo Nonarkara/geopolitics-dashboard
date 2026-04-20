@@ -1,490 +1,292 @@
 @import "tailwindcss";
 
+/* ────────────────────────────────────────────────────────────
+   THAILAND GEOPOLITICAL WATCH — V8
+   Design philosophy: Dieter Rams / Braun / Philips 1970s
+   - Monochrome (black bg, grey scale, one accent)
+   - Functional, not decorative
+   - Grid-aligned, information-dense, zero ornamentation
+   ──────────────────────────────────────────────────────────── */
+
 :root {
-  --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-mono: "IBM Plex Mono", "JetBrains Mono", "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+  /* Typography — Next.js next/font pipeline injects --font-sans and --font-mono-family */
+  --font-ui: var(--font-sans, "Roboto"), -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  --font-mono: var(--font-mono-family, "JetBrains Mono"), "SFMono-Regular", Menlo, monospace;
 
-  /* Tactical Precision Palette (Tesla/Apple/Norman) */
-  --bg: #f2f2f0;
-  --bg-raised: #ffffff;
-  --bg-surface: #ffffff;
-  --panel: #ffffff;
+  /* Monochrome palette */
+  --bg: #0a0a0a;
+  --bg-raised: #111111;
+  --bg-panel: #161616;
+  --bg-hover: #1e1e1e;
 
-  --line: #000000;
-  --line-dim: #e0e0dc;
+  --line: #2a2a2a;
+  --line-bright: #3a3a3a;
 
-  --ink: #000000;
-  --muted: #555552;
-  --dim: #999994;
+  --ink: #f5f5f5;
+  --ink-dim: #a0a0a0;
+  --ink-muted: #6a6a6a;
+  --ink-faint: #3a3a3a;
 
-  --accent: #ff3b30;     /* Apple Alert Red */
-  --hazard: #ff9500;     /* Apple Warning Orange */
-  --safe: #34c759;
-  --tech: #007aff;       /* Precision Blue */
-  --danger: #ff3b30;
-  --success: #34c759;
+  /* Single accent — alert red, used sparingly */
+  --accent: #e24a3f;
+  --accent-dim: #8a2e26;
 
-  --glass: blur(20px) saturate(180%);
-
-  /* Signal Intensity Border System */
-  --signal-none: rgba(0,0,0,0.06);
-  --signal-low: rgba(0,122,255,0.25);
-  --signal-medium: rgba(255,149,0,0.45);
-  --signal-high: rgba(255,59,48,0.6);
-  --signal-critical: rgba(255,59,48,0.9);
+  /* Semantic, muted */
+  --ok: #5a7a4a;
+  --warn: #a07a2a;
+  --crit: #e24a3f;
 }
 
-/* ── Absolute Grid Continuity ─────────────────────────────── */
+/* ── Reset ────────────────────────────────────────────────── */
 
 * {
-  border-radius: 0 !important;
-  box-shadow: none !important;
-  outline: none !important;
+  box-sizing: border-box;
 }
 
-*:focus-visible {
-  outline: 2px solid var(--tech) !important;
-  outline-offset: 2px !important;
-}
-
-.theme-border body {
+html, body {
+  margin: 0;
+  padding: 0;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font-ui);
-  letter-spacing: -0.01em;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: -0.008em;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv11", "ss01", "ss03";
 }
 
-/* Flush Grid Utilities */
-.connected-grid {
-  display: flex;
-  background: var(--line);
-  gap: 1.5px;
-}
+/* ── Utility classes — Rams style ────────────────────────── */
 
-.grid-cell {
-  background: var(--bg-surface);
-  position: relative;
-}
-
-.grid-cell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--line-dim);
-  pointer-events: none;
-  opacity: 0.08;
-}
-
-/* ── Signal-Intensity Border System ─────────────────────── */
-
-.signal-border {
-  border: 2px solid var(--signal-none);
-  transition: border-color 0.3s ease;
-}
-
-.signal-border[data-signal="low"] {
-  border-color: var(--signal-low);
-}
-
-.signal-border[data-signal="medium"] {
-  border-color: var(--signal-medium);
-}
-
-.signal-border[data-signal="high"] {
-  border-color: var(--signal-high);
-}
-
-.signal-border[data-signal="critical"] {
-  border-color: var(--signal-critical);
-  animation: signal-pulse 2s ease-in-out infinite;
-}
-
-@keyframes signal-pulse {
-  0%, 100% { border-color: var(--signal-critical); }
-  50% { border-color: rgba(255,59,48,0.4); }
-}
-
-/* Signal glow for critical modules */
-.signal-glow-critical {
-  box-shadow: 0 0 12px rgba(255,59,48,0.15) !important;
-}
-
-.signal-glow-warning {
-  box-shadow: 0 0 8px rgba(255,149,0,0.12) !important;
-}
-
-/* ── High-Density Typography ─────────────────────────────── */
-
-.eyebrow {
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--ink);
-  font-family: var(--font-mono);
-  opacity: 0.6;
-}
-
-.live-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0px 8px;
-  height: 20px;
-  font-size: 11px;
-  font-weight: 950;
-  text-transform: uppercase;
-  background: var(--ink);
-  color: #ffffff;
-  letter-spacing: 0.05em;
-}
-
-.live-badge::after {
-  content: "";
-  width: 4px;
-  height: 4px;
-  background: var(--accent);
-  border-radius: 50% !important;
-  animation: pulse-alert 1.5s infinite;
-}
-
-@keyframes pulse-alert {
-  0% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 1; }
-  100% { transform: scale(0.8); opacity: 0.5; }
-}
-
-.text-numeric {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.06em;
-}
-
-.h-precision {
-  font-weight: 900;
-  letter-spacing: -0.08em;
-  line-height: 0.75;
-}
-
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { scrollbar-width: none; }
-
-/* ── Operational Surfaces ────────────────────────────────── */
-
-.ops-card {
+.rams-panel {
+  background: var(--bg-panel);
   border: 1px solid var(--line);
-  background: white;
-  padding: 12px;
-  transition: all 0.15s ease;
 }
 
-.ops-card:hover {
-  background: var(--bg-raised);
-  border-color: var(--ink);
-}
-
-.control-pill {
-  height: 28px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  border: 1.5px solid var(--line);
-  font-size: 11px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-  transition: all 0.1s ease;
-}
-
-.control-pill.active {
-  background: var(--ink);
-  color: white;
-}
-
-/* ── Signal Module Cards ───────────────────────────────── */
-
-.module-card {
-  background: white;
-  border: 1.5px solid var(--line-dim);
-  position: relative;
-  transition: border-color 0.3s ease;
-}
-
-.module-card[data-priority="critical"] {
-  border-color: var(--accent);
-  border-width: 2.5px;
-}
-
-.module-card[data-priority="warning"] {
-  border-color: var(--hazard);
-  border-width: 2px;
-}
-
-.module-card[data-priority="info"] {
-  border-color: var(--tech);
-  border-width: 1.5px;
-}
-
-.module-card[data-priority="normal"] {
-  border-color: var(--line-dim);
-  border-width: 1px;
-}
-
-/* Priority indicator stripe */
-.module-card[data-priority="critical"]::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--accent);
-}
-
-.module-card[data-priority="warning"]::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--hazard);
-}
-
-/* ── Data Density Micro Components ──────────────────────── */
-
-.stat-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 6px;
-  font-size: 9px;
-  font-weight: 900;
-  font-family: var(--font-mono);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  background: var(--bg);
-  border: 1px solid var(--line-dim);
-}
-
-.stat-pill.danger { background: rgba(255,59,48,0.08); color: var(--accent); border-color: rgba(255,59,48,0.2); }
-.stat-pill.warning { background: rgba(255,149,0,0.08); color: var(--hazard); border-color: rgba(255,149,0,0.2); }
-.stat-pill.safe { background: rgba(52,199,89,0.08); color: var(--safe); border-color: rgba(52,199,89,0.2); }
-.stat-pill.info { background: rgba(0,122,255,0.08); color: var(--tech); border-color: rgba(0,122,255,0.2); }
-
-/* ── Country Flag Colors ────────────────────────────────── */
-
-.country-bar { height: 3px; width: 100%; }
-
-/* ── Tactical Pulse Animations ───────────────────────────── */
-
-@keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
-}
-
-.animate-marquee {
-  animation: marquee 60s linear infinite;
-}
-
-.animate-marquee:hover {
-  animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-marquee,
-  .animate-sweep,
-  .signal-border[data-signal="critical"],
-  .live-badge::after {
-    animation: none !important;
-  }
-}
-
-@keyframes sweep {
-  0% { transform: translateX(-100%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateX(100%); opacity: 0; }
-}
-
-.animate-sweep {
-  animation: sweep 4s ease-in-out infinite;
-}
-
-/* ── GDP Bar Chart Micro ─────────────────────────────────── */
-
-.gdp-bar {
-  height: 4px;
-  background: var(--line-dim);
-  position: relative;
-  overflow: hidden;
-}
-
-.gdp-bar-fill {
-  height: 100%;
-  transition: width 0.6s ease;
-}
-
-/* ── Scrollbar for sidebar ──────────────────────────────── */
-
-.thin-scrollbar::-webkit-scrollbar {
-  width: 3px;
-}
-
-.thin-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.thin-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--line-dim);
-}
-
-/* ── Skeleton shimmer for loading states ───────────────── */
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.07) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s ease-in-out infinite;
-}
-
-/* ── Responsive text floor ─────────────────────────────── */
-
-@media (max-width: 1023px) {
-  .stat-pill {
-    font-size: max(9px, inherit);
-  }
-}
-
-/* ── Screen reader only (visible on focus) ─────────────── */
-
-.sr-only-focusable:not(:focus):not(:focus-within) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ── Glassmorphic Card System (Theater Command Panels) ───── */
-
-:root {
-  --theater-myanmar: #ef4444;
-  --theater-cambodia: #f59e0b;
-  --theater-deep-south: #e11d48;
-  --theater-malaysia: #22c55e;
-  --glass-blur: blur(24px) saturate(1.2);
-  --surface-translucent: rgba(10, 12, 18, 0.75);
-}
-
-.glass-card {
-  --card-accent: rgba(255, 255, 255, 0.15);
-  background: var(--surface-translucent);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 2px solid var(--card-accent);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.glass-card-header {
+.rams-panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-raised);
+}
+
+.rams-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rams-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rams-hr {
+  height: 1px;
+  background: var(--line);
+  border: 0;
+}
+
+.rams-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 6px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.glass-card-title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  letter-spacing: 1.2px;
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--ink-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
 }
 
-.glass-card-icon {
-  display: flex;
+.rams-btn:hover {
+  border-color: var(--ink-dim);
+  color: var(--ink);
+  background: var(--bg-hover);
+}
+
+.rams-btn-accent {
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.rams-btn-accent:hover {
+  border-color: var(--accent);
+  background: rgba(226, 74, 63, 0.08);
+}
+
+/* ── Clickable list items ─────────────────────────────────── */
+
+.rams-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
-  color: var(--card-accent);
+  gap: 10px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--line);
+  cursor: pointer;
+  transition: background 0.08s ease;
 }
 
-.glass-card-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.rams-row:hover {
+  background: var(--bg-hover);
 }
 
-.glass-card-body {
-  padding: 0;
+.rams-row:last-child {
+  border-bottom: 0;
 }
 
-.glass-pill {
-  font-size: 0.5rem;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-  padding: 2px 6px;
-  border-radius: 3px;
-  color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* ── Bars & charts — minimal ──────────────────────────────── */
+
+.rams-bar-track {
+  height: 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  position: relative;
+  overflow: hidden;
 }
 
-.glass-pill-live {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.12);
-  border-color: rgba(34, 197, 94, 0.25);
+.rams-bar-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--ink-dim);
 }
 
-.glass-pill-muted {
-  color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.06);
+.rams-bar-fill-accent {
+  background: var(--accent);
 }
 
-/* ── Pulse-glow animation ──────────────────────────────── */
+/* ── Ticker / marquee ─────────────────────────────────────── */
 
-@keyframes pulse-glow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-/* ── Marquee animation for LiveIntelligenceFeed ─────────── */
-
-@keyframes marquee {
+@keyframes rams-marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
 }
 
-.animate-marquee {
-  animation: marquee 60s linear infinite;
+.rams-marquee {
+  display: flex;
+  gap: 48px;
+  white-space: nowrap;
+  animation: rams-marquee 90s linear infinite;
+  width: max-content;
 }
 
-.animate-marquee:hover {
+.rams-marquee:hover {
   animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rams-marquee { animation-duration: 600s; }
+}
+
+/* ── Tick pulse — subtle ──────────────────────────────────── */
+
+@keyframes rams-tick {
+  0%, 60% { opacity: 1; }
+  61%, 100% { opacity: 0.2; }
+}
+
+.rams-tick {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  animation: rams-tick 1s step-end infinite;
+}
+
+.rams-tick-ok { background: var(--ok); }
+
+/* ── Focus ring ───────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--line-bright); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-muted); }
+
+/* ── Responsive design — prevent text overlap on resize ────── */
+
+@media (max-width: 768px) {
+  html, body {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+
+  .rams-label {
+    font-size: 10px;
+  }
+
+  .rams-value {
+    font-size: 13px;
+  }
+
+  .rams-btn {
+    font-size: 10px;
+    padding: 5px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  html, body {
+    font-size: 13px;
+    line-height: 1.3;
+  }
+
+  .rams-label {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+
+  .rams-value {
+    font-size: 12px;
+  }
+
+  .rams-btn {
+    font-size: 9px;
+    padding: 4px 6px;
+  }
+}
+
+/* ── Legacy support (components that still reference old vars) ── */
+
+:root {
+  --font-family-sans: var(--font-ui);
+  --font-family-mono: var(--font-mono);
+  --bg-surface: var(--bg-panel);
+  --bg-raised: var(--bg-raised);
+  --panel: var(--bg-panel);
+  --line-dim: var(--line);
+  --muted: var(--ink-dim);
+  --dim: var(--ink-muted);
+  --hazard: var(--warn);
+  --safe: var(--ok);
+  --tech: var(--ink-dim);
+  --danger: var(--accent);
+  --success: var(--ok);
 }

@@ -56,7 +56,14 @@ const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
 const RAW_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
 const MAPBOX_TOKEN = getUsableMapboxToken(RAW_TOKEN);
 
-luma.registerAdapters([webgl2Adapter]);
+try {
+  luma.registerAdapters([webgl2Adapter]);
+} catch (err) {
+  if (typeof window !== "undefined") {
+    // eslint-disable-next-line no-console
+    console.warn("[BorderMap] luma.registerAdapters failed", err);
+  }
+}
 
 const INITIAL_VIEW_STATE: MapViewState = {
   longitude: 100.85, latitude: 14.2, zoom: 6.25, pitch: 40, bearing: 0,

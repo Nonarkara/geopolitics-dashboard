@@ -333,6 +333,8 @@ export const createIncidentLayer = (
       (d?.properties?.fatalities || 0) > 0 ? [239, 68, 68, 200] : [245, 158, 11, 200],
     getRadius: (d: IncidentFeature) =>
       Math.sqrt(Math.max(0, d?.properties?.fatalities || 0) + 1) * 2000,
+    radiusMinPixels: 5,
+    radiusMaxPixels: 30,
     pickable: true,
     autoHighlight: true,
     highlightColor: [255, 255, 255, 100],
@@ -370,6 +372,8 @@ export const createFireLayer = (data: FireEvent[]) =>
     getPosition: (d: FireEvent) => [d?.longitude || 0, d?.latitude || 0],
     getFillColor: [255, 165, 0, 180],
     getRadius: (d: FireEvent) => Math.sqrt(d?.brightness || 1) * 300,
+    radiusMinPixels: 3,
+    radiusMaxPixels: 20,
     pickable: true,
   });
 

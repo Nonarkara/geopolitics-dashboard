@@ -1,12 +1,13 @@
 import path from "node:path";
 
 const isStaticExport = process.env.NEXT_OUTPUT === "export";
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const nextConfig = {
   ...(isStaticExport
     ? {
         output: "export",
-        basePath: "/geopolitics-dashboard",
+        ...(basePath ? { basePath } : {}),
         images: { unoptimized: true },
       }
     : {}),
