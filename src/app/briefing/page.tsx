@@ -148,14 +148,14 @@ export default async function BriefingPage() {
           h2 { page-break-after: avoid; }
         }
         .briefing-page {
-          font-family: Georgia, 'Times New Roman', serif;
+          font-family: "Source Sans 3", "Helvetica Neue", sans-serif;
           color: #111;
           line-height: 1.6;
         }
         .briefing-page table {
           width: 100%;
           border-collapse: collapse;
-          font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+          font-family: "JetBrains Mono", "SF Mono", "Consolas", monospace;
           font-size: 10px;
         }
         .briefing-page th {
@@ -165,7 +165,7 @@ export default async function BriefingPage() {
           text-transform: uppercase;
           letter-spacing: 0.08em;
           font-size: 9px;
-          font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+          font-family: "JetBrains Mono", "SF Mono", "Consolas", monospace;
           text-align: left;
           padding: 6px 12px;
           border: 1px solid #333;

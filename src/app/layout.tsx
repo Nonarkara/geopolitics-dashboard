@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
-import { Roboto, JetBrains_Mono } from "next/font/google";
+import { Josefin_Sans, Source_Sans_3, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
 
-const sans = Roboto({
+const display = Josefin_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-sans",
+  weight: ["300", "400", "600", "700"],
+  variable: "--font-display-family",
+  display: "swap",
+});
+
+const body = Source_Sans_3({
+  subsets: ["latin"],
+  weight: ["300", "400", "600", "700"],
+  variable: "--font-body-family",
   display: "swap",
 });
 
@@ -73,7 +80,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
+    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
       <body className="overflow-hidden antialiased">
         {children}
       </body>
