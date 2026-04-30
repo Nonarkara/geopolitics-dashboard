@@ -130,7 +130,7 @@ function useFetch<T>(url: string, interval: number): T | null {
 }
 
 export default function Sidebar({ brief }: SidebarProps) {
-  const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
+  const { buildUrl, isHistorical, timeWindow, bangkokDay } = useTimeWindow();
   const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
   const rivers = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
   const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
@@ -220,7 +220,7 @@ export default function Sidebar({ brief }: SidebarProps) {
       <div className="flex-1 overflow-y-auto no-scrollbar thin-scrollbar p-4 space-y-5">
         {isHistorical && timeWindow ? (
           <section className="border border-white/15 bg-black px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/75">
-            Playback window: {formatBangkokDayLabel(timeWindow.bangkokDay)} ICT
+            Playback window: {formatBangkokDayLabel(bangkokDay ?? "")} ICT
           </section>
         ) : null}
         {/* TRI-BORDER PRIORITY BOARD */}

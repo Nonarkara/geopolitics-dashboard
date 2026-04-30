@@ -217,6 +217,7 @@ export interface MarketRadarResponse {
   signals: EconomicIndicator[];
   aseanGdp: AseanGdpDatum[];
   sources: string[];
+  mode?: string;
 }
 
 export interface DatabaseTableSummary {
@@ -279,6 +280,7 @@ export interface NewsItem {
 export interface NewsResponse {
   news: NewsItem[];
   generatedAt: string;
+  mode?: string;
 }
 
 export interface TickerItem {

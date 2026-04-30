@@ -42,7 +42,7 @@ function formatHeaderTime(value: string) {
 }
 
 export default function BorderNewsDesk() {
-  const { timeWindow, buildUrl, isHistorical } = useTimeWindow();
+  const { timeWindow, bangkokDay, buildUrl, isHistorical } = useTimeWindow();
   const [news, setNews] = useState<NewsResponse>(fallbackNews);
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function BorderNewsDesk() {
       <div className="min-h-0 flex-1 overflow-y-auto p-2.5 no-scrollbar">
         {isHistorical && timeWindow ? (
           <div className="mb-2 rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
-            Playback window: {formatBangkokDayLabel(timeWindow.bangkokDay)} ICT
+            Playback window: {formatBangkokDayLabel(bangkokDay ?? "")} ICT
           </div>
         ) : null}
         {news.news.length > 0 ? (

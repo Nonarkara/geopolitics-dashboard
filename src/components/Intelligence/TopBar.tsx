@@ -44,7 +44,7 @@ export default function TopBar({
   onOpenArchitecture,
   onOpenDataExplorer,
 }: TopBarProps) {
-  const { isHistorical, timeWindow } = useTimeWindow();
+  const { isHistorical, timeWindow, bangkokDay } = useTimeWindow();
   const [time, setTime] = useState(() => formatTime(new Date()));
 
   useEffect(() => {
@@ -89,7 +89,7 @@ export default function TopBar({
             </span>
             {isHistorical && timeWindow ? (
               <span className="inline-flex items-center border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.2)]">
-                Playback {formatBangkokDayLabel(timeWindow.bangkokDay)}
+                Playback {formatBangkokDayLabel(bangkokDay ?? "")}
               </span>
             ) : null}
           </div>
