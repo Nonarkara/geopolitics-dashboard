@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { loadBorderOsint } from "../../../../lib/border-osint";
 import { logFeedHealth } from "../../../../lib/supabase";

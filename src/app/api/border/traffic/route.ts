@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 import { logFeedHealth } from "../../../../lib/supabase";

@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { fallbackBriefing } from "../../../../lib/mock-data";
 import { buildLatestBriefing } from "../../../../lib/intelligence";

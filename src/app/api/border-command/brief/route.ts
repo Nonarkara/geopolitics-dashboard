@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { loadBorderCommandBrief } from "../../../../lib/border-command";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";

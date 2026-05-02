@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import type { FlightData } from "../../../types/dashboard";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../lib/signal-archive";

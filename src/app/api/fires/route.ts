@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { query } from "../../../lib/db";
 import { getErrorMessage } from "../../../lib/errors";

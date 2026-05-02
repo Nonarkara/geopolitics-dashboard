@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   exportDatabaseTableRows,
@@ -46,7 +48,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!isDataExplorerAuthorized(request)) {
+  if (!await isDataExplorerAuthorized(request)) {
     return unauthorizedDataExplorerResponse();
   }
 

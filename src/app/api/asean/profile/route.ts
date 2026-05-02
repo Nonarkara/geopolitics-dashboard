@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextRequest, NextResponse } from "next/server";
 import { isAseanCountryCode } from "../../../../lib/asean-country-registry";
 import { loadAseanCountryProfile } from "../../../../lib/asean-economics";

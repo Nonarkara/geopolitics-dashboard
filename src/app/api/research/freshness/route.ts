@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured, query } from "../../../../lib/db";
 

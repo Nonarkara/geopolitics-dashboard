@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { buildRuntimeStatusPayload } from "../../../lib/runtime-status";
 
 export async function GET() {

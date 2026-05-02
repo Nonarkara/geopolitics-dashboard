@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 

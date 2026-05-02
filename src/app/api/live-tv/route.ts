@@ -1,3 +1,5 @@
+export const runtime = 'edge';
+
 import { NextResponse } from "next/server";
 
 const CACHE_TTL = 900; // 15 minutes
