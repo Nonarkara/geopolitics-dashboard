@@ -128,6 +128,47 @@ export const fallbackEconomicIndicators: EconomicIndicator[] = [
     category: "Inflation",
     source: "BOT",
   },
+  // US Equity — fallback values (refreshed every 5 min when live)
+  {
+    label: "DOW",
+    value: 39118,
+    change: 0.32,
+    up: true,
+    category: "US Equity",
+    source: "Yahoo Finance (fallback)",
+  },
+  {
+    label: "NASDAQ",
+    value: 18188,
+    change: 0.55,
+    up: true,
+    category: "US Equity",
+    source: "Yahoo Finance (fallback)",
+  },
+  {
+    label: "NVDA",
+    value: 875.4,
+    change: 1.2,
+    up: true,
+    category: "Tech",
+    source: "Yahoo Finance (fallback)",
+  },
+  {
+    label: "TSLA",
+    value: 248.5,
+    change: -0.8,
+    up: false,
+    category: "Tech",
+    source: "Yahoo Finance (fallback)",
+  },
+  {
+    label: "GOOGL",
+    value: 176.3,
+    change: 0.4,
+    up: true,
+    category: "Tech",
+    source: "Yahoo Finance (fallback)",
+  },
 ];
 
 export const fallbackAseanGdp: AseanGdpDatum[] = [
