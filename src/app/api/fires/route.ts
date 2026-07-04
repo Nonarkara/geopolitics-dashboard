@@ -36,9 +36,21 @@ export async function GET() {
       acq_date: row.acq_date,
     }));
 
-    return NextResponse.json(fires.length > 0 ? fires : fallbackFires);
+    if (fires.length > 0) {
+      return NextResponse.json(fires, {
+        headers: { "X-Data-Source": "live" },
+      });
+    }
+    // Zero rows is a legitimate empty result, but we substitute mock data so
+    // the map is never blank — mark it so a caller can tell it apart from real.
+    return NextResponse.json(fallbackFires, {
+      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "no-rows" },
+    });
   } catch (error: unknown) {
     console.error("Fire query error:", getErrorMessage(error));
-    return NextResponse.json(fallbackFires, { status: 200 });
+    return NextResponse.json(fallbackFires, {
+      status: 200,
+      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "db-error" },
+    });
   }
 }

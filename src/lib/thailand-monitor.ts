@@ -1,4 +1,5 @@
 import { query } from "./db";
+import { getErrorMessage } from "./errors";
 import {
   fallbackBriefing,
   fallbackEconomicIndicators,
@@ -117,7 +118,13 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
       });
 
     return incidents.length > 0 ? incidents : fallbackIncidents;
-  } catch {
+  } catch (error) {
+    // Never swallow the DB failure silently — the caller substitutes mock
+    // data, so the real error must at least reach the server logs.
+    console.error(
+      "Incident query failed — serving mock incidents:",
+      getErrorMessage(error),
+    );
     return fallbackIncidents;
   }
 }
