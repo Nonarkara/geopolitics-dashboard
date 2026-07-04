@@ -146,9 +146,9 @@ export default function BorderDashboard() {
         {/* ROW 6: BORDER STATUS STRIP */}
         <BorderStatusStrip brief={brief} />
       </div>
-      </TimeWindowProvider>
 
-      {/* MOBILE COMMAND PANELS (same Sidebar content as the desktop aside) */}
+      {/* MOBILE COMMAND PANELS (same Sidebar content as the desktop aside).
+          Must stay INSIDE TimeWindowProvider — Sidebar calls useTimeWindow(). */}
       <MobileDrawer
         isOpen={isPanelsOpen}
         onClose={() => setIsPanelsOpen(false)}
@@ -156,6 +156,7 @@ export default function BorderDashboard() {
       >
         <Sidebar brief={brief} />
       </MobileDrawer>
+      </TimeWindowProvider>
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
