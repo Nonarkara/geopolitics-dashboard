@@ -14,6 +14,7 @@ import DashboardArchitectureModal from "../components/Intelligence/DashboardArch
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
+import MobileDrawer from "../components/Common/MobileDrawer";
 import { TimeWindowProvider } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
 import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
@@ -36,6 +37,7 @@ export default function BorderDashboard() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [isPanelsOpen, setIsPanelsOpen] = useState(false);
   const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
 
   useEffect(() => {
@@ -100,6 +102,16 @@ export default function BorderDashboard() {
           </div>
         </div>
 
+        {/* MOBILE: sidebar is hidden below xl — surface it via a bottom sheet (§11.8) */}
+        <button
+          type="button"
+          onClick={() => setIsPanelsOpen(true)}
+          aria-label="Open command panels"
+          className="fixed left-2 top-[64px] z-40 flex h-11 items-center gap-2 border border-white/25 bg-black/85 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-white xl:hidden"
+        >
+          <span aria-hidden="true">&#9776;</span> Panels
+        </button>
+
         {/* ROW 3: ANALYTICS STRIP */}
         <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
 
@@ -135,6 +147,15 @@ export default function BorderDashboard() {
         <BorderStatusStrip brief={brief} />
       </div>
       </TimeWindowProvider>
+
+      {/* MOBILE COMMAND PANELS (same Sidebar content as the desktop aside) */}
+      <MobileDrawer
+        isOpen={isPanelsOpen}
+        onClose={() => setIsPanelsOpen(false)}
+        title="Command Panels"
+      >
+        <Sidebar brief={brief} />
+      </MobileDrawer>
 
       {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />

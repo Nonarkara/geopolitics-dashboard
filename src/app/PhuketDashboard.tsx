@@ -9,6 +9,7 @@ import TopBar from "../components/Phuket/Intelligence/TopBar";
 import ProvinceDashboard from "../components/Phuket/Analytics/ProvinceDashboard";
 import BorderMap from "../components/Phuket/Map/BorderMap";
 import Sidebar from "../components/Phuket/Sidebar/Sidebar";
+import MobileDrawer from "../components/Common/MobileDrawer";
 import type { ProvinceSelection } from "../types/dashboard";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
 
@@ -19,6 +20,7 @@ export default function PhuketDashboard() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [isPanelsOpen, setIsPanelsOpen] = useState(false);
 
   const openManual = () => {
     setIsArchitectureOpen(false);
@@ -65,11 +67,33 @@ export default function PhuketDashboard() {
         <div className="flex flex-1 flex-col min-w-0 bg-[var(--bg)]">
           <section className="relative flex-1 overflow-hidden">
             <BorderMap onProvinceSelect={setSelectedProvince} />
+            {/* MOBILE: command column is hidden below xl — surface it (§11.8) */}
+            <button
+              type="button"
+              onClick={() => setIsPanelsOpen(true)}
+              aria-label="Open command panels"
+              className="absolute left-2 top-2 z-40 flex h-11 items-center gap-2 border border-[var(--line)] bg-[var(--bg-raised)] px-3 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink)] xl:hidden"
+            >
+              <span aria-hidden="true">&#9776;</span> Panels
+            </button>
           </section>
 
           <BottomIntelRail />
         </div>
       </div>
+
+      {/* MOBILE COMMAND PANELS (same content as the desktop aside) */}
+      <MobileDrawer
+        isOpen={isPanelsOpen}
+        onClose={() => setIsPanelsOpen(false)}
+        title="Command Panels"
+      >
+        <Sidebar />
+        <section className="border-t border-[var(--line)] p-3">
+          <div className="eyebrow mb-2 opacity-50">Tactical Brief</div>
+          <BriefingPanel />
+        </section>
+      </MobileDrawer>
 
       <ProvinceDashboard
         province={selectedProvince}
