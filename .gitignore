@@ -44,3 +44,5 @@ next-env.d.ts
 # Build output (may contain env secrets)
 .open-next/
 .next/
+
+.wrangler/
