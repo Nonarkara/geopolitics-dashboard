@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured, query } from "../../../../lib/db";
 import { logFeedHealth } from "../../../../lib/supabase";

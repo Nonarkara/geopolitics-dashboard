@@ -52,7 +52,7 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
     id: "cambodia-frontier",
     label: "Cambodia frontier",
     counterpart: "Cambodia",
-    center: [13.6587, 102.5636],
+    center: [102.5636, 13.6587],
     radiusKm: 320,
     aliases: [
       "aranyaprathet",
@@ -81,8 +81,8 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
     id: "malaysia-frontier",
     label: "Malaysia frontier",
     counterpart: "Malaysia",
-    center: [6.7483, 100.4186],
-    radiusKm: 360,
+    center: [100.4186, 6.7483],
+    radiusKm: 200,
     aliases: [
       "hat yai",
       "sadao",

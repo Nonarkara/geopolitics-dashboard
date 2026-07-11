@@ -215,16 +215,15 @@ function FeedDot({ fetchResult, label, expectedIntervalMs, nowMs }: {
   fetchResult: UseFetchResult<unknown>;
   label: string;
   expectedIntervalMs: number;
-  nowMs: number | null;
+  nowMs: number;
 }) {
   const [showTip, setShowTip] = useState(false);
 
   const hasData = fetchResult.data !== null;
   const hasError = fetchResult.error !== null;
-  const age =
-    fetchResult.lastRefreshed && nowMs !== null
-      ? nowMs - fetchResult.lastRefreshed.getTime()
-      : Infinity;
+  const age = fetchResult.lastRefreshed
+    ? nowMs - fetchResult.lastRefreshed.getTime()
+    : Infinity;
   const isStale = age > expectedIntervalMs * 2;
 
   let dotColor = "bg-[var(--safe,#22c55e)]"; // fresh
@@ -289,8 +288,8 @@ function ScoreBreakdownTooltip({ breakdown, show }: { breakdown: ScoreBreakdown;
 }
 
 export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief | null }) {
-  const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
-  const nowMs = useNow(5_000);
+  const { buildUrl, isHistorical, timeWindow, bangkokDay } = useTimeWindow();
+  const nowMs = useNow(5_000).getTime();
   const commoditiesFetch = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
   const riversFetch = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
   const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
@@ -307,15 +306,15 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
 
   // Find the stalest feed
   const feedAges: { label: string; age: number }[] = [
-    { label: "TFC", age: trafficFetch.lastRefreshed && nowMs !== null ? nowMs - trafficFetch.lastRefreshed.getTime() : Infinity },
-    { label: "QKE", age: quakesFetch.lastRefreshed && nowMs !== null ? nowMs - quakesFetch.lastRefreshed.getTime() : Infinity },
-    { label: "FLD", age: riversFetch.lastRefreshed && nowMs !== null ? nowMs - riversFetch.lastRefreshed.getTime() : Infinity },
-    { label: "DIS", age: disastersFetch.lastRefreshed && nowMs !== null ? nowMs - disastersFetch.lastRefreshed.getTime() : Infinity },
-    { label: "AGR", age: commoditiesFetch.lastRefreshed && nowMs !== null ? nowMs - commoditiesFetch.lastRefreshed.getTime() : Infinity },
+    { label: "TFC", age: trafficFetch.lastRefreshed     ? nowMs - trafficFetch.lastRefreshed.getTime()     : Infinity },
+    { label: "QKE", age: quakesFetch.lastRefreshed      ? nowMs - quakesFetch.lastRefreshed.getTime()      : Infinity },
+    { label: "FLD", age: riversFetch.lastRefreshed      ? nowMs - riversFetch.lastRefreshed.getTime()      : Infinity },
+    { label: "DIS", age: disastersFetch.lastRefreshed   ? nowMs - disastersFetch.lastRefreshed.getTime()   : Infinity },
+    { label: "AGR", age: commoditiesFetch.lastRefreshed ? nowMs - commoditiesFetch.lastRefreshed.getTime() : Infinity },
   ];
   const stalest = feedAges.reduce((a, b) => (a.age > b.age ? a : b));
   const stalestLabel =
-    stalest.age < Infinity && nowMs !== null
+    stalest.age < Infinity
       ? `${stalest.label} ${timeAgo(new Date(nowMs - stalest.age), nowMs)}`
       : "--";
 
@@ -397,7 +396,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
       <div className="max-w-[2200px] mx-auto flex items-center gap-3 overflow-x-auto no-scrollbar">
         {isHistorical && timeWindow ? (
           <div className="shrink-0 border border-black bg-black px-3 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/75">
-            Playback {formatBangkokDayLabel(timeWindow.bangkokDay)} | hazard feeds remain live reference
+            Playback {formatBangkokDayLabel(bangkokDay ?? "")} | hazard feeds remain live reference
           </div>
         ) : null}
 

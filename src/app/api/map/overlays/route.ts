@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 

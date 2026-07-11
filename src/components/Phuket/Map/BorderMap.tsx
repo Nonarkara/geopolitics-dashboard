@@ -327,8 +327,8 @@ export default function BorderMap({
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
-  const [showAerialBasemap, setShowAerialBasemap] = useState(MAPBOX_TOKEN.length === 0);
-  const [showStreets, setShowStreets] = useState(MAPBOX_TOKEN.length === 0);
+  const [showAerialBasemap, setShowAerialBasemap] = useState(true);
+  const [showStreets, setShowStreets] = useState(false);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
@@ -374,7 +374,9 @@ export default function BorderMap({
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
   const rainCount = rainfall.length;
-  const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
+  // Mapbox account removed — always use the free Deck.gl aerial/street base
+  // layers plus the satellite overlay. No token, no account, no billing.
+  const hasMapboxBaseMap = false;
   const mapStyle = isDetailedMap
     ? "mapbox://styles/mapbox/satellite-streets-v12"
     : "mapbox://styles/mapbox/light-v11";

@@ -1,6 +1,7 @@
 import path from "node:path";
 
 const nextConfig = {
+  output: "standalone",
   transpilePackages: [
     "@deck.gl/core",
     "@deck.gl/layers",

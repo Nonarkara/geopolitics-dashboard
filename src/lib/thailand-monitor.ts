@@ -88,6 +88,11 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
         event_date
       FROM events
       WHERE geom IS NOT NULL
+        AND event_type NOT IN (
+          'Road safety alert', 'Marine advisory', 'Tourism surge',
+          'Flooded roadway', 'Weather alert', 'Traffic incident',
+          'Infrastructure', 'Public health'
+        )
       ORDER BY event_date DESC
       LIMIT 100
     `);

@@ -300,7 +300,69 @@ export async function fetchReferenceEconomicIndicators() {
       category: "Crypto",
       source: "Binance BTCUSDT",
     },
+    // US Equity indices & watchlist stocks — Yahoo Finance (no key required)
+    ...await fetchUsEquityIndicators(),
   ] satisfies EconomicIndicator[];
+}
+
+// ── US Equity: Dow Jones, NASDAQ, NVDA, TSLA, GOOGL ──────────────────────────
+// Yahoo Finance v8 chart API — free, no key, server-side only (no CORS issue).
+// Returns price + 24h change for each symbol. Gracefully returns empty array on error.
+const YAHOO_SYMBOLS: { symbol: string; label: string; category: string }[] = [
+  { symbol: "^DJI",   label: "DOW",   category: "US Equity" },
+  { symbol: "^IXIC",  label: "NASDAQ", category: "US Equity" },
+  { symbol: "NVDA",   label: "NVDA",  category: "Tech" },
+  { symbol: "TSLA",   label: "TSLA",  category: "Tech" },
+  { symbol: "GOOGL",  label: "GOOGL", category: "Tech" },
+];
+
+type YahooChartMeta = {
+  regularMarketPrice?: number;
+  chartPreviousClose?: number;
+};
+
+async function fetchYahooQuote(symbol: string): Promise<{ price: number; change: number } | null> {
+  try {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const res = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Mozilla/5.0" },
+      next: { revalidate: 300 },  // cache 5 min
+    });
+    clearTimeout(timeout);
+    if (!res.ok) return null;
+    const json = await res.json() as { chart?: { result?: { meta: YahooChartMeta }[] } };
+    const meta = json?.chart?.result?.[0]?.meta;
+    if (!meta || typeof meta.regularMarketPrice !== "number") return null;
+    const price = meta.regularMarketPrice;
+    const prev = meta.chartPreviousClose ?? price;
+    const changePct = prev > 0 ? ((price - prev) / prev) * 100 : 0;
+    return { price, change: Number(changePct.toFixed(2)) };
+  } catch {
+    return null;
+  }
+}
+
+async function fetchUsEquityIndicators(): Promise<EconomicIndicator[]> {
+  const results = await Promise.allSettled(
+    YAHOO_SYMBOLS.map(async ({ symbol, label, category }) => {
+      const q = await fetchYahooQuote(symbol);
+      if (!q) return null;
+      const isIndex = symbol.startsWith("^");
+      return {
+        label,
+        value: isIndex ? Math.round(q.price) : Number(q.price.toFixed(2)),
+        change: q.change,
+        up: q.change >= 0,
+        category,
+        source: "Yahoo Finance",
+      } satisfies EconomicIndicator;
+    })
+  );
+  return results
+    .flatMap((r) => (r.status === "fulfilled" && r.value !== null ? [r.value] : []));
 }
 
 function buildWorldBankIndicatorUrl(indicatorId: string) {

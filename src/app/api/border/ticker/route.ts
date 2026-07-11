@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { fallbackTicker } from "../../../../lib/mock-data";
 import {
