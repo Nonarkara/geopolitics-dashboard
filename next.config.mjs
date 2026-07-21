@@ -16,7 +16,6 @@ const nextConfig = {
     "@deck.gl/layers",
     "@deck.gl/aggregation-layers",
     "@deck.gl/geo-layers",
-    "@deck.gl/mapbox",
     "@deck.gl/react",
     "@luma.gl/core",
     "@luma.gl/engine",
@@ -26,10 +25,6 @@ const nextConfig = {
   ],
   turbopack: {},
   env: {
-    NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-      process.env.MAPBOX_ACCESS_TOKEN ??
-      "",
     NEXT_PUBLIC_ENABLE_DATA_EXPLORER:
       process.env.NEXT_PUBLIC_ENABLE_DATA_EXPLORER ?? "",
     NEXT_PUBLIC_STATIC_EXPORT:
