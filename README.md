@@ -1,5 +1,7 @@
 # Phuket Dashboard
 
+> **Deployment (read first):** the live site is the `overhaul` branch, deployed to Cloudflare **Workers** via OpenNext — `npm run build:worker && npm run deploy` (config: `wrangler.jsonc` + `open-next.config.ts` on `overhaul`). Cloudflare Pages (`wrangler.toml`) and Vercel (`vercel.json`) are retired and their configs were removed — do not re-add them. Maps render on free tiles via MapLibre; there is no Mapbox dependency anywhere (account deleted 2026-07).
+
 Map-first monitoring dashboard for Phuket and nearby provinces, focused on tourism demand, road safety, rainfall, monsoon pressure, air quality, mobility, and local economy. The frontend is a Next.js app; the data layer is PostgreSQL/PostGIS plus Python ingestion scripts. This repo was cloned from the Geopolitics Dashboard system and retargeted as a Phuket-focused starter.
 
 ## Stack
