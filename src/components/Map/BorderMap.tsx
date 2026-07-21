@@ -45,16 +45,14 @@ import type {
   VesselPosition,
 } from "../../types/dashboard";
 import { haversineKm } from "../../lib/border-regions";
-import { getUsableMapboxToken } from "../../lib/mapbox";
 import { resolveAppUrl } from "../../lib/app-url";
 
 const DeckGL = dynamic(
   () => import("@deck.gl/react").then((module) => module.default),
   { ssr: false },
 );
-const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const RAW_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
-const MAPBOX_TOKEN = getUsableMapboxToken(RAW_TOKEN);
+// Mapbox is permanently gone (account deleted) — no MapboxMap underlay,
+// no token. The free Deck.gl raster tile layers below are the only base.
 
 try {
   luma.registerAdapters([webgl2Adapter]);
@@ -275,8 +273,6 @@ interface BaseMapConfig {
   gibsFormat?: "jpg" | "png";
   maxZoom: number;
   useDefaultDate?: boolean;
-  /** Mapbox style URL — rendered via react-map-gl instead of deck.gl tiles */
-  mapboxStyle?: string;
 }
 
 const BASE_MAPS: BaseMapConfig[] = [
@@ -429,8 +425,6 @@ export default function BorderMap({
   const [operationsMap, setOperationsMap] = useState<BorderOperationalMapResponse | null>(null);
   const [recentSignals, setRecentSignals] = useState<{ id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[]>([]);
   const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
-
-  const hasMapboxToken = MAPBOX_TOKEN.length > 0;
 
   useEffect(() => {
     const load = async () => {
@@ -738,20 +732,7 @@ export default function BorderMap({
         controller={true}
         layers={layers}
         style={{ position: "absolute", inset: "0" }}
-      >
-        {hasMapboxToken ? (
-          <MapboxMap
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle="mapbox://styles/mapbox/satellite-v9"
-            attributionControl={false}
-            renderWorldCopies={false}
-            maxBounds={[
-              [THAILAND_BORDER_BOUNDS.west, THAILAND_BORDER_BOUNDS.south],
-              [THAILAND_BORDER_BOUNDS.east, THAILAND_BORDER_BOUNDS.north],
-            ]}
-          />
-        ) : null}
-      </DeckGL>
+      />
 
       {/* ── Layer Control Panel ─────────────────────────────── */}
       <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 w-72">

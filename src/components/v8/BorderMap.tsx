@@ -1,9 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/mapbox";
-import "mapbox-gl/dist/mapbox-gl.css";
-import { getUsableMapboxToken } from "../../lib/mapbox";
+import Map, { Marker, Source, Layer, type MapRef } from "react-map-gl/maplibre";
+import "maplibre-gl/dist/maplibre-gl.css";
 import {
   BASE_MAPS,
   OVERLAYS,
@@ -15,9 +14,8 @@ import {
 import BaseMapSelector from "./BaseMapSelector";
 import LayerToggle from "./LayerToggle";
 
-const TOKEN = getUsableMapboxToken(process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "");
-
-// Blank Mapbox GL style — we render all base maps as raster layers on top.
+// Blank MapLibre GL style — we render all base maps as raster layers on top.
+// Glyphs use the free no-token MapLibre demo font server (Mapbox is permanently gone).
 const BLANK_STYLE = {
   version: 8 as const,
   name: "blank",
@@ -29,7 +27,7 @@ const BLANK_STYLE = {
       paint: { "background-color": "#0a0a0a" },
     },
   ],
-  glyphs: "mapbox://fonts/mapbox/{fontstack}/{range}.pbf",
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
 };
 
 interface Incident {
@@ -128,27 +126,6 @@ export default function BorderMap({
     });
   }, [focusBorder, ready]);
 
-  if (!TOKEN) {
-    return (
-      <div
-        style={{
-          flex: 1,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "var(--bg)",
-          color: "var(--accent)",
-          fontFamily: "var(--font-mono)",
-          fontSize: 11,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-        }}
-      >
-        Map unavailable — missing Mapbox token
-      </div>
-    );
-  }
-
   const activeBase = BASE_MAPS.find((b) => b.id === activeBaseId) ?? BASE_MAPS[0];
   const baseUrl = buildTileUrl(activeBase);
   const activeBaseDate = activeBase.needsDate ? gibsDateFor(activeBase.cadence) : undefined;
@@ -158,7 +135,6 @@ export default function BorderMap({
     <div style={{ flex: 1, minWidth: 0, position: "relative", background: "#0a0a0a" }}>
       <Map
         ref={mapRef}
-        mapboxAccessToken={TOKEN}
         initialViewState={{ longitude: 100.8, latitude: 15.2, zoom: 5.6, pitch: 0, bearing: 0 }}
         mapStyle={BLANK_STYLE}
         style={{ width: "100%", height: "100%" }}

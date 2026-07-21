@@ -39,7 +39,6 @@ import {
 } from "../../../services/map-engine";
 import { luma } from "@luma.gl/core";
 import { webgl2Adapter } from "@luma.gl/webgl";
-import { getUsableMapboxToken } from "../../../lib/mapbox";
 import { buildMapOverlayCatalog } from "../../../lib/map-overlays";
 import PublicCameraCard from "../Intelligence/PublicCameraCard";
 import type {
@@ -60,10 +59,8 @@ import type {
   RegionBorderFeature,
 } from "../../../types/dashboard";
 
-const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const MAPBOX_TOKEN = getUsableMapboxToken(
-  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-);
+// Mapbox is permanently gone (account deleted) — no MapboxMap underlay,
+// no token. The free Deck.gl raster base layers are the only base map.
 
 // Register WebGL adapter for deck.gl v9
 luma.registerAdapters([webgl2Adapter]);
@@ -327,8 +324,10 @@ export default function BorderMap({
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
-  const [showAerialBasemap, setShowAerialBasemap] = useState(MAPBOX_TOKEN.length === 0);
-  const [showStreets, setShowStreets] = useState(MAPBOX_TOKEN.length === 0);
+  // Mapbox is permanently gone (account deleted) — a free base (ESRI aerial /
+  // OSM streets) is always visible by default.
+  const [showAerialBasemap, setShowAerialBasemap] = useState(true);
+  const [showStreets, setShowStreets] = useState(true);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
@@ -374,10 +373,6 @@ export default function BorderMap({
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
   const rainCount = rainfall.length;
-  const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
-  const mapStyle = isDetailedMap
-    ? "mapbox://styles/mapbox/satellite-streets-v12"
-    : "mapbox://styles/mapbox/light-v11";
   const fallbackBackgroundClass = isDetailedMap
     ? "bg-[radial-gradient(circle_at_top,_var(--line-bright),_var(--bg)_52%),linear-gradient(180deg,_var(--bg)_0%,_var(--bg-surface)_100%)]"
     : "bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.08),_rgba(10,15,26,0.98)_42%),linear-gradient(180deg,_rgba(4,8,15,1)_0%,_rgba(2,6,12,1)_100%)]";
@@ -795,12 +790,10 @@ export default function BorderMap({
       data-testid="phuket-map-surface"
       className="relative flex h-full w-full flex-col overflow-hidden"
     >
-      {!hasMapboxBaseMap && (
-        <div
-          className={`absolute inset-0 ${fallbackBackgroundClass}`}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className={`absolute inset-0 ${fallbackBackgroundClass}`}
+        aria-hidden="true"
+      />
 
       <DeckGL
         id="phuket-deck"
@@ -815,16 +808,7 @@ export default function BorderMap({
         onClick={handleMapClick}
         getTooltip={({ object }: PickingInfo<unknown>) => getTooltipText(object)}
       >
-        {hasMapboxBaseMap ? (
-          <MapboxMap
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle={mapStyle}
-            reuseMaps
-            attributionControl={false}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
-        )}
+        <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
       </DeckGL>
 
       {enabledOverlays.publicCameras ? (

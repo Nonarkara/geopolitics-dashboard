@@ -260,7 +260,7 @@ export const architectureFlowSteps: ArchitectureFlowStep[] = [
 
 export const resiliencePatterns = [
   "Every external fetch path is wrapped with a timeout and a fallback branch.",
-  "Mapbox is optional. The map uses a 7-level basemap fallback chain (Mapbox → OSM → LongDo → ESRI → CartoDB → Stadia → gradient) from the DrNon Global Satellite Toolkit.",
+  "Mapbox is gone. The map renders on free raster tile basemaps (ESRI / OSM / CartoDB / NASA GIBS) with MapLibre GL — no token, no account, no billing.",
   "Intelligence and convergence can serve cached or synthesized payloads when feeds fail.",
   "Playback routes fail closed on invalid windows and storage failures instead of silently leaking live data.",
   "Grouped Vercel cron routes record their own freshness snapshots so scheduler health is observable in `/api/status`.",
@@ -1256,9 +1256,10 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     id: "mapbox",
     label: "Mapbox Styles API",
     category: "Optional",
-    description: "Optional styled basemap service used only when a valid token is configured.",
-    surfaces: ["Detailed or dark Mapbox basemap"],
-    endpoints: ["https://api.mapbox.com/styles/v1/mapbox/..."],
+    description:
+      "Removed — the Mapbox account was deleted. Basemaps render exclusively on free raster tiles (ESRI / CARTO / OSM / NASA GIBS) and MapLibre GL.",
+    surfaces: [],
+    endpoints: [],
     optional: true,
   },
   {

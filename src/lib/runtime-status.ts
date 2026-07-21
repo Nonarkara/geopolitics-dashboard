@@ -3,7 +3,6 @@ import { loadCronJobStatuses } from "./cron-jobs";
 import { isDatabaseConfigured, query } from "./db";
 import { isDataExplorerEnabled } from "./feature-flags";
 import { getTimeoutSignal } from "./http";
-import { hasUsableMapboxToken } from "./mapbox";
 import type {
   DashboardDatasetCriticality,
   DashboardDatasetStatus,
@@ -421,10 +420,8 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
     Promise.all(datasetDescriptors.map(loadDatasetStatus)),
     loadCronJobStatuses(),
   ]);
-  const hasMapboxToken = hasUsableMapboxToken(
-    process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-      process.env.MAPBOX_ACCESS_TOKEN,
-  );
+  // Mapbox is permanently gone (account deleted) — basemaps render on free
+  // raster tiles (ESRI / CARTO / OSM / NASA GIBS), no token required.
   const degradedStates = new Set<RuntimeDatasetState>([
     "stale",
     "fallback",
@@ -463,7 +460,7 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
           ? "degraded"
           : "vercel-cron"
         : "unsecured",
-      basemap: hasMapboxToken ? "configured" : "missing",
+      basemap: "free-tiles",
       reference_dashboard: process.env.REFERENCE_DASHBOARD_URL
         ? "configured"
         : "default",
