@@ -453,12 +453,12 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
     checkedAt: new Date().toISOString(),
     posture,
     services: {
-      app_runtime: process.env.VERCEL === "1" ? "vercel" : "local",
+      app_runtime: process.env.APP_RUNTIME?.trim() || (process.env.VERCEL === "1" ? "vercel" : "local"),
       database: isDatabaseConfigured ? "supabase-postgres" : "fallback",
       scheduler: process.env.CRON_SECRET?.trim()
         ? hasCronIssue
           ? "degraded"
-          : "vercel-cron"
+          : "secured-cron"
         : "unsecured",
       basemap: "free-tiles",
       reference_dashboard: process.env.REFERENCE_DASHBOARD_URL

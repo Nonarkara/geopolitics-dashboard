@@ -36,7 +36,40 @@ interface ConnectablePool {
   on(event: "connect", listener: (client: DatabaseClient) => void): void;
 }
 
-export const isDatabaseConfigured = Boolean(connectionString);
+export let isDatabaseConfigured = Boolean(connectionString);
+
+/* ── Hyperdrive upgrade path (Cloudflare Workers only) ──────
+ * When no static DATABASE_URL is present but the Worker has a
+ * HYPERDRIVE binding, adopt its connection string at runtime and
+ * flip isDatabaseConfigured (ESM live binding — no importer changes).
+ */
+interface HyperdriveLike {
+  connectionString?: string;
+}
+
+let _resolvedConnectionString: string | undefined = connectionString;
+
+async function resolveConnectionString(): Promise<string | undefined> {
+  if (_resolvedConnectionString) {
+    return _resolvedConnectionString;
+  }
+
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    const hyperdrive = (env as { HYPERDRIVE?: HyperdriveLike }).HYPERDRIVE;
+    const hyperdriveString = hyperdrive?.connectionString?.trim();
+
+    if (hyperdriveString) {
+      _resolvedConnectionString = hyperdriveString;
+      isDatabaseConfigured = true;
+    }
+  } catch {
+    // Not inside a Cloudflare Worker (local dev / tests) — keep fallback.
+  }
+
+  return _resolvedConnectionString;
+}
 
 function getIntegerEnv(name: string, fallback: number) {
   const raw = process.env[name]?.trim();
@@ -80,7 +113,9 @@ let _pool: ConnectablePool | null = null;
 let _poolInitialized = false;
 
 async function getPool(): Promise<ConnectablePool> {
-  if (!connectionString) {
+  const activeConnectionString = await resolveConnectionString();
+
+  if (!activeConnectionString) {
     throw new Error(
       "DATABASE_URL is not configured — set it to your Supabase connection string",
     );
@@ -96,7 +131,7 @@ async function getPool(): Promise<ConnectablePool> {
   const { Pool } = await import("pg");
 
   const poolConfig = {
-    connectionString,
+    connectionString: activeConnectionString,
     application_name: "geopolitics-dashboard",
     max: getIntegerEnv("DATABASE_POOL_MAX", 10),
     maxUses: getIntegerEnv("DATABASE_POOL_MAX_USES", 7_500),
@@ -112,7 +147,7 @@ async function getPool(): Promise<ConnectablePool> {
     query_timeout: getIntegerEnv("DATABASE_QUERY_TIMEOUT_MS", 15_000),
     allowExitOnIdle: process.env.NODE_ENV === "test",
     keepAlive: true,
-    ssl: shouldUseSsl(connectionString)
+    ssl: shouldUseSsl(activeConnectionString)
       ? { rejectUnauthorized: false }
       : undefined,
   };
