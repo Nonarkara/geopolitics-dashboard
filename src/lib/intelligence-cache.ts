@@ -4,8 +4,6 @@ import {
   type DatabaseExecutor,
   withDatabaseTransaction,
 } from "./db";
-import fs from "fs/promises";
-import path from "path";
 import type {
   IntelligenceItem,
   IntelligencePackage,
@@ -35,7 +33,6 @@ interface SourceHealthRow {
 }
 
 let memorySnapshot: CachedSnapshot | null = null;
-const LOCAL_CACHE_PATH = path.join(process.cwd(), "data", "intelligence_cache.json");
 
 interface CachedPayloadState {
   payload: IntelligencePackageResponse;
@@ -67,16 +64,7 @@ function mapSourceHealthRow(row: SourceHealthRow): SourceHealth {
 
 async function loadFromDatabase(): Promise<CachedSnapshot | null> {
   if (!isDatabaseConfigured) {
-    // Attempt to load from on-disk cache when DB is not configured
-    try {
-      const contents = await fs.readFile(LOCAL_CACHE_PATH, "utf8");
-      const parsed = JSON.parse(contents) as CachedSnapshot;
-      if (parsed && parsed.payload) return parsed;
-    } catch {
-      // ignore file errors and fall through to null
-    }
-
-    return null;
+    return null; // edge/no-db: caller uses in-memory memorySnapshot
   }
 
   try {
@@ -126,22 +114,7 @@ async function loadFromDatabase(): Promise<CachedSnapshot | null> {
 
 async function storeInDatabase(payload: IntelligencePackageResponse) {
   if (!isDatabaseConfigured) {
-    // Persist to local on-disk cache as a fallback
-    try {
-      const updatedAt = getLatestTimestamp(payload.packages) || payload.generatedAt || new Date().toISOString();
-      const snapshot: CachedSnapshot = {
-        payload: { ...payload, generatedAt: updatedAt },
-        updatedAt,
-      };
-
-      // ensure directory exists
-      await fs.mkdir(path.dirname(LOCAL_CACHE_PATH), { recursive: true });
-      await fs.writeFile(LOCAL_CACHE_PATH, JSON.stringify(snapshot, null, 2), "utf8");
-    } catch {
-      // ignore disk write failures; caching is best-effort
-    }
-
-    return;
+    return; // edge/no-db: in-memory memorySnapshot is the only persistence
   }
 
   try {

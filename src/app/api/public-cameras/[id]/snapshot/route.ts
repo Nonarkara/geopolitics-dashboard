@@ -1,3 +1,4 @@
+
 import { getPublicCameraDefinition, resolvePublicCameraSnapshot } from "../../../../../lib/public-cameras";
 
 export const revalidate = 180;

@@ -1,5 +1,7 @@
+
 import { NextResponse } from "next/server";
 import { fallbackFires } from "../../../lib/mock-data";
+import { getErrorMessage } from "../../../lib/errors";
 import type { FireEvent } from "../../../types/dashboard";
 
 /**
@@ -98,9 +100,22 @@ async function fetchNasaFirms(): Promise<FireEvent[]> {
 export async function GET() {
   try {
     const fires = await fetchNasaFirms();
-    return NextResponse.json(fires.length > 0 ? fires : fallbackFires);
+
+    if (fires.length > 0) {
+      return NextResponse.json(fires, {
+        headers: { "X-Data-Source": "live" },
+      });
+    }
+    // Zero rows is a legitimate empty result, but we substitute mock data so
+    // the map is never blank — mark it so a caller can tell it apart from real.
+    return NextResponse.json(fallbackFires, {
+      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "no-rows" },
+    });
   } catch (error: unknown) {
-    console.error("FIRMS fetch error:", error instanceof Error ? error.message : error);
-    return NextResponse.json(fallbackFires, { status: 200 });
+    console.error("FIRMS fetch error:", getErrorMessage(error));
+    return NextResponse.json(fallbackFires, {
+      status: 200,
+      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "fetch-error" },
+    });
   }
 }

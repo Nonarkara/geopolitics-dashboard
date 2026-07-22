@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import { queryTrends } from "../../../../lib/signal-archive";
 

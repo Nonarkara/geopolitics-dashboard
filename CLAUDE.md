@@ -2,7 +2,7 @@
 
 ASEAN regional command center — 14-layer satellite maps, live news ticker, YouTube TV feeds (Burma, Cambodia, Malaysia), AI incident analysis, ASEAN atomic clocks, economic stats. Designed for 72-inch presentation screens.
 
-Live: `geopolitics-dashboard.pages.dev` (Cloudflare Pages)
+Live: Cloudflare Worker `geopolitics-dashboard` (deployed from the `overhaul` branch via OpenNext — see README). Cloudflare Pages and Fly.io are both retired; do not reintroduce either.
 
 ## Tech Stack
 
@@ -11,12 +11,14 @@ Next.js 16 + React 19 + TypeScript + Tailwind 4 + Deck.gl 9.2 + Mapbox GL + Supa
 ## Build & Deploy
 
 ```bash
-npm run dev                                          # Dev server (webpack mode)
-npx @cloudflare/next-on-pages                        # Build for Cloudflare Pages
-wrangler pages deploy .vercel/output/static --project-name geopolitics-dashboard
+npm run dev                                          # Dev server
+npm run build:worker                                 # opennextjs-cloudflare build
+npm run deploy                                        # opennextjs-cloudflare deploy → Worker `geopolitics-dashboard`
 ```
 
 Type-check before every build: `tsc --noEmit`
+
+Deployment: Cloudflare Workers via OpenNext (`wrangler.jsonc` + `open-next.config.ts`, both live on `overhaul`). Database reaches Supabase Postgres through Cloudflare Hyperdrive. Scheduled refreshes run from GitHub Actions, since Cloudflare has no native cron for Next.js routes.
 
 ## Design System
 
@@ -50,7 +52,9 @@ Type-check before every build: `tsc --noEmit`
 --text-2xl: 2rem;       --text-3xl: 2.5rem;
 ```
 
-Fonts: `--font-ui: "Inter"`, `--font-mono: "IBM Plex Mono"`
+Fonts: `--font-display: "Josefin Sans"` (headings), `--font-ui: "Source Sans 3"` (body/UI), `--font-mono: "JetBrains Mono"` (data/code)
+
+**Banned fonts (§11.10):** Never use Roboto, Inter, Poppins, Montserrat, Open Sans, or Lato.
 
 ### Layout Rules
 
@@ -122,8 +126,8 @@ async function fetchJson<T>(url: string, retries = 2, backoff = 300): Promise<T>
 
 Cache priority:
 1. **In-memory module cache** (sync, instant)
-2. **Supabase HTTP** (`supabase-js`, works on CF Workers)
-3. **PostGIS direct TCP** (`pg` — admin/cron only, outside Workers)
+2. **Supabase HTTP** (`supabase-js`, works natively on Workers)
+3. **PostGIS direct TCP** (`pg` via Cloudflare Hyperdrive — lazy dynamic import, falls back gracefully if unavailable)
 4. **Mock fallback** (static export mode, dev without DB)
 
 ### API Response Envelope
@@ -248,7 +252,7 @@ Answer factually. Cite sources. Flag stale data. Do not speculate beyond availab
 
 Supabase PostgreSQL + PostGIS.
 
-**Rule:** Use `supabase-js` HTTP client for all Cloudflare Worker routes. Use `pg` direct TCP only in cron/admin scripts running outside Workers (requires `nodejs_compat` in `wrangler.toml`).
+**Rule:** `supabase-js` HTTP client works everywhere, including Worker routes, and is preferred for simple CRUD. `pg` direct TCP (`src/lib/db.ts`) reaches Postgres via Cloudflare Hyperdrive on Workers, uses a lazy dynamic import, and falls back gracefully (never throws unhandled) if `pg` or the Hyperdrive binding is unavailable in a given runtime — use it for complex analytical queries (PostGIS, window functions, CTEs, transactions via `withDatabaseTransaction`).
 
 All geospatial columns require GIST index:
 
@@ -279,6 +283,10 @@ Redis optional — degrade gracefully (`REDIS_URL` may not be set on CF Workers)
 | AI analysis | `lib/intelligence.ts` + `lib/convergence.ts` | Incident detection, narrative generation |
 | Economic stats | `Sidebar/AseanEconomicsPanel.tsx` | GDP, trade, country indicators |
 | Briefing chat | `Intelligence/BriefingChat.tsx` | Claude API briefing assistant |
+| Time window | `lib/time-window.ts` | Bangkok UTC+7 day boundaries |
+| Live clock | `hooks/useNow.ts` | Re-rendering clock hook |
+| News classifier | `lib/news-classifier.ts` | Border color constants |
+| Auth | `lib/data-explorer-auth.ts` | Web Crypto HMAC constant-time auth |
 
 ---
 
@@ -325,11 +333,11 @@ Coverage targets:
 
 ## Static Export Mode
 
-`NEXT_PUBLIC_STATIC_EXPORT=true` + `NEXT_OUTPUT=export` — strips API routes, uses mock data. GitHub Pages demo only. Cloudflare deployment uses full SSR.
+`NEXT_PUBLIC_STATIC_EXPORT=true` + `NEXT_OUTPUT=export` — strips API routes, uses mock data. GitHub Pages demo only. The real Cloudflare Worker deployment (`overhaul` branch) uses full SSR via OpenNext.
 
 ## Cloudflare Compatibility
 
 - `@supabase/supabase-js` — works natively on Workers (HTTP-based)
-- `pg` direct TCP — requires `nodejs_compat` flag in `wrangler.toml`; avoid in Worker routes
+- `pg` direct TCP — reaches Postgres through the Cloudflare Hyperdrive binding; requires `nodejs_compat` in `wrangler.jsonc`; falls back gracefully (never throws unhandled) if unavailable in a given runtime
 - Redis — optional, degrade gracefully if `REDIS_URL` not set
-- No Vercel/Netlify/Render configs — deleted in V7 overhaul (April 2026)
+- No Vercel or Cloudflare Pages configs — `vercel.json` and `wrangler.toml` were retired when the deploy moved to Cloudflare Workers via OpenNext; do not reintroduce either

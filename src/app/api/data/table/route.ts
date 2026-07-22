@@ -1,3 +1,4 @@
+
 import { NextRequest, NextResponse } from "next/server";
 import {
   isDataExplorerAuthorized,
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (!isDataExplorerAuthorized(request)) {
+  if (!await isDataExplorerAuthorized(request)) {
     return unauthorizedDataExplorerResponse();
   }
 

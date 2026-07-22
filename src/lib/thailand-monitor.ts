@@ -1,5 +1,6 @@
 import { query } from "./db";
 import { loadStoredMarketIndicatorSnapshot } from "./history-store";
+import { getErrorMessage } from "./errors";
 import {
   fallbackBriefing,
   fallbackIncidents,
@@ -78,6 +79,11 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
         event_date
       FROM events
       WHERE geom IS NOT NULL
+        AND event_type NOT IN (
+          'Road safety alert', 'Marine advisory', 'Tourism surge',
+          'Flooded roadway', 'Weather alert', 'Traffic incident',
+          'Infrastructure', 'Public health'
+        )
       ORDER BY event_date DESC
       LIMIT 100
     `);
@@ -101,8 +107,16 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
         };
       });
 
+    // A genuinely empty result set is not fabricated — return it as-is so the
+    // caller (and the API boundary's X-Data-Source header) reports it as live.
     return incidents;
-  } catch {
+  } catch (error) {
+    // Never swallow the DB failure silently — the caller substitutes mock
+    // data, so the real error must at least reach the server logs.
+    console.error(
+      "Incident query failed — serving mock incidents:",
+      getErrorMessage(error),
+    );
     return fallbackIncidents;
   }
 }

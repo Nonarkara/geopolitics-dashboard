@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { loadBorderIncidents } from "../../../../lib/border-osint";
 

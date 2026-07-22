@@ -1,6 +1,7 @@
 import { archiveSignalBatch, type ArchiveSignal } from "./signal-archive";
 import {
   BORDER_AREAS,
+  type BorderAreaId,
   incidentMatchesBorderArea,
   resolveBorderAreaByText,
   resolveBorderAreaLabel,
@@ -259,6 +260,70 @@ function buildSource(
     responseTimeMs: Date.now() - startedAt,
     message,
   };
+}
+
+// ── Google News RSS — live border headlines ──────────────────────────
+const GOOGLE_NEWS_QUERIES: { query: string; areaId: BorderAreaId }[] = [
+  { query: "Thailand Myanmar border OR frontier OR Mae Sot OR refugee", areaId: "myanmar-frontier" },
+  { query: "Thailand Cambodia border OR Aranyaprathet OR Poipet OR checkpoint", areaId: "cambodia-frontier" },
+  { query: "Thailand Malaysia border OR Sadao OR Hat Yai OR Narathiwat", areaId: "malaysia-frontier" },
+];
+
+function parseRssItems(xml: string): { title: string; link: string; pubDate: string; source: string }[] {
+  const items: { title: string; link: string; pubDate: string; source: string }[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match: RegExpExecArray | null;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const block = match[1];
+    const title = block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/)?.[1] ?? "";
+    const link = block.match(/<link>(.*?)<\/link>/)?.[1] ?? "";
+    const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? "";
+    const source = block.match(/<source[^>]*>(.*?)<\/source>/)?.[1] ?? "Google News";
+    if (title && !title.startsWith("&lt;")) items.push({ title: title.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#39;/g, "'").replace(/&quot;/g, '"'), link, pubDate, source });
+  }
+  return items;
+}
+
+async function fetchGoogleNewsBorderHeadlines(): Promise<BorderNarrativeSignal[]> {
+  const signals: BorderNarrativeSignal[] = [];
+
+  await Promise.all(
+    GOOGLE_NEWS_QUERIES.map(async ({ query, areaId }) => {
+      try {
+        const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en&gl=TH&ceid=TH:en`;
+        // Server-side fetch — no CORS proxy needed
+        const response = await fetch(rssUrl, {
+          signal: AbortSignal.timeout(8000),
+          headers: { "User-Agent": BORDER_USER_AGENT, Accept: "application/rss+xml,application/xml,text/xml" },
+        });
+        if (!response.ok) return;
+        const xml = await response.text();
+        const items = parseRssItems(xml).slice(0, 3);
+        const area = BORDER_AREAS.find(a => a.id === areaId);
+
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          signals.push({
+            id: `gnews-${areaId}-${i}`,
+            areaId,
+            areaLabel: area?.label ?? areaId,
+            title: item.title,
+            summary: `Live headline from ${item.source} matched to ${area?.counterpart ?? "border"} frontier.`,
+            source: item.source,
+            sourceUrl: item.link,
+            publishedAt: item.pubDate ? new Date(item.pubDate).toISOString() : new Date().toISOString(),
+            provider: "Google News",
+            severity: inferNarrativeSeverity(item.title),
+            tags: ["Border", area?.counterpart ?? "Unknown", "Live"],
+          });
+        }
+      } catch {
+        // Non-critical — GDELT and fallbacks cover this frontier
+      }
+    }),
+  );
+
+  return dedupeByTitle(signals);
 }
 
 async function fetchGdeltSignals() {
@@ -570,13 +635,16 @@ export async function loadBorderOsint(): Promise<BorderOsintResponse> {
   }
 
   borderOsintPending = (async () => {
-    const [gdelt, unhcr] = await Promise.all([
+    const [gdelt, unhcr, googleNews] = await Promise.all([
       fetchGdeltSignals(),
       fetchUnhcrSnapshot(),
+      fetchGoogleNewsBorderHeadlines(),
     ]);
+    // Merge Google News headlines with GDELT signals — Google News first (fresher)
+    const mergedSignals = dedupeByTitle([...googleNews, ...gdelt.signals]).slice(0, 12);
     const payload: BorderOsintResponse = {
       generatedAt: new Date().toISOString(),
-      signals: gdelt.signals,
+      signals: mergedSignals.length > 0 ? mergedSignals : gdelt.signals,
       humanitarian: unhcr.humanitarian,
       sources: [gdelt.source, unhcr.source, acledSourceStatus()],
     };

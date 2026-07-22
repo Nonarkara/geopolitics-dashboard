@@ -919,7 +919,7 @@ export function createProvinceLabelsLayer() {
       d.borderArea ? [245, 158, 11, 220] : [148, 163, 184, 180],
     getTextAnchor: "middle" as const,
     getAlignmentBaseline: "center" as const,
-    fontFamily: "Helvetica Neue, Arial, sans-serif",
+    fontFamily: "Source Sans 3, Helvetica Neue, Arial, sans-serif",
     fontWeight: "bold" as unknown as number,
     fontSettings: { sdf: true },
     outlineColor: [10, 15, 26, 200],

@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { getServiceSupabase, supabaseEnabled } from "../../../../lib/supabase";
 

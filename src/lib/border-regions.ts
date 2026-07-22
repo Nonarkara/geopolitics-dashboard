@@ -53,7 +53,7 @@ export const BORDER_AREAS: BorderAreaConfig[] = [
     id: "cambodia-frontier",
     label: "Cambodia frontier",
     counterpart: "Cambodia",
-    center: [13.6587, 102.5636],
+    center: [102.5636, 13.6587],
     radiusKm: 320,
     aliases: [
       "aranyaprathet",

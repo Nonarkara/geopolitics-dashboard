@@ -64,7 +64,7 @@ function formatIndicatorChange(change: number | string) {
 }
 
 export default function BorderMarketPulse() {
-  const { timeWindow, buildUrl, isHistorical } = useTimeWindow();
+  const { timeWindow, bangkokDay, buildUrl, isHistorical } = useTimeWindow();
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
@@ -183,7 +183,7 @@ export default function BorderMarketPulse() {
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         {isHistorical && timeWindow ? (
           <div className="rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
-            Playback window: {formatBangkokDayLabel(timeWindow.bangkokDay)} ICT
+            Playback window: {bangkokDay ? formatBangkokDayLabel(bangkokDay) : ""} ICT
           </div>
         ) : null}
         {payload.mode === "historical-empty" ? (

@@ -6,13 +6,14 @@ import dynamic from "next/dynamic";
 import { luma } from "@luma.gl/core";
 import { webgl2Adapter } from "@luma.gl/webgl";
 import {
-  Building2, Check, Compass, Eye, Flame, Globe, Grid3x3, Layers, MapPinned, Maximize2, Plane, Radio, Route, Ship, Target, Truck, Users, Zap
+  Building2, Check, Compass, Eye, Flame, Globe, Grid3x3, Layers, MapPin, MapPinned, Maximize2, Plane, Radio, Route, Ship, Target, Truck, Users, Wind, Zap
 } from "lucide-react";
 import CommandTooltip from "../Common/CommandTooltip";
 import { BASE_MAP_TOOLTIPS, OVERLAY_TOOLTIPS, INTEL_TOGGLE_TOOLTIPS } from "../../lib/tooltip-catalog";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { formatBangkokDayLabel } from "../../lib/time-window";
 import {
+  createAirQualityHeatmapLayers,
   createConflictZonesLayer,
   createFireLayer,
   createFlightPathsLayer,
@@ -31,6 +32,7 @@ import {
   createVesselLayer,
 } from "../../services/map-engine";
 import type {
+  AirQualityPoint,
   BorderOperationalMapResponse,
   ConflictZoneCollection,
   DashboardDatasetStatus,
@@ -47,6 +49,9 @@ import type {
 import { haversineKm } from "../../lib/border-regions";
 import { getUsableMapboxToken } from "../../lib/mapbox";
 import { resolveAppUrl } from "../../lib/app-url";
+import { BORDER_AREAS } from "../../lib/border-regions";
+import type { BorderAreaId } from "../../lib/border-regions";
+import FrontierNewsPanel from "./FrontierNewsPanel";
 
 const DeckGL = dynamic(
   () => import("@deck.gl/react").then((module) => module.default),
@@ -410,6 +415,8 @@ export default function BorderMap({
   const [showGrid, setShowGrid] = useState(false);
   const [showVessels, setShowVessels] = useState(false);
   const [showSignalPulse, setShowSignalPulse] = useState(false);
+  const [showAqi, setShowAqi] = useState(false);
+  const [activeFrontier, setActiveFrontier] = useState<string | null>(null);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
@@ -427,15 +434,18 @@ export default function BorderMap({
   const [vessels, setVessels] = useState<VesselPosition[]>([]);
   const [trafficIncidents, setTrafficIncidents] = useState<TrafficIncident[]>([]);
   const [operationsMap, setOperationsMap] = useState<BorderOperationalMapResponse | null>(null);
+  const [aqiData, setAqiData] = useState<AirQualityPoint[]>([]);
   const [recentSignals, setRecentSignals] = useState<{ id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[]>([]);
   const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
 
-  const hasMapboxToken = MAPBOX_TOKEN.length > 0;
+  // Mapbox account removed — always use the free Deck.gl tile layers (ESRI /
+  // CARTO / OSM) as the base. No token, no account, no billing.
+  const hasMapboxToken = false;
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [inc, fir, flt, ref, borders, zn, runtimeStatus, ves, traffic, operations, sig] = await Promise.all([
+        const [inc, fir, flt, ref, borders, zn, runtimeStatus, ves, traffic, operations, sig, aqi] = await Promise.all([
           fetchJson<IncidentFeature[]>("/api/border/incidents", []),
           fetchJson<FireEvent[]>("/api/fires", []),
           fetchJson<FlightData[]>("/api/flights", []),
@@ -450,6 +460,7 @@ export default function BorderMap({
             `/api/research/signals?from=${new Date(Date.now() - 86400000).toISOString()}&limit=100`,
             { signals: [] },
           ),
+          fetchJson<AirQualityPoint[]>("/api/air-quality", []),
         ]);
 
         setIncidents(Array.isArray(inc) ? inc : []);
@@ -468,6 +479,7 @@ export default function BorderMap({
           isBorderOperationalMapResponse(operations) ? operations : null,
         );
         setRecentSignals((sig?.signals || []).filter((s: { lat?: number; lng?: number }) => s.lat && s.lng));
+        setAqiData(Array.isArray(aqi) ? aqi : []);
         setFeedAlerts(
           buildFeedAlerts(
             isDashboardStatusPayload(runtimeStatus) ? runtimeStatus : null,
@@ -610,9 +622,10 @@ export default function BorderMap({
     if (showFlights) result.push(createFlightPathsLayer(flights));
     if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
     if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
+    if (showAqi && aqiData.length > 0) result.push(...createAirQualityHeatmapLayers(aqiData, "aqi"));
 
     return result.flat().filter(Boolean);
-  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals]);
+  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showAqi, aqiData]);
 
   // UI/interaction layers — change on viewport (but these are lightweight)
   const uiLayers = useMemo(() => {
@@ -661,7 +674,7 @@ export default function BorderMap({
   // Combine all layer groups
   const layers = [...baseLayers, ...intelligenceLayers, ...uiLayers];
 
-  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
+  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse, showAqi].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
@@ -678,10 +691,31 @@ export default function BorderMap({
     setShowGrid(false);
     setShowVessels(false);
     setShowSignalPulse(false);
+    setShowAqi(false);
+    setActiveFrontier(null);
     setActiveOverlayIds(new Set());
     setActiveBaseId("ESRI");
     focusNationalFrame();
   };
+
+  const flyToFrontier = useCallback((areaId: string) => {
+    if (activeFrontier === areaId) {
+      // Toggle off — return to overview
+      setActiveFrontier(null);
+      setViewState(clampViewState(INITIAL_VIEW_STATE));
+      return;
+    }
+    const area = BORDER_AREAS.find(a => a.id === areaId);
+    if (!area) return;
+    setActiveFrontier(areaId);
+    setViewState(clampViewState({
+      longitude: area.center[0],
+      latitude: area.center[1],
+      zoom: 8.2,
+      pitch: 35,
+      bearing: 0,
+    }));
+  }, [activeFrontier]);
 
   // Group overlays by category for display
   const overlaysByCategory = useMemo(() => {
@@ -705,7 +739,20 @@ export default function BorderMap({
         }}
       />
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute right-6 top-6 max-w-[260px] border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
+        <div className="absolute left-[25%] top-[23%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Mae Sot
+        </div>
+        <div className="absolute left-[69%] top-[48%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Aranyaprathet
+        </div>
+        <div className="absolute left-[56%] top-[73%] border border-white/20 bg-black/35 px-2 py-1 text-[8px] font-black uppercase tracking-[0.18em] text-white/80">
+          Sadao
+        </div>
+      </div>
+
+      {/* Operations info card + Frontier Navigation (stacked, same corner) */}
+      <div className="absolute right-6 top-6 z-40 flex flex-col gap-3 w-[260px]">
+        <div className="border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
           <div className="text-[8px] font-black uppercase tracking-[0.22em] text-white/45">
             Tri-Border Operations
           </div>
@@ -714,6 +761,37 @@ export default function BorderMap({
           </div>
           <div className="mt-1">
             {selectedOperationalNode?.usage ?? activeTheater?.summary ?? "Zoom guardrails stay tight until the viewport reaches a real conflict theater or SEZ."}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1.5 w-[220px]">
+        <div className="border border-white/15 bg-black/70 backdrop-blur-sm overflow-hidden">
+          <div className="px-3 py-2 flex items-center gap-2">
+            <MapPin size={10} className="text-[var(--accent)]" />
+            <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">Frontier Nav</span>
+          </div>
+          <div className="flex divide-x divide-white/10">
+            {[
+              { id: "myanmar-frontier", label: "MYA", color: "var(--accent)" },
+              { id: "cambodia-frontier", label: "KHM", color: "var(--hazard)" },
+              { id: "malaysia-frontier", label: "MYS", color: "var(--tech)" },
+            ].map(f => (
+              <button
+                key={f.id}
+                onClick={() => flyToFrontier(f.id)}
+                className={`flex-1 py-2 px-1 flex flex-col items-center gap-1 transition-all ${
+                  activeFrontier === f.id
+                    ? "bg-white/15 text-white"
+                    : "text-white/50 hover:bg-white/[0.06] hover:text-white"
+                }`}
+              >
+                <span className="text-[10px] font-black tracking-wider">{f.label}</span>
+                <span
+                  className="w-full h-[2px]"
+                  style={{ backgroundColor: activeFrontier === f.id ? f.color : "transparent" }}
+                />
+              </button>
+            ))}
           </div>
           <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black uppercase tracking-[0.14em]">
             <span className={`border px-2 py-1 ${deepZoomUnlocked ? "border-[#f97316]/40 bg-[#f97316]/10 text-[#fdba74]" : "border-white/10 bg-white/5 text-white/45"}`}>
@@ -728,6 +806,19 @@ export default function BorderMap({
               Map and overlay feeds stay live during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}.
             </div>
           ) : null}
+        </div>
+        {activeFrontier ? (
+          <FrontierNewsPanel areaId={activeFrontier as BorderAreaId} />
+        ) : (
+          <div className="border border-white/10 bg-black/50 px-3 py-2 text-[8px] leading-relaxed text-white/50 backdrop-blur-sm">
+            <span className="font-black uppercase tracking-[0.12em] text-white/70">
+              Thailand Border Focus
+            </span>
+            <span className="block mt-0.5">
+              {`${BASE_MAPS.length} basemaps, ${DATA_OVERLAYS.length} overlays`}
+            </span>
+          </div>
+        )}
         </div>
       </div>
       <DeckGL
@@ -912,6 +1003,7 @@ export default function BorderMap({
             { active: showGrid, set: setShowGrid, label: "GRID", icon: Grid3x3 },
             { active: showVessels, set: setShowVessels, label: "SHIP", icon: Ship },
             { active: showSignalPulse, set: setShowSignalPulse, label: "SIG", icon: Radio },
+            { active: showAqi, set: setShowAqi, label: "AQI", icon: Wind },
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
@@ -973,7 +1065,7 @@ export default function BorderMap({
               { label: "AIR", val: flights?.length || 0 },
               { label: "FLOW", val: refugees?.length || 0 },
               { label: "VESSEL", val: vessels?.length || 0 },
-              { label: "PULSE", val: recentSignals?.length || 0 },
+              { label: "AQI", val: showAqi ? aqiData.filter(p => p.aqi > 100).length : 0 },
             ].map(m => (
               <div key={m.label} className="flex flex-col">
                 <span className="text-[9px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>
@@ -985,9 +1077,6 @@ export default function BorderMap({
       </div>
 
       <div className="absolute bottom-6 right-6 z-40 flex flex-col gap-1">
-        <button onClick={focusNationalFrame} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
-          <Compass size={14} strokeWidth={3} />
-        </button>
         <button
           onClick={() => {
             if (selectedOperationalNode) {
@@ -1002,6 +1091,21 @@ export default function BorderMap({
 
             focusNationalFrame();
           }}
+          title="Recenter"
+          className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all"
+        >
+          <Compass size={14} strokeWidth={3} />
+        </button>
+        <button
+          onClick={() => {
+            const el = document.documentElement;
+            if (!document.fullscreenElement) {
+              el.requestFullscreen?.().catch(() => {});
+            } else {
+              document.exitFullscreen?.().catch(() => {});
+            }
+          }}
+          title="Toggle fullscreen"
           className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all"
         >
           <Maximize2 size={14} strokeWidth={3} />

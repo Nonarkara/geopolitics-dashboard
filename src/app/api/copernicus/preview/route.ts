@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { fallbackCopernicusPreview } from "../../../../lib/mock-data";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";

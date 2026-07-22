@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { listCriticalCameras } from "../../../lib/critical-cameras";
 import type { PublicCameraResponse } from "../../../types/dashboard";

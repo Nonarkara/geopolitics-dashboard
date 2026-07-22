@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { fallbackRefugees } from "../../../lib/mock-data";
 

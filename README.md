@@ -1,13 +1,11 @@
 # Thailand Geopolitical Watch
 
+> **Deployment (read first):** the live site is the `overhaul` branch, deployed to Cloudflare **Workers** via OpenNext — `npm run build:worker && npm run deploy` (config: `wrangler.jsonc` + `open-next.config.ts` on `overhaul`). Cloudflare Pages (`wrangler.toml`) and Vercel (`vercel.json`) are retired and their configs were removed — do not re-add them. Maps render on free tiles via MapLibre; there is no Mapbox dependency anywhere (account deleted 2026-07).
+
 Tri-border command dashboard for Thailand's Myanmar, Cambodia, and southern frontier theatres. The product combines an operations-first map, live command surfaces, and Bangkok-day playback for archived intelligence review.
 
-This repository is now `Vercel-first`:
-
-- `Vercel` hosts the Next.js application
-- `Supabase Postgres` is the single production data backbone
-- `Vercel Cron` drives grouped refresh routes under `/api/cron/*`
-- `Render` remains legacy infrastructure only, not the primary deployment story
+- `Supabase Postgres` is the single production data backbone (via Cloudflare Hyperdrive)
+- Scheduled refreshes run from GitHub Actions (Cloudflare Workers has no native cron for Next.js routes)
 
 ## Stack
 

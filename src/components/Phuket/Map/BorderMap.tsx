@@ -78,6 +78,27 @@ const INITIAL_VIEW_STATE: MapViewState = {
   maxZoom: 18,
 };
 
+// §11.9 — Deck.gl does not enforce viewState.minZoom/maxZoom on its own, so the
+// floor must be re-applied on every view change or the world tiles/repeats when
+// zoomed out. City-scale floor is 5 (mirrors src/components/Map/BorderMap.tsx).
+const PHUKET_BOUNDS = {
+  west: 96.5, east: 100.5, south: 6.0, north: 9.5,
+} as const;
+const MIN_PHUKET_ZOOM = 5;
+const MAX_PHUKET_ZOOM = 18;
+
+function clampPhuketViewState(viewState: MapViewState): MapViewState {
+  const clamp = (value: number, minimum: number, maximum: number) =>
+    Math.min(maximum, Math.max(minimum, value));
+  return {
+    ...viewState,
+    longitude: clamp(viewState.longitude, PHUKET_BOUNDS.west, PHUKET_BOUNDS.east),
+    latitude: clamp(viewState.latitude, PHUKET_BOUNDS.south, PHUKET_BOUNDS.north),
+    zoom: clamp(viewState.zoom, MIN_PHUKET_ZOOM, MAX_PHUKET_ZOOM),
+    pitch: clamp(viewState.pitch ?? INITIAL_VIEW_STATE.pitch ?? 0, 0, 60),
+  };
+}
+
 const EMPTY_BORDERS: RegionBorderCollection = {
   type: "FeatureCollection",
   features: [],
@@ -322,13 +343,13 @@ export default function BorderMap({
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
   const mapSurfaceRef = useRef<HTMLDivElement>(null);
-  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
+  const [viewState, setViewState] = useState(clampPhuketViewState(INITIAL_VIEW_STATE));
   const [mapSurfaceSize, setMapSurfaceSize] = useState({ width: 0, height: 0 });
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
-  const [showAerialBasemap, setShowAerialBasemap] = useState(MAPBOX_TOKEN.length === 0);
-  const [showStreets, setShowStreets] = useState(MAPBOX_TOKEN.length === 0);
+  const [showAerialBasemap, setShowAerialBasemap] = useState(true);
+  const [showStreets, setShowStreets] = useState(false);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
@@ -374,7 +395,9 @@ export default function BorderMap({
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
   const rainCount = rainfall.length;
-  const hasMapboxBaseMap = MAPBOX_TOKEN.length > 0;
+  // Mapbox account removed — always use the free Deck.gl aerial/street base
+  // layers plus the satellite overlay. No token, no account, no billing.
+  const hasMapboxBaseMap = false;
   const mapStyle = isDetailedMap
     ? "mapbox://styles/mapbox/satellite-streets-v12"
     : "mapbox://styles/mapbox/light-v11";
@@ -807,7 +830,7 @@ export default function BorderMap({
         viewState={viewState}
         onViewStateChange={({ viewState: nextViewState }) => {
           if (isMapViewState(nextViewState)) {
-            setViewState(nextViewState);
+            setViewState(clampPhuketViewState(nextViewState));
           }
         }}
         controller={true}
@@ -820,6 +843,7 @@ export default function BorderMap({
             mapboxAccessToken={MAPBOX_TOKEN}
             mapStyle={mapStyle}
             reuseMaps
+            renderWorldCopies={false}
             attributionControl={false}
           />
         ) : (

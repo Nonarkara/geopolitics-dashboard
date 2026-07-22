@@ -1,3 +1,4 @@
+
 import { NextResponse } from "next/server";
 import { logFeedHealth } from "../../../../lib/supabase";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
