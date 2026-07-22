@@ -50,10 +50,9 @@ interface HyperdriveLike {
 let _resolvedConnectionString: string | undefined = connectionString;
 
 async function resolveConnectionString(): Promise<string | undefined> {
-  if (_resolvedConnectionString) {
-    return _resolvedConnectionString;
-  }
-
+  // In Cloudflare Workers, ALWAYS prefer a live HYPERDRIVE binding over any
+  // statically bundled DATABASE_URL (build machines may bake a localhost URL
+  // into the worker artifact — Hyperdrive is the only reachable path there).
   try {
     const { getCloudflareContext } = await import("@opennextjs/cloudflare");
     const { env } = getCloudflareContext();
@@ -61,8 +60,14 @@ async function resolveConnectionString(): Promise<string | undefined> {
     const hyperdriveString = hyperdrive?.connectionString?.trim();
 
     if (hyperdriveString) {
-      _resolvedConnectionString = hyperdriveString;
-      isDatabaseConfigured = true;
+      if (_resolvedConnectionString !== hyperdriveString) {
+        _resolvedConnectionString = hyperdriveString;
+        isDatabaseConfigured = true;
+        // Connection target changed — force pool rebuild on next getPool().
+        _pool = null;
+        _poolInitialized = false;
+      }
+      return _resolvedConnectionString;
     }
   } catch {
     // Not inside a Cloudflare Worker (local dev / tests) — keep fallback.
