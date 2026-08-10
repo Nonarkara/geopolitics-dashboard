@@ -1,6 +1,7 @@
 /**
- * OpenSanctions watchlist hits for Myanmar / Cambodia / Malaysia border trade.
- * Free public API — https://www.opensanctions.org/docs/api/
+ * Sanctions watch for Myanmar / Cambodia / Malaysia.
+ * Keyless path: OpenSanctions US OFAC SDN simple CSV (cached),
+ * filtered to mm / kh / my country codes.
  */
 
 export interface SanctionHit {
@@ -25,66 +26,82 @@ export interface SanctionsResponse {
   };
 }
 
-const CACHE_TTL_MS = 60 * 60 * 1000;
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const OFAC_CSV =
+  "https://data.opensanctions.org/datasets/latest/us_ofac_sdn/targets.simple.csv";
+const BORDER_COUNTRIES = new Set(["mm", "kh", "my"]);
+
 let cache: { payload: SanctionsResponse; cachedAt: number } | null = null;
 
-const QUERIES = ["Myanmar junta", "Cambodia casino", "Malaysia trafficking"];
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : null;
+function parseCsvLine(line: string): string[] {
+  const cells: string[] = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i += 1;
+      } else {
+        inQuotes = !inQuotes;
+      }
+      continue;
+    }
+    if (ch === "," && !inQuotes) {
+      cells.push(current);
+      current = "";
+      continue;
+    }
+    current += ch;
+  }
+  cells.push(current);
+  return cells;
 }
 
-async function searchOpenSanctions(query: string): Promise<SanctionHit[]> {
-  const url = `https://api.opensanctions.org/search/default?q=${encodeURIComponent(query)}&limit=4`;
-  const response = await fetch(url, {
-    signal: AbortSignal.timeout(10_000),
-    headers: { Accept: "application/json" },
-  });
-  if (!response.ok) {
-    throw new Error(`OpenSanctions ${response.status}`);
-  }
+function parseOfacCsv(text: string): SanctionHit[] {
+  const lines = text.split(/\r?\n/).filter(Boolean);
+  if (lines.length < 2) return [];
 
-  const payload = (await response.json()) as { results?: unknown[] };
+  const header = parseCsvLine(lines[0]);
+  const idx = {
+    id: header.indexOf("id"),
+    schema: header.indexOf("schema"),
+    name: header.indexOf("name"),
+    countries: header.indexOf("countries"),
+    sanctions: header.indexOf("sanctions"),
+    dataset: header.indexOf("dataset"),
+  };
+
   const hits: SanctionHit[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i]);
+    const countries = (cols[idx.countries] ?? "")
+      .split(";")
+      .map((c) => c.trim().toLowerCase())
+      .filter(Boolean);
+    if (!countries.some((c) => BORDER_COUNTRIES.has(c))) continue;
 
-  for (const row of payload.results ?? []) {
-    const record = asRecord(row);
-    if (!record) continue;
-    const id = typeof record.id === "string" ? record.id : null;
-    const caption =
-      typeof record.caption === "string"
-        ? record.caption
-        : typeof record.name === "string"
-          ? record.name
-          : null;
-    if (!id || !caption) continue;
-
-    const properties = asRecord(record.properties);
-    const countries = Array.isArray(properties?.country)
-      ? properties.country.filter((c): c is string => typeof c === "string")
-      : [];
-    const topics = Array.isArray(properties?.topics)
-      ? properties.topics.filter((t): t is string => typeof t === "string")
-      : Array.isArray(record.datasets)
-        ? []
-        : [];
-    const datasets = Array.isArray(record.datasets)
-      ? record.datasets.filter((d): d is string => typeof d === "string")
-      : [];
+    const id = cols[idx.id];
+    const name = cols[idx.name];
+    if (!id || !name) continue;
 
     hits.push({
       id,
-      name: caption,
-      schema: typeof record.schema === "string" ? record.schema : "Entity",
+      name,
+      schema: cols[idx.schema] || "Entity",
       countries,
-      topics: topics.slice(0, 4),
-      dataset: datasets[0] ?? "opensanctions",
+      topics: (cols[idx.sanctions] ?? "")
+        .split(";")
+        .map((t) => t.trim())
+        .filter(Boolean)
+        .slice(0, 3),
+      dataset: cols[idx.dataset] || "US OFAC SDN",
       url: `https://www.opensanctions.org/entities/${encodeURIComponent(id)}/`,
     });
-  }
 
+    if (hits.length >= 12) break;
+  }
   return hits;
 }
 
@@ -96,25 +113,20 @@ export async function loadOpenSanctionsWatch(): Promise<SanctionsResponse> {
   const generatedAt = new Date().toISOString();
 
   try {
-    const batches = await Promise.all(
-      QUERIES.map((query) => searchOpenSanctions(query).catch(() => [])),
-    );
-    const seen = new Set<string>();
-    const hits: SanctionHit[] = [];
-    for (const batch of batches) {
-      for (const hit of batch) {
-        if (seen.has(hit.id)) continue;
-        seen.add(hit.id);
-        hits.push(hit);
-      }
-    }
+    const response = await fetch(OFAC_CSV, {
+      signal: AbortSignal.timeout(45_000),
+      headers: { Accept: "text/csv" },
+    });
+    if (!response.ok) throw new Error(`OFAC CSV ${response.status}`);
+    const text = await response.text();
+    const hits = parseOfacCsv(text);
 
     const result: SanctionsResponse = {
       generatedAt,
-      hits: hits.slice(0, 10),
+      hits,
       source: {
-        id: "opensanctions",
-        label: "OpenSanctions",
+        id: "opensanctions-ofac",
+        label: "OpenSanctions / OFAC SDN",
         url: "https://www.opensanctions.org",
         status: hits.length > 0 ? "live" : "stale",
         age: generatedAt,
@@ -127,8 +139,8 @@ export async function loadOpenSanctionsWatch(): Promise<SanctionsResponse> {
       generatedAt,
       hits: [],
       source: {
-        id: "opensanctions",
-        label: "OpenSanctions",
+        id: "opensanctions-ofac",
+        label: "OpenSanctions / OFAC SDN",
         url: "https://www.opensanctions.org",
         status: "offline",
         age: generatedAt,

@@ -1,6 +1,7 @@
 /**
- * ReliefWeb / HDX-style humanitarian headlines for Thailand border theatres.
- * Free public API — no key. https://apidoc.rwlabs.org/
+ * Humanitarian desk — keyless sources only.
+ * Primary: ReliefWeb RSS (no appname gate).
+ * Secondary: HDX CKAN package search.
  */
 
 export interface ReliefWebReport {
@@ -27,10 +28,94 @@ export interface ReliefWebResponse {
 const CACHE_TTL_MS = 30 * 60 * 1000;
 let cache: { payload: ReliefWebResponse; cachedAt: number } | null = null;
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : null;
+const RW_RSS =
+  "https://reliefweb.int/updates/rss.xml?search=Thailand%20Myanmar%20OR%20Cambodia%20border%20OR%20Malaysia";
+const HDX_SEARCH =
+  "https://data.humdata.org/api/3/action/package_search?q=thailand+myanmar+cambodia+displacement+refugee&rows=6";
+
+function parseRssItems(xml: string) {
+  const items: { title: string; link: string; pubDate: string; source: string }[] = [];
+  const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+  let match: RegExpExecArray | null;
+  while ((match = itemRegex.exec(xml)) !== null) {
+    const block = match[1];
+    const title =
+      block.match(/<title>(?:<!\[CDATA\[)?(.*?)(?:\]\]>)?<\/title>/)?.[1] ?? "";
+    const link = block.match(/<link>(.*?)<\/link>/)?.[1] ?? "";
+    const pubDate = block.match(/<pubDate>(.*?)<\/pubDate>/)?.[1] ?? "";
+    const source =
+      block.match(/<source[^>]*>(.*?)<\/source>/)?.[1] ?? "ReliefWeb";
+    if (title && link) {
+      items.push({
+        title: title
+          .replace(/&amp;/g, "&")
+          .replace(/&lt;/g, "<")
+          .replace(/&gt;/g, ">")
+          .replace(/&#39;/g, "'")
+          .replace(/&quot;/g, '"'),
+        link,
+        pubDate,
+        source,
+      });
+    }
+  }
+  return items;
+}
+
+async function fetchReliefWebRss(): Promise<ReliefWebReport[]> {
+  const response = await fetch(RW_RSS, {
+    signal: AbortSignal.timeout(12_000),
+    headers: { Accept: "application/rss+xml,application/xml,text/xml" },
+  });
+  if (!response.ok) throw new Error(`ReliefWeb RSS ${response.status}`);
+  const xml = await response.text();
+  return parseRssItems(xml)
+    .slice(0, 8)
+    .map((item, index) => ({
+      id: `rw-rss-${index}-${item.link.slice(-24)}`,
+      title: item.title,
+      url: item.link,
+      date: item.pubDate
+        ? new Date(item.pubDate).toISOString()
+        : new Date().toISOString(),
+      source: item.source,
+      countries: [],
+    }));
+}
+
+async function fetchHdxPackages(): Promise<ReliefWebReport[]> {
+  const response = await fetch(HDX_SEARCH, {
+    signal: AbortSignal.timeout(12_000),
+    headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`HDX ${response.status}`);
+  const payload = (await response.json()) as {
+    success?: boolean;
+    result?: { results?: Array<Record<string, unknown>> };
+  };
+  if (!payload.success) return [];
+
+  const reports: ReliefWebReport[] = [];
+  for (const pkg of payload.result?.results ?? []) {
+    const title = typeof pkg.title === "string" ? pkg.title : null;
+    const name = typeof pkg.name === "string" ? pkg.name : null;
+    if (!title || !name) continue;
+    const org =
+      typeof pkg.organization === "object" &&
+      pkg.organization !== null &&
+      typeof (pkg.organization as { title?: string }).title === "string"
+        ? (pkg.organization as { title: string }).title
+        : "HDX";
+    reports.push({
+      id: `hdx-${name}`,
+      title,
+      url: `https://data.humdata.org/dataset/${name}`,
+      date: new Date().toISOString(),
+      source: org,
+      countries: [],
+    });
+  }
+  return reports;
 }
 
 export async function loadReliefWebReports(): Promise<ReliefWebResponse> {
@@ -39,94 +124,26 @@ export async function loadReliefWebReports(): Promise<ReliefWebResponse> {
   }
 
   const generatedAt = new Date().toISOString();
-  const url = "https://api.reliefweb.int/v1/reports?appname=geopolitics-dashboard&limit=8";
 
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      signal: AbortSignal.timeout(12_000),
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        filter: {
-          operator: "AND",
-          conditions: [
-            {
-              field: "country.iso3",
-              value: ["THA", "MMR", "KHM", "MYS"],
-              operator: "OR",
-            },
-            {
-              field: "date.created",
-              value: {
-                from: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000)
-                  .toISOString()
-                  .slice(0, 10),
-              },
-            },
-          ],
-        },
-        fields: {
-          include: ["title", "url", "date", "source", "country"],
-        },
-        sort: ["date.created:desc"],
-        limit: 8,
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`ReliefWeb ${response.status}`);
-    }
-
-    const payload = (await response.json()) as { data?: unknown[] };
+    const [rss, hdx] = await Promise.all([
+      fetchReliefWebRss().catch(() => [] as ReliefWebReport[]),
+      fetchHdxPackages().catch(() => [] as ReliefWebReport[]),
+    ]);
+    const seen = new Set<string>();
     const reports: ReliefWebReport[] = [];
-
-    for (const row of payload.data ?? []) {
-      const record = asRecord(row);
-      const fields = asRecord(record?.fields);
-      if (!fields) continue;
-
-      const id = String(record?.id ?? fields.title ?? Math.random());
-      const title = typeof fields.title === "string" ? fields.title : null;
-      const link = typeof fields.url === "string" ? fields.url : null;
-      if (!title || !link) continue;
-
-      const dateField = asRecord(fields.date);
-      const created =
-        (typeof dateField?.created === "string" && dateField.created) ||
-        (typeof dateField?.original === "string" && dateField.original) ||
-        generatedAt;
-
-      const sources = Array.isArray(fields.source) ? fields.source : [];
-      const sourceName =
-        sources
-          .map((entry) => asRecord(entry)?.name)
-          .find((name): name is string => typeof name === "string") ?? "ReliefWeb";
-
-      const countries = Array.isArray(fields.country)
-        ? fields.country
-            .map((entry) => asRecord(entry)?.name)
-            .filter((name): name is string => typeof name === "string")
-        : [];
-
-      reports.push({
-        id: `rw-${id}`,
-        title,
-        url: link,
-        date: created,
-        source: sourceName,
-        countries,
-      });
+    for (const report of [...rss, ...hdx]) {
+      if (seen.has(report.url)) continue;
+      seen.add(report.url);
+      reports.push(report);
     }
 
     const result: ReliefWebResponse = {
       generatedAt,
-      reports,
+      reports: reports.slice(0, 10),
       source: {
-        id: "reliefweb",
-        label: "ReliefWeb",
+        id: "reliefweb-hdx",
+        label: "ReliefWeb + HDX",
         url: "https://reliefweb.int",
         status: reports.length > 0 ? "live" : "stale",
         age: generatedAt,
@@ -135,17 +152,16 @@ export async function loadReliefWebReports(): Promise<ReliefWebResponse> {
     cache = { payload: result, cachedAt: Date.now() };
     return result;
   } catch {
-    const result: ReliefWebResponse = {
+    return {
       generatedAt,
       reports: [],
       source: {
-        id: "reliefweb",
-        label: "ReliefWeb",
+        id: "reliefweb-hdx",
+        label: "ReliefWeb + HDX",
         url: "https://reliefweb.int",
         status: "offline",
         age: generatedAt,
       },
     };
-    return result;
   }
 }
