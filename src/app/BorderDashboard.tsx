@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
 import BorderNewsDesk from "../components/Intelligence/BorderNewsDesk";
+import BorderInsightLab from "../components/Intelligence/BorderInsightLab";
 import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
-import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
@@ -86,15 +85,12 @@ export default function BorderDashboard() {
           />
         </header>
 
-        {/* ROW 2: PRIMARY SURFACE */}
+        {/* ROW 2: PRIMARY SURFACE — map gets more vertical room */}
         <div className="flex flex-1 min-h-0 connected-grid">
-
-          {/* LEFT SIDEBAR */}
-          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
+          <aside className="hidden w-[320px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
             <Sidebar brief={brief} />
           </aside>
 
-          {/* CENTER: MAP */}
           <div className="flex-1 min-w-0 grid-cell bg-[#111]">
             <ErrorBoundary name="Tactical Map Engine">
               <BorderMap onProvinceSelect={setSelectedProvince} />
@@ -102,7 +98,6 @@ export default function BorderDashboard() {
           </div>
         </div>
 
-        {/* MOBILE: sidebar is hidden below xl — surface it via a bottom sheet (§11.8) */}
         <button
           type="button"
           onClick={() => setIsPanelsOpen(true)}
@@ -112,26 +107,19 @@ export default function BorderDashboard() {
           <span aria-hidden="true">&#9776;</span> Panels
         </button>
 
-        {/* ROW 3: ANALYTICS STRIP — taller for v2.0 readable type */}
-        <div className="h-[320px] shrink-0 connected-grid bg-black overflow-hidden">
-
-          {/* MARKET PULSE */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderMarketPulse />
-          </div>
-
-          {/* CRITICAL CAMERA RAIL */}
+        {/* ROW 3: Insight Lab + News — markets/cameras demoted off the primary canvas */}
+        <div className="h-[340px] shrink-0 connected-grid bg-black overflow-hidden">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
-            <CriticalCameraRail />
+            <ErrorBoundary name="Border Insight Lab">
+              <BorderInsightLab brief={brief} />
+            </ErrorBoundary>
           </div>
-
-          {/* LIVE BORDER NEWS */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
+          <div className="w-[360px] shrink-0 grid-cell overflow-hidden">
             <BorderNewsDesk />
           </div>
         </div>
 
-        {/* ROW 4: TICKER BAR */}
+        {/* ROW 4: TICKER */}
         <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
           <div className="flex items-center gap-3 mr-6 shrink-0">
             <div className="animate-ping w-1.5 h-1.5 bg-[var(--accent)] rounded-full" />
@@ -140,15 +128,10 @@ export default function BorderDashboard() {
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
-        {/* ROW 5: TIME MACHINE */}
         <TimeMachine />
-
-        {/* ROW 6: BORDER STATUS STRIP */}
         <BorderStatusStrip brief={brief} />
       </div>
 
-      {/* MOBILE COMMAND PANELS (same Sidebar content as the desktop aside).
-          Must stay INSIDE TimeWindowProvider — Sidebar calls useTimeWindow(). */}
       <MobileDrawer
         isOpen={isPanelsOpen}
         onClose={() => setIsPanelsOpen(false)}
@@ -158,7 +141,6 @@ export default function BorderDashboard() {
       </MobileDrawer>
       </TimeWindowProvider>
 
-      {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
       <DashboardManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
       <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(false)} />
