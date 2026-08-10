@@ -279,6 +279,87 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ── Connected grid shell ─────────────────────────────────── */
+.connected-grid {
+  display: flex;
+  gap: 1.5px;
+  background: var(--line);
+}
+
+.grid-cell {
+  background: var(--bg-panel);
+  min-width: 0;
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ok);
+  border: 1px solid var(--line-bright);
+  padding: 2px 6px;
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid var(--line-bright);
+  padding: 4px 8px;
+}
+
+.stat-pill.danger {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.stat-pill.warning {
+  color: var(--warn);
+}
+
+.stat-pill.safe {
+  color: var(--ok);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 60s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee {
+    animation-duration: 400s;
+  }
+}
+
 /* ── Legacy support (components that still reference old vars) ── */
 
 :root {
@@ -295,4 +376,50 @@ h1, h2, h3, h4, h5, h6 {
   --tech: var(--ink-dim);
   --danger: var(--accent);
   --success: var(--ok);
+}
+
+/* ── Command shell readability (v2.0) — 16" laptop floor ── */
+.theme-border {
+  --cmd-micro: 11px;
+  --cmd-body: 13px;
+  --cmd-lead: 16px;
+  --cmd-title: 18px;
+}
+
+/* Remap legacy micro type used across Border panels */
+.theme-border :is(
+  .text-\[5\.5px\],
+  .text-\[6px\],
+  .text-\[6\.5px\],
+  .text-\[7px\],
+  .text-\[8px\]
+) {
+  font-size: var(--cmd-micro) !important;
+  letter-spacing: 0.06em;
+  line-height: 1.35;
+}
+
+.theme-border :is(.text-\[9px\], .text-\[10px\]) {
+  font-size: var(--cmd-body) !important;
+  line-height: 1.4;
+}
+
+.theme-border :is(.text-\[11px\], .text-\[13px\]) {
+  font-size: var(--cmd-lead) !important;
+  line-height: 1.35;
+}
+
+.theme-border .text-\[15px\] {
+  font-size: var(--cmd-title) !important;
+  line-height: 1.25;
+}
+
+.theme-border .rams-label,
+.theme-border .rams-btn {
+  font-size: var(--cmd-micro);
+}
+
+.theme-border .eyebrow {
+  font-size: var(--cmd-micro);
+  letter-spacing: 0.14em;
 }

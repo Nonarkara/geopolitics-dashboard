@@ -23,6 +23,8 @@ import {
 import type { BorderCommandBrief, CommodityPrice, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import BorderNewsFeed from "./BorderNewsFeed";
+import type { ReliefWebResponse } from "../../lib/reliefweb";
+import type { SanctionsResponse } from "../../lib/opensanctions";
 import {
   formatBangkokDayLabel,
   formatBangkokTimeLabel,
@@ -128,6 +130,30 @@ function useFetch<T>(url: string, interval: number): T | null {
   return data;
 }
 
+function useEnvelope<T>(url: string, interval: number): T | null {
+  const [data, setData] = useState<T | null>(null);
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (document.hidden) return;
+      try {
+        const res = await fetch(url, { cache: "no-store" });
+        const json = (await res.json()) as { success?: boolean; data?: T };
+        if (active && json?.data) setData(json.data);
+      } catch {
+        /* keep last good */
+      }
+    };
+    void load();
+    const id = setInterval(() => void load(), interval);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [url, interval]);
+  return data;
+}
+
 export default function Sidebar({ brief }: SidebarProps) {
   const { buildUrl, isHistorical, timeWindow, bangkokDay } = useTimeWindow();
   const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
@@ -135,6 +161,8 @@ export default function Sidebar({ brief }: SidebarProps) {
   const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
   const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
   const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+  const relief = useEnvelope<ReliefWebResponse>("/api/border/reliefweb", 1800_000);
+  const sanctions = useEnvelope<SanctionsResponse>("/api/border/sanctions", 3600_000);
 
   const [narrative, setNarrative] = useState<string | null>(null);
   const [narrativeTime, setNarrativeTime] = useState<string | null>(null);
@@ -519,7 +547,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                 return (
                   <div key={d.id} className={`border border-white/10 p-2 ${d.alertLevel === "Red" ? "bg-[rgba(255,59,48,0.04)]" : "bg-white/[0.06]"}`}>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[7px] font-black uppercase tracking-wider px-1 py-0.5 rounded-sm ${alertColor}`}>
+                      <span className={`text-[7px] font-black uppercase tracking-wider px-1 py-0.5 ${alertColor}`}>
                         {d.alertLevel}
                       </span>
                       <span className="text-[7px] font-black uppercase opacity-40">{d.type}</span>
@@ -538,6 +566,97 @@ export default function Sidebar({ brief }: SidebarProps) {
             </div>
           </section>
         )}
+
+        {/* RELIEFWEB / HDX */}
+        <section className="pt-3 border-t border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="eyebrow text-white/90 flex items-center gap-2">
+              <Siren size={10} className="text-[var(--hazard,#f59e0b)]" />
+              Humanitarian Desk
+            </div>
+            <span className="live-badge scale-75">
+              {relief?.source.status === "live" ? "RELIEFWEB" : "RW OFF"}
+            </span>
+          </div>
+          {relief && relief.reports.length > 0 ? (
+            <div className="space-y-1">
+              {relief.reports.slice(0, 5).map((report) => (
+                <a
+                  key={report.id}
+                  href={report.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block border border-white/10 bg-white/[0.06] p-2 hover:bg-white/[0.09] transition-colors"
+                >
+                  <div className="text-[9px] font-bold leading-tight line-clamp-2">
+                    {report.title}
+                  </div>
+                  <SourceAttr
+                    href={report.url}
+                    label={report.source}
+                    date={new Date(report.date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                  />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-white/10 bg-white/[0.03] px-2 py-3 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35">
+              {relief?.source.status === "offline"
+                ? "ReliefWeb offline"
+                : "No recent ReliefWeb reports for THA/MMR/KHM/MYS"}
+            </div>
+          )}
+        </section>
+
+        {/* OPENSANCTIONS WATCH */}
+        <section className="pt-3 border-t border-white/10">
+          <div className="flex items-center justify-between mb-3">
+            <div className="eyebrow text-white/90 flex items-center gap-2">
+              <Shield size={10} className="text-[var(--accent)]" />
+              Sanctions Watch
+            </div>
+            <span className="live-badge scale-75">
+              {sanctions?.source.status === "live" ? "OS" : "OS OFF"}
+            </span>
+          </div>
+          {sanctions && sanctions.hits.length > 0 ? (
+            <div className="space-y-1">
+              {sanctions.hits.slice(0, 6).map((hit) => (
+                <a
+                  key={hit.id}
+                  href={hit.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block border border-white/10 bg-white/[0.06] p-2 hover:bg-white/[0.09] transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-[7px] font-black uppercase tracking-wider opacity-40">
+                      {hit.schema}
+                    </span>
+                    {hit.countries[0] ? (
+                      <span className="text-[7px] font-black uppercase tracking-wider text-white/35">
+                        {hit.countries[0]}
+                      </span>
+                    ) : null}
+                  </div>
+                  <div className="text-[9px] font-bold leading-tight mt-1 line-clamp-2">
+                    {hit.name}
+                  </div>
+                  <SourceAttr href={hit.url} label="OPENSANCTIONS" />
+                </a>
+              ))}
+            </div>
+          ) : (
+            <div className="border border-white/10 bg-white/[0.03] px-2 py-3 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35">
+              {sanctions?.source.status === "offline"
+                ? "OpenSanctions offline"
+                : "No watchlist hits in current query set"}
+            </div>
+          )}
+        </section>
 
         {/* INTERVENTION QUEUE */}
         <section className="pt-3 border-t border-white/10">

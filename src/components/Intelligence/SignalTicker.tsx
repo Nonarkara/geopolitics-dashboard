@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
-import { fallbackTicker } from "../../lib/mock-data";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import type { TickerResponse } from "../../types/dashboard";
 
@@ -15,13 +14,20 @@ function isTickerResponse(value: unknown): value is TickerResponse {
   );
 }
 
+const EMPTY_TICKER: TickerResponse = {
+  items: [],
+  generatedAt: new Date(0).toISOString(),
+  mode: "live",
+};
+
 export default function SignalTicker({
   endpoint = "/api/ticker",
 }: {
   endpoint?: string;
 }) {
   const { buildUrl, isHistorical, timeWindow } = useTimeWindow();
-  const [ticker, setTicker] = useState<TickerResponse>(fallbackTicker);
+  const [ticker, setTicker] = useState<TickerResponse>(EMPTY_TICKER);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -29,18 +35,36 @@ export default function SignalTicker({
         const response = await fetch(buildUrl(endpoint), { cache: "no-store" });
         const payload: unknown = await response.json();
 
+        if (!response.ok) {
+          setErrorCode(`HTTP_${response.status}`);
+          setTicker(
+            isHistorical
+              ? { ...EMPTY_TICKER, items: [], mode: "historical-empty" }
+              : { ...EMPTY_TICKER, generatedAt: new Date().toISOString() },
+          );
+          return;
+        }
+
         if (isTickerResponse(payload)) {
+          setErrorCode(null);
           setTicker(payload);
         }
       } catch {
-        setTicker(isHistorical ? { ...fallbackTicker, items: [], mode: "historical-empty" } : fallbackTicker);
+        setErrorCode("FETCH_FAILED");
+        setTicker(
+          isHistorical
+            ? { ...EMPTY_TICKER, items: [], mode: "historical-empty" }
+            : { ...EMPTY_TICKER, generatedAt: new Date().toISOString() },
+        );
       }
     };
 
-    load();
-    const interval = setInterval(load, 60000);
+    void load();
+    const interval = setInterval(() => {
+      void load();
+    }, 60_000);
     return () => clearInterval(interval);
-  }, [buildUrl, endpoint, isHistorical]);
+  }, [buildUrl, endpoint, isHistorical, timeWindow]);
 
   if (ticker.items.length === 0) {
     return (
@@ -51,7 +75,9 @@ export default function SignalTicker({
       >
         {ticker.mode === "historical-empty" && timeWindow
           ? `No archived ticker snapshot for ${timeWindow.bangkokDay} ICT`
-          : "Synchronizing signal ticker"}
+          : errorCode
+            ? `LIVE UNAVAILABLE · ${errorCode}`
+            : "Synchronizing signal ticker"}
       </div>
     );
   }

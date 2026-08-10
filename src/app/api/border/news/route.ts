@@ -130,9 +130,16 @@ export async function GET(request: NextRequest) {
       message: null,
     });
 
-    return noStoreJson({ ...news, mode: "live" as const }, {
-      headers: { "x-request-id": requestId },
-    });
+    return noStoreJson(
+      {
+        ...news,
+        mode: "live" as const,
+        sources: truthfulOsint.sources,
+      },
+      {
+        headers: { "x-request-id": requestId },
+      },
+    );
   } catch (error) {
     void borderNewsRouteDeps.logFeedHealth({
       feed_id: "border-news",

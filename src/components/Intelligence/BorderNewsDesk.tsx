@@ -3,11 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ExternalLink, Newspaper, RefreshCw } from "lucide-react";
 import LoadingSkeleton from "../Common/LoadingSkeleton";
-import { fallbackNews } from "../../lib/mock-data";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { formatBangkokDayLabel } from "../../lib/time-window";
-import type { NewsResponse } from "../../types/dashboard";
+import type { NewsResponse, SourceHealth } from "../../types/dashboard";
 
 function isNewsResponse(value: unknown): value is NewsResponse {
   return (
@@ -42,9 +41,33 @@ function formatHeaderTime(value: string) {
   });
 }
 
+function ageLabel(iso: string) {
+  const ms = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 48) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function sourceChipClass(status: SourceHealth["status"]) {
+  if (status === "live") return "text-[var(--safe,#22c55e)] border-white/20";
+  if (status === "stale") return "text-[var(--hazard,#f59e0b)] border-white/15";
+  return "text-white/35 border-white/10";
+}
+
+const EMPTY_LIVE: NewsResponse = {
+  news: [],
+  generatedAt: new Date(0).toISOString(),
+  mode: "live",
+};
+
 export default function BorderNewsDesk() {
   const { timeWindow, bangkokDay, buildUrl, isHistorical } = useTimeWindow();
-  const [news, setNews] = useState<NewsResponse>(fallbackNews);
+  const [news, setNews] = useState<NewsResponse | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
   const [hasLoaded, setHasLoaded] = useState(isStatic);
   const hasLoadedRef = useRef(isStatic);
@@ -55,12 +78,46 @@ export default function BorderNewsDesk() {
         const response = await fetch(buildUrl("/api/border/news"), { cache: "no-store" });
         const payload: unknown = await response.json();
 
+        if (!response.ok) {
+          const code =
+            typeof payload === "object" &&
+            payload !== null &&
+            "error" in payload &&
+            typeof (payload as { error?: { code?: string } }).error?.code === "string"
+              ? (payload as { error: { code: string } }).error.code
+              : `HTTP_${response.status}`;
+          setErrorCode(code);
+          setNews(
+            isHistorical
+              ? { ...EMPTY_LIVE, news: [], mode: "historical-empty" }
+              : { ...EMPTY_LIVE, news: [], generatedAt: new Date().toISOString() },
+          );
+          if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
+            setHasLoaded(true);
+          }
+          return;
+        }
+
         if (isNewsResponse(payload)) {
+          setErrorCode(null);
           setNews(payload);
-          if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
+          if (!hasLoadedRef.current) {
+            hasLoadedRef.current = true;
+            setHasLoaded(true);
+          }
         }
       } catch {
-        setNews(isHistorical ? { ...fallbackNews, news: [], mode: "historical-empty" } : fallbackNews);
+        setErrorCode("FETCH_FAILED");
+        setNews(
+          isHistorical
+            ? { ...EMPTY_LIVE, news: [], mode: "historical-empty" }
+            : { ...EMPTY_LIVE, news: [], generatedAt: new Date().toISOString() },
+        );
+        if (!hasLoadedRef.current) {
+          hasLoadedRef.current = true;
+          setHasLoaded(true);
+        }
       }
     };
 
@@ -72,22 +129,46 @@ export default function BorderNewsDesk() {
     return () => clearInterval(interval);
   }, [buildUrl, isHistorical, timeWindow]);
 
+  const display = news ?? EMPTY_LIVE;
+  const sources = display.sources ?? [];
+
   return (
     <section
       data-testid="border-news-desk"
       className="flex h-full flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,#08090e_0%,#0c0f16_100%)] select-none"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
-        <div>
+        <div className="min-w-0">
           <div className="eyebrow text-white/90 mb-0.5">Border News Wire</div>
           <div className="text-[10px] font-black uppercase tracking-[0.03em] text-white/90">
             Cited headlines with source links
           </div>
+          {sources.length > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {sources.map((source) => (
+                <span
+                  key={source.id}
+                  className={`inline-flex items-center gap-1 border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-[0.12em] ${sourceChipClass(source.status)}`}
+                  title={source.message ?? source.label}
+                >
+                  {source.label}
+                  <span className="opacity-50">· {source.status}</span>
+                </span>
+              ))}
+            </div>
+          ) : null}
         </div>
-        <div className="inline-flex items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35">
-          <FreshnessDot lastUpdated={news.generatedAt} />
-          <RefreshCw size={10} />
-          {formatHeaderTime(news.generatedAt)}
+        <div className="inline-flex flex-col items-end gap-0.5 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35 shrink-0">
+          <span className="inline-flex items-center gap-1.5">
+            <FreshnessDot lastUpdated={display.generatedAt} />
+            <RefreshCw size={10} />
+            {display.generatedAt === EMPTY_LIVE.generatedAt
+              ? "—"
+              : formatHeaderTime(display.generatedAt)}
+          </span>
+          {display.generatedAt !== EMPTY_LIVE.generatedAt ? (
+            <span className="opacity-50">{ageLabel(display.generatedAt)}</span>
+          ) : null}
         </div>
       </div>
 
@@ -99,74 +180,73 @@ export default function BorderNewsDesk() {
       ) : (
       <div className="min-h-0 flex-1 overflow-y-auto p-2.5 no-scrollbar">
         {isHistorical && timeWindow ? (
-          <div className="mb-2 rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
+          <div className="mb-2 border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
             Playback window: {formatBangkokDayLabel(bangkokDay ?? "")} ICT
           </div>
         ) : null}
-        {news.news.length > 0 ? (
+        {display.news.length > 0 ? (
           <div className="flex h-full flex-col gap-2">
-            {/* LEAD STORY */}
             <article className="relative overflow-hidden border border-white/10 bg-white/[0.03] p-3">
-              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-[linear-gradient(180deg,#ef4444_0%,#f59e0b_100%)]" />
+              <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-[var(--accent)]" />
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <div
                     className={`text-[7px] font-black px-1.5 py-0.5 uppercase tracking-widest ${
-                      news.news[0].severity === "alert"
+                      display.news[0].severity === "alert"
                         ? "bg-[var(--accent)] text-white"
-                        : news.news[0].severity === "watch"
+                        : display.news[0].severity === "watch"
                           ? "bg-[var(--hazard)] text-black"
                           : "bg-white/10 text-white/90"
                     }`}
                   >
-                    Lead {news.news[0].tag}
+                    Lead {display.news[0].tag}
                   </div>
-                  {news.news[0].provider && (
+                  {display.news[0].provider && (
                     <span className="text-[6px] font-black uppercase tracking-[0.16em] px-1 py-px bg-white/[0.06] text-white/35">
-                      {news.news[0].provider}
+                      {display.news[0].provider}
                     </span>
                   )}
                 </div>
                 <time className="text-[7px] font-mono tabular-nums opacity-40">
-                  {formatDatetime(news.news[0].publishedAt)}
+                  {formatDatetime(display.news[0].publishedAt)}
                 </time>
               </div>
 
               <h3 className="mt-1.5 text-[13px] font-black uppercase leading-[1.15] tracking-tight text-white/90">
-                {news.news[0].sourceUrl ? (
+                {display.news[0].sourceUrl ? (
                   <a
-                    href={news.news[0].sourceUrl}
+                    href={display.news[0].sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="hover:underline decoration-[var(--accent)] underline-offset-2"
                   >
-                    {news.news[0].title}
+                    {display.news[0].title}
                   </a>
                 ) : (
-                  news.news[0].title
+                  display.news[0].title
                 )}
               </h3>
               <p className="mt-1.5 text-[9px] leading-[1.45] text-white/50 line-clamp-2">
-                {news.news[0].summary}
+                {display.news[0].summary}
               </p>
 
               <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/[0.06] pt-1.5">
-                {news.news[0].sourceUrl ? (
+                {display.news[0].sourceUrl ? (
                   <a
-                    href={news.news[0].sourceUrl}
+                    href={display.news[0].sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.14em] text-white/35 hover:text-white/90 transition-colors"
-                    title={`Open source: ${news.news[0].source}`}
+                    title={`Open source: ${display.news[0].source}`}
                   >
                     <Newspaper size={9} />
-                    {news.news[0].source}
+                    {display.news[0].source}
                     <ExternalLink size={7} className="opacity-40" />
                   </a>
                 ) : (
                   <span className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.14em] text-white/35">
                     <Newspaper size={9} />
-                    {news.news[0].source}
+                    {display.news[0].source}
                   </span>
                 )}
                 <span className="text-[7px] font-black uppercase tracking-[0.16em] text-[var(--tech)]">
@@ -175,12 +255,11 @@ export default function BorderNewsDesk() {
               </div>
             </article>
 
-            {/* SECONDARY STORIES */}
             <div className="grid grid-cols-1 gap-1.5">
-              {news.news.slice(1, 5).map((item) => (
+              {display.news.slice(1, 5).map((item) => (
                 <article
                   key={item.id}
-                  className="border border-white/10 bg-white/[0.04] px-2.5 py-2 backdrop-blur-sm"
+                  className="border border-white/10 bg-white/[0.04] px-2.5 py-2"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
@@ -248,12 +327,17 @@ export default function BorderNewsDesk() {
             </div>
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center border border-white/[0.06] bg-white/[0.04]">
+          <div className="flex h-full flex-col items-center justify-center gap-2 border border-white/[0.06] bg-white/[0.04] px-4 text-center">
             <span className="eyebrow text-white/90">
-              {news.mode === "historical-empty"
+              {display.mode === "historical-empty"
                 ? "No archived border headlines for this playback day"
-                : "Refreshing border headlines"}
+                : "LIVE UNAVAILABLE"}
             </span>
+            {errorCode && display.mode !== "historical-empty" ? (
+              <span className="text-[8px] font-mono uppercase tracking-[0.16em] text-white/40">
+                {errorCode}
+              </span>
+            ) : null}
           </div>
         )}
       </div>

@@ -304,14 +304,41 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
   const trafficFetch = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
   const disastersFetch = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+  const firesFetch = useFetch<Array<{ latitude: number; longitude: number }>>("/api/fires", 900_000);
+  const [acledStatus, setAcledStatus] = useState<"live" | "stale" | "offline">("offline");
 
   const commodities = commoditiesFetch.data;
   const rivers = riversFetch.data;
   const quakes = quakesFetch.data;
   const traffic = trafficFetch.data;
   const disasters = disastersFetch.data;
+  const fireCount = firesFetch.data?.length ?? 0;
 
-  const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing;
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/border/osint", { cache: "no-store" });
+        const json = (await res.json()) as {
+          data?: { sources?: Array<{ id: string; status: "live" | "stale" | "offline" }> };
+          sources?: Array<{ id: string; status: "live" | "stale" | "offline" }>;
+        };
+        const sources = json.data?.sources ?? json.sources ?? [];
+        const acled = sources.find((source) => source.id === "acled");
+        if (active && acled) setAcledStatus(acled.status);
+      } catch {
+        /* keep last */
+      }
+    };
+    void load();
+    const id = setInterval(() => void load(), 300_000);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, []);
+
+  const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing || firesFetch.isRefreshing;
 
   // Find the stalest feed
   const feedAges: { label: string; age: number }[] = [
@@ -333,7 +360,8 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     quakesFetch.refresh();
     trafficFetch.refresh();
     disastersFetch.refresh();
-  }, [commoditiesFetch, riversFetch, quakesFetch, trafficFetch, disastersFetch]);
+    firesFetch.refresh();
+  }, [commoditiesFetch, riversFetch, quakesFetch, trafficFetch, disastersFetch, firesFetch]);
 
   // Score breakdown hover state (overall posture badge)
   const [showScoreBreakdown, setShowScoreBreakdown] = useState(false);
@@ -458,6 +486,14 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         <div className="flex items-center gap-0 shrink-0">
           <Metric label="Incidents" value={totalIncidents} sub="matched" sourceId="acled" />
           <Metric label="Fatalities" value={totalFatalities} sub="reported" sourceId="acled" />
+          <Metric label="FIRMS" value={fireCount} sub="hotspots" sourceId="fires" />
+          <Metric
+            label="ACLED"
+            value={acledStatus === "offline" ? "OFF" : acledStatus.toUpperCase()}
+            sub={acledStatus === "offline" ? "no key" : "ingest"}
+            color={acledStatus === "offline" ? "var(--dim)" : undefined}
+            sourceId="acled"
+          />
           <Metric label="Cameras" value={totalVerified} sub={`+${totalCandidates} scout`} />
         </div>
 

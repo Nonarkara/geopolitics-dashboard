@@ -363,6 +363,8 @@ export interface NewsResponse {
   news: NewsItem[];
   generatedAt: string;
   mode?: DashboardPlaybackMode;
+  sources?: SourceHealth[];
+  errorCode?: string;
 }
 
 export interface TickerItem {

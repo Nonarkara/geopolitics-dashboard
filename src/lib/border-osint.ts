@@ -537,16 +537,21 @@ async function fetchUnhcrSnapshot() {
 }
 
 function acledSourceStatus(): SourceHealth {
+  const username =
+    process.env.ACLED_USERNAME?.trim() ?? process.env.ACLED_EMAIL?.trim();
+  const password = process.env.ACLED_PASSWORD?.trim();
+  const keyed = Boolean(username && password);
+
   return {
     id: "acled",
     label: "ACLED",
-    url: "https://acleddata.com/acled-api-documentation",
-    status: process.env.ACLED_API_URL ? "stale" : "offline",
+    url: "https://acleddata.com/api-documentation",
+    status: keyed ? "stale" : "offline",
     checkedAt: new Date().toISOString(),
     responseTimeMs: null,
-    message: process.env.ACLED_API_URL
-      ? "ACLED endpoint configured, but no border adapter is enabled yet for this deployment."
-      : "Optional provider. Configure ACLED credentials to add coded conflict events to the border stack.",
+    message: keyed
+      ? "Credentials present — conflict events via ingest / events table"
+      : "ACLED offline — set ACLED_USERNAME + ACLED_PASSWORD",
   };
 }
 
@@ -610,16 +615,42 @@ export async function loadBorderIncidents(): Promise<IncidentFeature[]> {
   }
 }
 
-export function filterTruthfulBorderOsint(osint: BorderOsintResponse): BorderOsintResponse {
-  const gdeltSource = osint.sources.find((source) => source.id === "gdelt-doc-2");
-  const unhcrSource = osint.sources.find(
-    (source) => source.id === "unhcr-refugee-data-finder",
-  );
+const FALLBACK_SIGNAL_IDS = new Set(
+  FALLBACK_BORDER_SIGNALS.map((signal) => signal.id),
+);
 
+function hasRealSourceUrl(url: string | null | undefined) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isFallbackSourceLabel(label: string) {
+  return /fallback/i.test(label);
+}
+
+/**
+ * Keep live OSINT with real source URLs even when GDELT is stale.
+ * Drop only curated fallback narratives — never wipe Google News because GDELT lagged.
+ */
+export function filterTruthfulBorderOsint(osint: BorderOsintResponse): BorderOsintResponse {
   return {
     ...osint,
-    signals: gdeltSource?.status === "live" ? osint.signals : [],
-    humanitarian: unhcrSource?.status === "live" ? osint.humanitarian : [],
+    signals: osint.signals.filter(
+      (signal) =>
+        !FALLBACK_SIGNAL_IDS.has(signal.id) &&
+        !isFallbackSourceLabel(signal.source) &&
+        hasRealSourceUrl(signal.sourceUrl),
+    ),
+    humanitarian: osint.humanitarian.filter(
+      (snapshot) =>
+        !isFallbackSourceLabel(snapshot.source) &&
+        hasRealSourceUrl(snapshot.sourceUrl),
+    ),
   };
 }
 
@@ -635,18 +666,37 @@ export async function loadBorderOsint(): Promise<BorderOsintResponse> {
   }
 
   borderOsintPending = (async () => {
+    const googleStartedAt = Date.now();
     const [gdelt, unhcr, googleNews] = await Promise.all([
       fetchGdeltSignals(),
       fetchUnhcrSnapshot(),
       fetchGoogleNewsBorderHeadlines(),
     ]);
     // Merge Google News headlines with GDELT signals — Google News first (fresher)
-    const mergedSignals = dedupeByTitle([...googleNews, ...gdelt.signals]).slice(0, 12);
+    const liveGdeltSignals = gdelt.signals.filter(
+      (signal) => !FALLBACK_SIGNAL_IDS.has(signal.id),
+    );
+    const mergedSignals = dedupeByTitle([
+      ...googleNews,
+      ...liveGdeltSignals,
+    ]).slice(0, 12);
+    const googleSource = buildSource(
+      "google-news-rss",
+      "Google News RSS",
+      "https://news.google.com/rss",
+      googleNews.length > 0 ? "live" : "offline",
+      googleNews.length > 0
+        ? `${googleNews.length} frontier headlines`
+        : "No Google News headlines matched",
+      googleStartedAt,
+    );
     const payload: BorderOsintResponse = {
       generatedAt: new Date().toISOString(),
-      signals: mergedSignals.length > 0 ? mergedSignals : gdelt.signals,
-      humanitarian: unhcr.humanitarian,
-      sources: [gdelt.source, unhcr.source, acledSourceStatus()],
+      signals: mergedSignals,
+      humanitarian: unhcr.humanitarian.filter(
+        (snapshot) => !isFallbackSourceLabel(snapshot.source),
+      ),
+      sources: [googleSource, gdelt.source, unhcr.source, acledSourceStatus()],
     };
 
     borderOsintCache[0] = {

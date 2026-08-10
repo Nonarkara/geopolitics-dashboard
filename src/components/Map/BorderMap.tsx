@@ -408,7 +408,9 @@ export default function BorderMap({
   const [showSignalPulse, setShowSignalPulse] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
-  const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(new Set());
+  const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(
+    () => new Set(["NGT"]),
+  );
   const [activeTheaterId, setActiveTheaterId] = useState<
     "national" | "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south"
   >("national");
@@ -910,6 +912,24 @@ export default function BorderMap({
           <div className="flex items-center gap-2">
             <Layers size={10} className="text-[var(--accent)]" />
             <span className="text-[9px] font-black uppercase tracking-[0.15em]">Active: {activeLayersCount + activeOverlayCount}</span>
+            <button
+              type="button"
+              onClick={() => toggleOverlay("NGT")}
+              className={`ml-2 inline-flex items-center gap-1 border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] ${
+                activeOverlayIds.has("NGT")
+                  ? "border-[var(--accent)] text-[var(--accent)]"
+                  : "border-white/25 text-white/50"
+              }`}
+              title="VIIRS night lights — settlement / corridor activity proxy"
+            >
+              SAT · NGT
+              <span className="opacity-50">
+                {new Date().toISOString().slice(0, 10)}
+              </span>
+            </button>
+            <span className="text-[8px] font-mono uppercase tracking-[0.12em] text-white/40">
+              FIRMS {fires.length}
+            </span>
           </div>
           <button onClick={handleClearAll} className="text-[8px] font-black underline uppercase opacity-40 hover:opacity-100 transition-all">Reset</button>
         </div>

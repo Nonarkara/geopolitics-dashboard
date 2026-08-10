@@ -112,8 +112,8 @@ export default function BorderDashboard() {
           <span aria-hidden="true">&#9776;</span> Panels
         </button>
 
-        {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
+        {/* ROW 3: ANALYTICS STRIP — taller for v2.0 readable type */}
+        <div className="h-[320px] shrink-0 connected-grid bg-black overflow-hidden">
 
           {/* MARKET PULSE */}
           <div className="w-[340px] shrink-0 grid-cell overflow-hidden">

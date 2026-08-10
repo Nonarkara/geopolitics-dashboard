@@ -1,52 +1,34 @@
-
 import { NextResponse } from "next/server";
-import { fallbackFires } from "../../../lib/mock-data";
 import { getErrorMessage } from "../../../lib/errors";
 import type { FireEvent } from "../../../types/dashboard";
 
 /**
  * GET /api/fires
  *
- * Returns fire hotspots for Thailand and border regions.
- * Primary source: NASA FIRMS open CSV (no API key required).
- * Fallback: enriched mock data from mock-data.ts.
+ * NASA FIRMS thermal hotspots for Thailand + border box.
+ * Prefer keyed area API when FIRMS_KEY is set; else open SEA CSV.
+ * Never silently paint mock as live — empty array + X-Data-Source headers.
  */
 
 const FIRMS_CSV_URL =
   "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_SouthEast_Asia_24h.csv";
 
-// Thailand + border region bounds
 const LAT_MIN = 5.0;
 const LAT_MAX = 21.0;
 const LON_MIN = 96.5;
 const LON_MAX = 106.5;
 
-// In-memory cache (15 minutes)
-let firmsCache: { data: FireEvent[]; cachedAt: number } | null = null;
+let firmsCache: {
+  data: FireEvent[];
+  cachedAt: number;
+  source: "firms-area" | "firms-csv";
+} | null = null;
 const CACHE_TTL_MS = 15 * 60 * 1000;
 
-async function fetchNasaFirms(): Promise<FireEvent[]> {
-  // Return cache if fresh
-  if (firmsCache && Date.now() - firmsCache.cachedAt < CACHE_TTL_MS) {
-    return firmsCache.data;
-  }
-
-  const response = await fetch(FIRMS_CSV_URL, {
-    signal: AbortSignal.timeout(12_000),
-  });
-
-  if (!response.ok) {
-    throw new Error(`FIRMS fetch failed: ${response.status}`);
-  }
-
-  const csv = await response.text();
+function parseFirmsCsv(csv: string): FireEvent[] {
   const lines = csv.split("\n");
+  if (lines.length < 2) return [];
 
-  if (lines.length < 2) {
-    throw new Error("FIRMS CSV has no data rows");
-  }
-
-  // Parse header to find column indices
   const header = lines[0].split(",");
   const latIdx = header.indexOf("latitude");
   const lonIdx = header.indexOf("longitude");
@@ -69,17 +51,15 @@ async function fetchNasaFirms(): Promise<FireEvent[]> {
     const lat = parseFloat(cols[latIdx]);
     const lon = parseFloat(cols[lonIdx]);
 
-    // Filter to Thailand + border region
     if (lat < LAT_MIN || lat > LAT_MAX || lon < LON_MIN || lon > LON_MAX) {
       continue;
     }
 
     const brightness = brightIdx >= 0 ? parseFloat(cols[brightIdx]) || 0 : 0;
-    const confidence = confIdx >= 0 ? (cols[confIdx] || "nominal") : "nominal";
-    const acqDate = dateIdx >= 0 ? cols[dateIdx] : new Date().toISOString().slice(0, 10);
+    const confidence = confIdx >= 0 ? cols[confIdx] || "nominal" : "nominal";
+    const acqDate =
+      dateIdx >= 0 ? cols[dateIdx] : new Date().toISOString().slice(0, 10);
     const acqTime = timeIdx >= 0 ? cols[timeIdx] : "0000";
-
-    // Build ISO timestamp from acq_date (YYYY-MM-DD) and acq_time (HHMM)
     const hh = acqTime.slice(0, 2).padStart(2, "0");
     const mm = acqTime.slice(2, 4).padStart(2, "0");
 
@@ -92,30 +72,80 @@ async function fetchNasaFirms(): Promise<FireEvent[]> {
     });
   }
 
-  // Cache the result
-  firmsCache = { data: fires, cachedAt: Date.now() };
   return fires;
+}
+
+async function fetchFirmsArea(mapKey: string): Promise<FireEvent[]> {
+  // west,south,east,north / 1-day VIIRS NRT
+  const url = `https://firms.modaps.eosdis.nasa.gov/api/area/csv/${encodeURIComponent(mapKey)}/VIIRS_SNPP_NRT/${LON_MIN},${LAT_MIN},${LON_MAX},${LAT_MAX}/1`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+  if (!response.ok) {
+    throw new Error(`FIRMS area API failed: ${response.status}`);
+  }
+  return parseFirmsCsv(await response.text());
+}
+
+async function fetchFirmsCsv(): Promise<FireEvent[]> {
+  const response = await fetch(FIRMS_CSV_URL, {
+    signal: AbortSignal.timeout(12_000),
+  });
+  if (!response.ok) {
+    throw new Error(`FIRMS CSV failed: ${response.status}`);
+  }
+  return parseFirmsCsv(await response.text());
+}
+
+async function fetchNasaFirms(): Promise<{
+  data: FireEvent[];
+  source: "firms-area" | "firms-csv";
+}> {
+  if (firmsCache && Date.now() - firmsCache.cachedAt < CACHE_TTL_MS) {
+    return { data: firmsCache.data, source: firmsCache.source };
+  }
+
+  const mapKey = process.env.FIRMS_KEY?.trim();
+  let data: FireEvent[] = [];
+  let source: "firms-area" | "firms-csv" = "firms-csv";
+
+  if (mapKey) {
+    try {
+      data = await fetchFirmsArea(mapKey);
+      source = "firms-area";
+    } catch {
+      data = await fetchFirmsCsv();
+      source = "firms-csv";
+    }
+  } else {
+    data = await fetchFirmsCsv();
+    source = "firms-csv";
+  }
+
+  firmsCache = { data, cachedAt: Date.now(), source };
+  return { data, source };
 }
 
 export async function GET() {
   try {
-    const fires = await fetchNasaFirms();
+    const { data: fires, source } = await fetchNasaFirms();
+    const generatedAt = new Date().toISOString();
 
-    if (fires.length > 0) {
-      return NextResponse.json(fires, {
-        headers: { "X-Data-Source": "live" },
-      });
-    }
-    // Zero rows is a legitimate empty result, but we substitute mock data so
-    // the map is never blank — mark it so a caller can tell it apart from real.
-    return NextResponse.json(fallbackFires, {
-      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "no-rows" },
+    return NextResponse.json(fires, {
+      headers: {
+        "X-Data-Source": "live",
+        "X-Data-Tier": source,
+        "X-Data-Age": generatedAt,
+        "X-Fire-Count": String(fires.length),
+      },
     });
   } catch (error: unknown) {
     console.error("FIRMS fetch error:", getErrorMessage(error));
-    return NextResponse.json(fallbackFires, {
+    return NextResponse.json([], {
       status: 200,
-      headers: { "X-Data-Source": "mock", "X-Mock-Reason": "fetch-error" },
+      headers: {
+        "X-Data-Source": "unavailable",
+        "X-Mock-Reason": "fetch-error",
+        "X-Error": getErrorMessage(error).slice(0, 120),
+      },
     });
   }
 }
