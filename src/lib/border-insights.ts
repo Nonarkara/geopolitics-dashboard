@@ -3,6 +3,10 @@
  * Air: Open-Meteo CAMS (AQI / PM2.5 / CO₂ model — not satellite XCO₂ column).
  * Mekong: Open-Meteo GloFAS river discharge at Thai-bank gauges.
  * Compare: World Bank GDP growth + urbanisation + forest cover.
+ *
+ * Worker note: do not use short AbortSignal.timeout on these upstreams.
+ * Cold Open-Meteo from CF can exceed 12s; flood-risk already proves the
+ * durable pattern is `next: { revalidate }` without a tight abort.
  */
 
 export interface InsightAirPoint {
@@ -106,64 +110,68 @@ const COUNTRIES = [
   { iso3: "CHN", label: "China" },
 ] as const;
 
-function lastNumber(values: Array<number | null | undefined>): number | null {
-  for (let i = values.length - 1; i >= 0; i--) {
-    const value = values[i];
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-  }
-  return null;
+type AirCurrent = {
+  time?: string;
+  us_aqi?: number;
+  pm2_5?: number;
+  carbon_dioxide?: number;
+};
+
+type AirPayload = {
+  latitude?: number;
+  longitude?: number;
+  current?: AirCurrent;
+};
+
+function emptyAir(site: (typeof AIR_SITES)[number]): InsightAirPoint {
+  return {
+    id: site.id,
+    label: site.label,
+    theater: site.theater,
+    lat: site.lat,
+    lng: site.lng,
+    usAqi: null,
+    pm25: null,
+    co2Ppm: null,
+    observedAt: null,
+    source: "Open-Meteo CAMS",
+  };
 }
 
-async function fetchAirSite(
-  site: (typeof AIR_SITES)[number],
-): Promise<InsightAirPoint> {
+async function fetchAirBatch(): Promise<InsightAirPoint[]> {
+  const latitudes = AIR_SITES.map((site) => site.lat).join(",");
+  const longitudes = AIR_SITES.map((site) => site.lng).join(",");
   const url =
-    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${site.lat}` +
-    `&longitude=${site.lng}&current=pm2_5,us_aqi` +
-    `&hourly=carbon_dioxide,pm2_5,us_aqi&forecast_days=1&timezone=Asia%2FBangkok`;
+    `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${latitudes}` +
+    `&longitude=${longitudes}&current=us_aqi,pm2_5,carbon_dioxide`;
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
-    if (!response.ok) throw new Error(`air ${response.status}`);
-    const payload = (await response.json()) as {
-      current?: {
-        time?: string;
-        pm2_5?: number;
-        us_aqi?: number;
-      };
-      hourly?: {
-        time?: string[];
-        carbon_dioxide?: Array<number | null>;
-        pm2_5?: Array<number | null>;
-        us_aqi?: Array<number | null>;
-      };
-    };
+    const response = await fetch(url, { next: { revalidate: 900 } });
+    if (!response.ok) return AIR_SITES.map(emptyAir);
 
-    return {
-      id: site.id,
-      label: site.label,
-      theater: site.theater,
-      lat: site.lat,
-      lng: site.lng,
-      usAqi: payload.current?.us_aqi ?? lastNumber(payload.hourly?.us_aqi ?? []),
-      pm25: payload.current?.pm2_5 ?? lastNumber(payload.hourly?.pm2_5 ?? []),
-      co2Ppm: lastNumber(payload.hourly?.carbon_dioxide ?? []),
-      observedAt: payload.current?.time ?? null,
-      source: "Open-Meteo CAMS",
-    };
+    const payload = (await response.json()) as AirPayload | AirPayload[];
+    const rows = Array.isArray(payload) ? payload : [payload];
+
+    return AIR_SITES.map((site, index) => {
+      const row = rows[index];
+      const current = row?.current;
+      if (!current || typeof current.us_aqi !== "number") return emptyAir(site);
+      return {
+        id: site.id,
+        label: site.label,
+        theater: site.theater,
+        lat: site.lat,
+        lng: site.lng,
+        usAqi: current.us_aqi,
+        pm25: typeof current.pm2_5 === "number" ? current.pm2_5 : null,
+        co2Ppm:
+          typeof current.carbon_dioxide === "number" ? current.carbon_dioxide : null,
+        observedAt: current.time ?? null,
+        source: "Open-Meteo CAMS",
+      };
+    });
   } catch {
-    return {
-      id: site.id,
-      label: site.label,
-      theater: site.theater,
-      lat: site.lat,
-      lng: site.lng,
-      usAqi: null,
-      pm25: null,
-      co2Ppm: null,
-      observedAt: null,
-      source: "Open-Meteo CAMS",
-    };
+    return AIR_SITES.map(emptyAir);
   }
 }
 
@@ -184,7 +192,7 @@ async function fetchRiver(
     const url =
       `https://flood-api.open-meteo.com/v1/flood?latitude=${site.lat}` +
       `&longitude=${site.lng}&daily=river_discharge&past_days=14&forecast_days=7`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(12_000) });
+    const response = await fetch(url, { next: { revalidate: 1800 } });
     if (!response.ok) return fallback;
     const payload = (await response.json()) as {
       daily?: { time?: string[]; river_discharge?: Array<number | null> };
@@ -252,7 +260,13 @@ async function fetchWorldBankIndicator(
   const map = new Map<string, { value: number; year: string }>();
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+    const response = await fetch(url, {
+      next: { revalidate: 86_400 },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "geopolitics-dashboard/2.0 (educational border insights)",
+      },
+    });
     if (!response.ok) return map;
     const payload = (await response.json()) as unknown;
     const rows = Array.isArray(payload) ? payload[1] : null;
@@ -286,7 +300,7 @@ async function fetchWorldBankIndicator(
 export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
   const generatedAt = new Date().toISOString();
   const [air, rivers, gdp, urban, forest] = await Promise.all([
-    Promise.all(AIR_SITES.map(fetchAirSite)),
+    fetchAirBatch(),
     Promise.all(MEKONG_SITES.map(fetchRiver)),
     fetchWorldBankIndicator("NY.GDP.MKTP.KD.ZG"),
     fetchWorldBankIndicator("SP.URB.TOTL.IN.ZS"),
