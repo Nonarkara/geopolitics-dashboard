@@ -25,12 +25,14 @@ const FRONTIER_COLORS: Record<BorderAreaId, string> = {
   "myanmar-frontier": "var(--accent)",
   "cambodia-frontier": "var(--hazard)",
   "malaysia-frontier": "var(--tech)",
+  "deep-south": "var(--hazard)",
 };
 
 const FRONTIER_LABELS: Record<BorderAreaId, string> = {
   "myanmar-frontier": "MYA",
   "cambodia-frontier": "KHM",
   "malaysia-frontier": "MYS",
+  "deep-south": "DPS",
 };
 
 function timeAgo(isoDate: string) {

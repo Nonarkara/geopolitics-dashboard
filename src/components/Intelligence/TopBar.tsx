@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { BookOpen, Database, Printer, Shield } from "lucide-react";
 import AnimatedNumber from "../Common/AnimatedNumber";
 import CommandTooltip from "../Common/CommandTooltip";
+import DashboardVersionBadge from "../Common/DashboardVersionBadge";
+import LogoStrip from "../Identity/LogoStrip";
 import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { formatBangkokDayLabel } from "../../lib/time-window";
