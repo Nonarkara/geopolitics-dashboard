@@ -207,8 +207,8 @@ export const architectureLayers: ArchitectureLayer[] = [
       "Weather, air quality, mobility, finance, RSS, imagery, and optional AI/media services feed the app.",
     bullets: [
       "External providers are never called directly from the map or charts; the server mediates them first.",
-      "Raster tile services such as NASA GIBS, ESRI, OSM, and optional Mapbox feed the map base and analytic layers.",
-      "Optional services such as OpenAI and Mapbox enrich the system without being required for baseline operation.",
+      "Raster tile services such as NASA GIBS, ESRI, and OSM feed the map base and analytic layers.",
+      "Optional services such as OpenAI enrich the system without being required for baseline operation.",
     ],
   },
 ];
@@ -260,7 +260,7 @@ export const architectureFlowSteps: ArchitectureFlowStep[] = [
 
 export const resiliencePatterns = [
   "Every external fetch path is wrapped with a timeout and a fallback branch.",
-  "Mapbox is optional. The map uses a 7-level basemap fallback chain (Mapbox → OSM → LongDo → ESRI → CartoDB → Stadia → gradient) from the DrNon Global Satellite Toolkit.",
+  "Mapbox is gone. The map renders on free raster tile basemaps (ESRI / OSM / CartoDB / NASA GIBS) with MapLibre GL — no token, no account, no billing.",
   "Intelligence and convergence can serve cached or synthesized payloads when feeds fail.",
   "Playback routes fail closed on invalid windows and storage failures instead of silently leaking live data.",
   "Grouped Vercel cron routes record their own freshness snapshots so scheduler health is observable in `/api/status`.",
@@ -275,7 +275,7 @@ export const storageNotes = [
   "Supplementary live features such as Realtime still run inside the same Supabase project rather than a second production data tier.",
   "Hybrid caches: intelligence cache and area convergence snapshots.",
   "Static assets: `public/data/*.geojson`, `public/manual/*`, and generated overlay catalog metadata.",
-  "Runtime feature gates: `DATABASE_URL`, `CRON_SECRET`, `REFERENCE_DASHBOARD_URL`, `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`, `OPENAI_API_KEY`.",
+  "Runtime feature gates: `DATABASE_URL`, `CRON_SECRET`, `REFERENCE_DASHBOARD_URL`, `OPENAI_API_KEY`.",
   "Supabase gates: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.",
 ];
 
@@ -295,7 +295,7 @@ export const internalApiCatalog: InternalApiDescriptor[] = [
     purpose:
       "Reports Vercel-first runtime posture for app health, database readiness, grouped cron freshness, per-dataset freshness, fallback posture, and AI summary configuration.",
     consumers: ["Architecture modal", "ops diagnostics", "external health checks"],
-    upstreams: ["Environment configuration", "Mapbox token guard", "data_snapshots", "feed_health"],
+    upstreams: ["Environment configuration", "data_snapshots", "feed_health"],
     fallback: "Returns a degraded but truthful runtime envelope with `no-store` semantics instead of caching stale success.",
   },
   {
@@ -1256,9 +1256,10 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
     id: "mapbox",
     label: "Mapbox Styles API",
     category: "Optional",
-    description: "Optional styled basemap service used only when a valid token is configured.",
-    surfaces: ["Detailed or dark Mapbox basemap"],
-    endpoints: ["https://api.mapbox.com/styles/v1/mapbox/..."],
+    description:
+      "Removed — the Mapbox account was deleted. Basemaps render exclusively on free raster tiles (ESRI / CARTO / OSM / NASA GIBS) and MapLibre GL.",
+    surfaces: [],
+    endpoints: [],
     optional: true,
   },
   {

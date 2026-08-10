@@ -15,11 +15,10 @@ export interface MapSource {
 }
 
 export interface BaseMapEntry extends MapSource {
-  kind: "raster-xyz" | "gibs" | "mapbox-style";
+  kind: "raster-xyz" | "gibs";
   urlTemplate?: string;  // for raster-xyz
   gibsLayer?: string;    // for gibs
   gibsFormat?: "jpg" | "png";
-  mapboxStyle?: string;  // for mapbox-style
   needsDate?: boolean;   // if true, substitute {date}; uses "best recent" date
 }
 
@@ -34,7 +33,7 @@ export interface OverlayEntry extends MapSource {
 }
 
 // ── Base maps ────────────────────────────────────────────────
-// All render as raster tiles on top of a blank Mapbox GL style.
+// All render as raster tiles on top of a blank MapLibre GL style.
 export const BASE_MAPS: BaseMapEntry[] = [
   {
     id: "ESRI_SAT",
@@ -292,7 +291,7 @@ export function freshnessLabel(cadence: Cadence, dateStr?: string): string {
 }
 
 /**
- * Build the XYZ tile URL template used by Mapbox GL raster source.
+ * Build the XYZ tile URL template used by the MapLibre GL raster source.
  * For GIBS: inserts date + resolution path.
  * For static XYZ: returns as-is.
  */

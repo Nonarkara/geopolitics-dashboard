@@ -63,7 +63,6 @@ function severityBorderColor(severity: string | undefined) {
 export default async function BriefingPage() {
   const renderedAt = new Date();
   const { date, time } = formatBriefingDate(renderedAt);
-  const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ?? "";
 
   // Fetch all data in parallel
   const from24h = new Date(renderedAt.getTime() - 86400000).toISOString();
@@ -224,21 +223,6 @@ export default async function BriefingPage() {
       </header>
 
       <div className="px-8 py-6">
-        {/* STATIC MAP THUMBNAIL */}
-        {mapboxToken && !mapboxToken.includes('your_') && (
-          <div className="mb-8">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/100.85,14.2,5.5,0/800x400@2x?access_token=${mapboxToken}`}
-              alt="Thailand border region"
-              className="w-full h-auto border border-gray-200"
-            />
-            <div className="text-[8px] font-mono text-gray-400 mt-1">
-              Theater overview — Thailand tri-border region (Myanmar / Cambodia / Malaysia)
-            </div>
-          </div>
-        )}
-
         {/* 1. COMMAND POSTURE */}
         <section>
           <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">

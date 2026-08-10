@@ -14,8 +14,8 @@ import {
 import BaseMapSelector from "./BaseMapSelector";
 import LayerToggle from "./LayerToggle";
 
-// Blank MapLibre style — we render all base maps as raster layers on top.
-// No token, no account — free and open-source (mapbox-gl account deleted 2026-07).
+// Blank MapLibre GL style — we render all base maps as raster layers on top.
+// Glyphs use the free no-token MapLibre demo font server (Mapbox is permanently gone).
 const BLANK_STYLE = {
   version: 8 as const,
   name: "blank",
@@ -27,6 +27,7 @@ const BLANK_STYLE = {
       paint: { "background-color": "#0a0a0a" },
     },
   ],
+  glyphs: "https://demotiles.maplibre.org/font/{fontstack}/{range}.pbf",
 };
 
 interface Incident {
