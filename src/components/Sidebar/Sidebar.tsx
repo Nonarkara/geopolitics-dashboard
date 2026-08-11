@@ -581,16 +581,18 @@ export default function Sidebar({ brief }: SidebarProps) {
           {relief && relief.reports.length > 0 ? (
             <div className="space-y-1">
               {relief.reports.slice(0, 5).map((report) => (
-                <a
+                <div
                   key={report.id}
-                  href={report.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="block border border-white/10 bg-white/[0.06] p-2 hover:bg-white/[0.09] transition-colors"
                 >
-                  <div className="text-[9px] font-bold leading-tight line-clamp-2">
+                  <a
+                    href={report.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-[9px] font-bold leading-tight line-clamp-2"
+                  >
                     {report.title}
-                  </div>
+                  </a>
                   <SourceAttr
                     href={report.url}
                     label={report.source}
@@ -599,7 +601,7 @@ export default function Sidebar({ brief }: SidebarProps) {
                       month: "short",
                     })}
                   />
-                </a>
+                </div>
               ))}
             </div>
           ) : (
@@ -625,11 +627,8 @@ export default function Sidebar({ brief }: SidebarProps) {
           {sanctions && sanctions.hits.length > 0 ? (
             <div className="space-y-1">
               {sanctions.hits.slice(0, 6).map((hit) => (
-                <a
+                <div
                   key={hit.id}
-                  href={hit.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="block border border-white/10 bg-white/[0.06] p-2 hover:bg-white/[0.09] transition-colors"
                 >
                   <div className="flex items-center gap-2">
@@ -642,11 +641,16 @@ export default function Sidebar({ brief }: SidebarProps) {
                       </span>
                     ) : null}
                   </div>
-                  <div className="text-[9px] font-bold leading-tight mt-1 line-clamp-2">
+                  <a
+                    href={hit.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 block text-[9px] font-bold leading-tight line-clamp-2"
+                  >
                     {hit.name}
-                  </div>
+                  </a>
                   <SourceAttr href={hit.url} label="OPENSANCTIONS" />
-                </a>
+                </div>
               ))}
             </div>
           ) : (
