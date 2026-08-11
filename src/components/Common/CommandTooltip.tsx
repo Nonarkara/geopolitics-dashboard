@@ -72,37 +72,37 @@ export default function CommandTooltip({
           <div className="px-2.5 py-2 space-y-1.5">
             {/* FUNCTION */}
             <div>
-              <div className="text-[6px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
+              <div className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
                 Function
               </div>
-              <div className="text-[8px] leading-tight opacity-80">
+              <div className="text-[12px] leading-tight opacity-80">
                 {content.fn}
               </div>
             </div>
 
             {/* SHOWS */}
             <div>
-              <div className="text-[6px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
+              <div className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
                 Shows
               </div>
-              <div className="text-[8px] leading-tight opacity-80">
+              <div className="text-[12px] leading-tight opacity-80">
                 {content.shows}
               </div>
             </div>
 
             {/* IMPORTANCE */}
             <div>
-              <div className="text-[6px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
+              <div className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
                 Importance
               </div>
-              <div className="text-[8px] leading-tight opacity-80">
+              <div className="text-[12px] leading-tight opacity-80">
                 {content.importance}
               </div>
             </div>
 
             {/* SOURCE */}
             <div className="border-t border-white/10 pt-1.5">
-              <div className="text-[6px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
+              <div className="text-[11px] font-black uppercase tracking-[0.3em] opacity-40 mb-0.5">
                 Source
               </div>
               {content.sourceUrl && content.sourceUrl !== "#" ? (
@@ -110,12 +110,12 @@ export default function CommandTooltip({
                   href={content.sourceUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[8px] underline opacity-60 hover:opacity-100 transition-opacity pointer-events-auto"
+                  className="text-[12px] underline opacity-60 hover:opacity-100 transition-opacity pointer-events-auto"
                 >
                   {content.source}
                 </a>
               ) : (
-                <div className="text-[8px] opacity-60">{content.source}</div>
+                <div className="text-[12px] opacity-60">{content.source}</div>
               )}
             </div>
           </div>

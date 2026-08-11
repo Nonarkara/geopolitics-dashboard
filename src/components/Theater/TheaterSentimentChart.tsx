@@ -41,7 +41,7 @@ export default function TheaterSentimentChart({
 
   if (timeline.length < 3) {
     return (
-      <div className="flex items-center justify-center h-[50px] text-white/20 text-[9px] font-mono">
+      <div className="flex items-center justify-center h-[50px] text-white/20 text-[13px] font-mono">
         Awaiting sentiment data
       </div>
     );
@@ -108,11 +108,11 @@ export default function TheaterSentimentChart({
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
-        <span className="text-[8px] font-mono text-white/30">
+        <span className="text-[12px] font-mono text-white/30">
           7d sentiment
         </span>
         <span
-          className="text-[7px] font-bold tracking-wide px-1.5 py-0.5 rounded"
+          className="text-[12px] font-bold tracking-wide px-1.5 py-0.5 rounded"
           style={{
             color: trendColor,
             background: `${trendColor}18`,

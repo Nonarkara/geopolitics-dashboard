@@ -86,7 +86,7 @@ export default function TimeMachine() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             />
             <motion.span
-              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[#f59e0b]"
+              className="relative z-10 text-[13px] font-black uppercase tracking-[0.3em] text-[#f59e0b]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
@@ -111,7 +111,7 @@ export default function TimeMachine() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             />
             <motion.span
-              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[var(--accent)]"
+              className="relative z-10 text-[13px] font-black uppercase tracking-[0.3em] text-[var(--accent)]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
@@ -124,8 +124,8 @@ export default function TimeMachine() {
 
       {/* LEFT LABEL */}
       <div className="hidden items-center gap-1.5 shrink-0 sm:flex">
-        <Clock size={10} className="text-[var(--tech)]" />
-        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--tech)]">
+        <Clock size={12} className="text-[var(--tech)]" />
+        <span className="text-[12px] font-black uppercase tracking-widest text-[var(--tech)]">
           Time Machine
         </span>
       </div>
@@ -193,7 +193,7 @@ export default function TimeMachine() {
 
       {/* SELECTED DATE LABEL */}
       {selectedDate && (
-        <span className="text-[8px] font-mono tabular-nums uppercase tracking-wider text-white/50 shrink-0">
+        <span className="text-[12px] font-mono tabular-nums uppercase tracking-wider text-white/50 shrink-0">
           {formatBangkokDayLabel(selectedDate)}
         </span>
       )}
@@ -202,7 +202,7 @@ export default function TimeMachine() {
       <button
         type="button"
         onClick={clearTimeWindow}
-        className={`flex shrink-0 items-center gap-1.5 border px-2.5 py-1 text-[8px] font-black uppercase tracking-widest transition-all duration-150 ease-out ${
+        className={`flex shrink-0 items-center gap-1.5 border px-2.5 py-1 text-[12px] font-black uppercase tracking-widest transition-all duration-150 ease-out ${
           isLive
             ? "border-[var(--accent)] bg-black text-[var(--accent)]"
             : "border-white/15 bg-white/5 text-white/40 hover:text-white/70 hover:border-white/30"

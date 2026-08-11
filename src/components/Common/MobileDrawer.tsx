@@ -45,7 +45,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
       <div className="relative flex max-h-[85dvh] flex-col border-t border-[var(--line,rgba(255,255,255,0.16))] bg-[var(--bg-raised,#0a0e14)]">
         <header className="flex shrink-0 items-center justify-between border-b border-[var(--line,rgba(255,255,255,0.16))] pl-4">
-          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white">
+          <span className="text-[14px] font-black uppercase tracking-[0.2em] text-white">
             {title}
           </span>
           <button

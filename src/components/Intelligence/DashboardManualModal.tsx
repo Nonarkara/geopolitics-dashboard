@@ -34,7 +34,7 @@ function ManualTextPanel({ page }: { page: ManualPage }) {
     <div className="flex min-h-0 flex-col gap-4">
       <section className="dashboard-panel rounded-sm p-4 sm:p-5">
         <div className="eyebrow">How To Read This Page</div>
-        <ul className="mt-3 space-y-3 text-[12px] leading-5 text-[var(--ink)] sm:text-[13px]">
+        <ul className="mt-3 space-y-3 text-[14px] leading-5 text-[var(--ink)] sm:text-[15px]">
           {page.bullets.map((bullet) => (
             <li
               key={bullet}
@@ -55,14 +55,14 @@ function ManualTextPanel({ page }: { page: ManualPage }) {
               className="rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-3 py-3"
             >
               <div className="flex items-center gap-2">
-                <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--line-bright)] text-[11px] font-bold text-[var(--cool)]">
+                <span className="inline-flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--line-bright)] text-[14px] font-bold text-[var(--cool)]">
                   {index + 1}
                 </span>
-                <h3 className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
+                <h3 className="text-[14px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
                   {callout.label}
                 </h3>
               </div>
-              <p className="mt-2 text-[12px] leading-5 text-[var(--muted)] sm:text-[13px]">
+              <p className="mt-2 text-[14px] leading-5 text-[var(--muted)] sm:text-[15px]">
                 {callout.description}
               </p>
             </article>
@@ -200,26 +200,26 @@ export default function DashboardManualModal({
       >
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
-              <BookOpen size={14} />
+            <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
+              <BookOpen size={15} />
               Operator Manual
             </div>
             <h2
               id={titleId}
-              className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[28px]"
+              className="mt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[30px]"
             >
               {page.title}
             </h2>
             <p
               id={descriptionId}
-              className="mt-1 max-w-3xl text-[12px] leading-5 text-[var(--muted)] sm:text-[13px]"
+              className="mt-1 max-w-3xl text-[14px] leading-5 text-[var(--muted)] sm:text-[15px]"
             >
               {page.subtitle}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
               Page {renderPageNumber(activePage)} / {renderPageNumber(lastIndex)}
             </div>
             <button
@@ -229,7 +229,7 @@ export default function DashboardManualModal({
               className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
               aria-label="Close dashboard manual"
             >
-              <X size={16} />
+              <X size={17} />
             </button>
           </div>
         </header>
@@ -254,13 +254,13 @@ export default function DashboardManualModal({
                       : "border-[var(--line)] bg-[var(--bg-surface)] hover:border-[var(--line-bright)]"
                   }`}
                 >
-                  <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                  <div className="font-mono text-[13px] uppercase tracking-[0.18em] text-[var(--muted)]">
                     {renderPageNumber(index)}
                   </div>
-                  <div className="mt-1 text-[13px] font-semibold text-[var(--ink)]">
+                  <div className="mt-1 text-[15px] font-semibold text-[var(--ink)]">
                     {candidate.title}
                   </div>
-                  <div className="mt-1 line-clamp-2 text-[11px] leading-4 text-[var(--muted)]">
+                  <div className="mt-1 line-clamp-2 text-[14px] leading-4 text-[var(--muted)]">
                     {candidate.subtitle}
                   </div>
                 </button>
@@ -279,7 +279,7 @@ export default function DashboardManualModal({
                 className="max-h-full w-full rounded-[20px] border border-[var(--line)] object-contain shadow-[0_24px_60px_rgba(0,0,0,0.45)]"
               />
             </div>
-            <figcaption className="mt-3 text-[11px] leading-5 text-[var(--muted)] sm:text-[12px]">
+            <figcaption className="mt-3 text-[14px] leading-5 text-[var(--muted)] sm:text-[14px]">
               Annotated live dashboard capture. Refresh these images whenever the
               layout or panel roles materially change.
             </figcaption>
@@ -295,17 +295,17 @@ export default function DashboardManualModal({
             type="button"
             onClick={() => setActivePage((current) => Math.max(current - 1, 0))}
             disabled={activePage === 0}
-            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={15} />
             Previous
           </button>
 
           <div className="text-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
+            <div className="text-[13px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
               Manual Navigation
             </div>
-            <div className="mt-1 text-[12px] text-[var(--muted)]">
+            <div className="mt-1 text-[14px] text-[var(--muted)]">
               Use the page list, arrow keys, or the buttons below.
             </div>
           </div>
@@ -314,10 +314,10 @@ export default function DashboardManualModal({
             type="button"
             onClick={() => setActivePage((current) => Math.min(current + 1, lastIndex))}
             disabled={activePage === lastIndex}
-            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
-            <ChevronRight size={14} />
+            <ChevronRight size={15} />
           </button>
         </footer>
       </section>

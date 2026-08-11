@@ -147,7 +147,7 @@ function BorderDashboardContent() {
           type="button"
           onClick={() => setIsPanelsOpen(true)}
           aria-label="Open mobile intelligence panels"
-          className="fixed right-3 top-[76px] z-40 flex h-11 items-center gap-2 border border-[var(--accent)] bg-black px-3 text-[11px] font-black uppercase tracking-[0.18em] text-white xl:hidden"
+          className="fixed right-3 top-[76px] z-40 flex h-11 items-center gap-2 border border-[var(--accent)] bg-black px-3 text-[14px] font-black uppercase tracking-[0.18em] text-white xl:hidden"
         >
           <span className="h-1.5 w-1.5 bg-[var(--accent)]" aria-hidden="true" /> Intel
         </button>
@@ -174,7 +174,7 @@ function BorderDashboardContent() {
         <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
           <div className="flex items-center gap-3 mr-6 shrink-0">
             <div className="h-1.5 w-1.5 animate-ping bg-[var(--accent)]" />
-            <div className="text-[11px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
+            <div className="text-[14px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
           </div>
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
@@ -199,7 +199,7 @@ function BorderDashboardContent() {
               type="button"
               onClick={() => setMobilePanel(panel)}
               aria-pressed={mobilePanel === panel}
-              className={`border-r border-[var(--line)] px-2 text-[10px] font-black uppercase tracking-[0.12em] last:border-r-0 ${
+              className={`border-r border-[var(--line)] px-2 text-[13px] font-black uppercase tracking-[0.12em] last:border-r-0 ${
                 mobilePanel === panel
                   ? "bg-[var(--accent)] text-black"
                   : "bg-black text-white/55"
@@ -236,7 +236,7 @@ function BorderDashboardContent() {
         ) : null}
         {mobilePanel === "history" ? (
           <div className="min-h-[240px] bg-black px-2 py-4">
-            <div className="mb-4 px-2 text-[11px] leading-relaxed text-white/55">
+            <div className="mb-4 px-2 text-[14px] leading-relaxed text-white/55">
               Select a Bangkok command day to replay the archived picture. Live mode remains the default.
             </div>
             <TimeMachine />

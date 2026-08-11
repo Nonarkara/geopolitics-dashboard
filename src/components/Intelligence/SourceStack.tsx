@@ -66,8 +66,8 @@ export default function SourceStack() {
             key={source.id}
             className="flex items-center justify-between gap-1 border border-[var(--line-dim)] px-2 py-1 bg-white"
           >
-            <span className="text-[8px] font-black truncate">{source.label}</span>
-            <span className="stat-pill safe shrink-0 text-[7px]">{source.target?.slice(0, 4) || "OK"}</span>
+            <span className="text-[12px] font-black truncate">{source.label}</span>
+            <span className="stat-pill safe shrink-0 text-[12px]">{source.target?.slice(0, 4) || "OK"}</span>
           </div>
         ))}
       </div>
@@ -85,8 +85,8 @@ export default function SourceStack() {
           { flag: "KR", name: "KARI" },
         ].map((src) => (
           <div key={src.flag} className="flex flex-col items-center py-1 border border-[var(--line-dim)] bg-[var(--bg)]">
-            <span className="text-[7px] font-black opacity-50">{src.flag}</span>
-            <span className="text-[6px] font-black opacity-25 uppercase">{src.name}</span>
+            <span className="text-[12px] font-black opacity-50">{src.flag}</span>
+            <span className="text-[11px] font-black opacity-25 uppercase">{src.name}</span>
           </div>
         ))}
       </div>

@@ -85,7 +85,7 @@ export default function TheaterMiniMap({
         }}
       />
       {/* Theater label */}
-      <div className="absolute bottom-1 left-1.5 text-[7px] font-mono text-white/40 tracking-wider uppercase">
+      <div className="absolute bottom-1 left-1.5 text-[12px] font-mono text-white/40 tracking-wider uppercase">
         {theaterId.replace("-", " ")}
       </div>
     </div>

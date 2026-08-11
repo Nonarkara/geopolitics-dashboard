@@ -684,8 +684,8 @@ export default function BorderMap({
     <div className="relative h-full w-full overflow-hidden bg-black select-none">
       <div className="pointer-events-none absolute inset-0 bg-[#05070a]" />
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute right-6 top-6 hidden max-w-[260px] border border-white/15 bg-black px-3 py-2 text-[9px] leading-relaxed text-white/70 xl:block">
-          <div className="text-[8px] font-black uppercase tracking-[0.22em] text-white/45">
+        <div className="absolute right-6 top-6 hidden max-w-[260px] border border-white/15 bg-black px-3 py-2 text-[13px] leading-relaxed text-white/70 xl:block">
+          <div className="text-[12px] font-black uppercase tracking-[0.22em] text-white/45">
             Tri-Border Operations
           </div>
           <div className="mt-1 font-black uppercase tracking-[0.08em] text-white">
@@ -694,7 +694,7 @@ export default function BorderMap({
           <div className="mt-1">
             {selectedOperationalNode?.usage ?? activeTheater?.summary ?? "Zoom guardrails stay tight until the viewport reaches a real conflict theater or SEZ."}
           </div>
-          <div className="mt-2 flex flex-wrap gap-1.5 text-[8px] font-black uppercase tracking-[0.14em]">
+          <div className="mt-2 flex flex-wrap gap-1.5 text-[12px] font-black uppercase tracking-[0.14em]">
             <span className={`border px-2 py-1 ${deepZoomUnlocked ? "border-[#f97316]/40 bg-[#f97316]/10 text-[#fdba74]" : "border-white/10 bg-white/5 text-white/45"}`}>
               {deepZoomUnlocked ? "Deep zoom unlocked" : "Strategic frame only"}
             </span>
@@ -703,7 +703,7 @@ export default function BorderMap({
             </span>
           </div>
           {isHistorical && timeWindow ? (
-            <div className="mt-2 border-t border-white/10 pt-2 text-[8px] font-black uppercase tracking-[0.18em] text-[#fda4af]">
+            <div className="mt-2 border-t border-white/10 pt-2 text-[12px] font-black uppercase tracking-[0.18em] text-[#fda4af]">
               Map and overlay feeds stay live during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}.
             </div>
           ) : null}
@@ -723,19 +723,19 @@ export default function BorderMap({
         type="button"
         onClick={() => setAreControlsOpen(true)}
         aria-label="Open map controls"
-        className="absolute left-3 top-3 z-40 h-11 border border-white/30 bg-black px-3 text-[10px] font-black uppercase tracking-[0.16em] text-white xl:hidden"
+        className="absolute left-3 top-3 z-40 h-11 border border-white/30 bg-black px-3 text-[13px] font-black uppercase tracking-[0.16em] text-white xl:hidden"
       >
         Map · {activeBase.label}
       </button>
 
       {/* ── Layer Control Panel ─────────────────────────────── */}
-      <div className={`absolute left-3 top-3 z-50 max-h-[calc(100%-24px)] w-[calc(100%-24px)] max-w-72 flex-col gap-1.5 overflow-y-auto xl:left-6 xl:top-6 xl:flex xl:max-h-none xl:w-72 xl:overflow-visible ${areControlsOpen ? "flex" : "hidden"}`}>
+      <div className={`absolute left-3 top-3 z-50 max-h-[calc(100%-24px)] w-[calc(100%-24px)] max-w-[340px] flex-col gap-1.5 overflow-y-auto xl:left-6 xl:top-6 xl:flex xl:max-h-none xl:w-[340px] xl:overflow-visible ${areControlsOpen ? "flex" : "hidden"}`}>
 
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
-            <MapPinned size={11} className="text-[var(--accent)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Operations Focus</span>
-            <span className="text-[8px] font-mono opacity-40 ml-auto">
+            <MapPinned size={13} className="text-[var(--accent)]" />
+            <span className="text-[13px] font-black uppercase tracking-[0.2em]">Operations Focus</span>
+            <span className="text-[12px] font-mono opacity-40 ml-auto">
               {activeTheater?.counterpart ?? "THA+"}
             </span>
             <button
@@ -752,8 +752,8 @@ export default function BorderMap({
               onClick={focusNationalFrame}
               className={`px-2 py-2 text-left transition-all ${activeTheaterId === "national" ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
             >
-              <div className="text-[9px] font-black uppercase tracking-[0.14em]">National frame</div>
-              <div className="mt-0.5 text-[6px] uppercase tracking-[0.18em] opacity-50">
+              <div className="text-[13px] font-black uppercase tracking-[0.14em]">National frame</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-[0.18em] opacity-50">
                 Thailand + neighbors only
               </div>
             </button>
@@ -763,8 +763,8 @@ export default function BorderMap({
                 onClick={() => focusTheater(theater.id)}
                 className={`px-2 py-2 text-left transition-all ${activeTheaterId === theater.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
               >
-                <div className="text-[9px] font-black uppercase tracking-[0.14em]">{theater.label}</div>
-                <div className="mt-0.5 text-[6px] uppercase tracking-[0.18em] opacity-50">
+                <div className="text-[13px] font-black uppercase tracking-[0.14em]">{theater.label}</div>
+                <div className="mt-0.5 text-[11px] uppercase tracking-[0.18em] opacity-50">
                   {theater.counterpart} theater
                 </div>
               </button>
@@ -772,10 +772,10 @@ export default function BorderMap({
           </div>
           <div className="border-t border-black/10 px-3 py-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[7px] font-black uppercase tracking-[0.22em] opacity-40">
+              <div className="text-[12px] font-black uppercase tracking-[0.22em] opacity-40">
                 Deep zoom gates
               </div>
-              <div className={`text-[7px] font-black uppercase tracking-[0.18em] ${deepZoomUnlocked ? "text-[#ea580c]" : "text-black/35"}`}>
+              <div className={`text-[12px] font-black uppercase tracking-[0.18em] ${deepZoomUnlocked ? "text-[#ea580c]" : "text-black/35"}`}>
                 {deepZoomUnlocked ? "unlocked" : "locked"}
               </div>
             </div>
@@ -786,16 +786,16 @@ export default function BorderMap({
                   onClick={() => focusNode(node.id)}
                   className={`px-2 py-2 text-left transition-all ${selectedOperationalNodeId === node.id ? "bg-[#111827] text-white" : "bg-white text-black hover:bg-gray-50"}`}
                 >
-                  <div className="text-[8px] font-black uppercase tracking-[0.14em]">
+                  <div className="text-[12px] font-black uppercase tracking-[0.14em]">
                     {node.shortLabel}
                   </div>
-                  <div className="mt-0.5 text-[5.5px] uppercase tracking-[0.18em] opacity-50">
+                  <div className="mt-0.5 text-[11px] uppercase tracking-[0.18em] opacity-50">
                     {node.type.replace("-", " ")}
                   </div>
                 </button>
               ))}
             </div>
-            <div className="mt-2 text-[8px] leading-relaxed text-black/55">
+            <div className="mt-2 text-[12px] leading-relaxed text-black/55">
               {selectedOperationalNode?.summary ??
                 activeTheater?.summary ??
                 "Conflict theaters and SEZ gates unlock the maximum zoom. Everywhere else stays on the strategic frame."}
@@ -806,9 +806,9 @@ export default function BorderMap({
         {/* ── BASE MAP (radio — choose one) ── */}
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
-            <Globe size={11} className="text-[var(--accent)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Base Map</span>
-            <span className="text-[8px] font-mono opacity-40 ml-auto">{activeBase.label}</span>
+            <Globe size={13} className="text-[var(--accent)]" />
+            <span className="text-[13px] font-black uppercase tracking-[0.2em]">Base Map</span>
+            <span className="text-[12px] font-mono opacity-40 ml-auto">{activeBase.label}</span>
           </div>
           <div className="grid grid-cols-4 gap-[1px] bg-black/10 p-[1px]">
             {BASE_MAPS.map(bm => {
@@ -819,8 +819,8 @@ export default function BorderMap({
                   onClick={() => setActiveBaseId(bm.id)}
                   className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all w-full ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                 >
-                  <span className="text-[9px] font-black tracking-wider leading-none">{bm.label}</span>
-                  <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center break-words hyphens-auto w-full">{bm.name}</span>
+                  <span className="text-[13px] font-black tracking-wider leading-none">{bm.label}</span>
+                  <span className="text-[11px] font-medium opacity-40 uppercase leading-tight text-center break-words hyphens-auto w-full">{bm.name}</span>
                 </button>
               );
               return tip ? <CommandTooltip key={bm.id} content={tip} position="right">{btn}</CommandTooltip> : btn;
@@ -831,16 +831,16 @@ export default function BorderMap({
         {/* ── DATA OVERLAYS (checkbox — stackable) ── */}
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
-            <Layers size={11} className="text-[var(--accent)]" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Data Overlays</span>
+            <Layers size={13} className="text-[var(--accent)]" />
+            <span className="text-[13px] font-black uppercase tracking-[0.2em]">Data Overlays</span>
             {activeOverlayCount > 0 && (
-              <span className="text-[9px] font-black tabular-nums ml-auto bg-[var(--accent)] text-white w-5 h-5 flex items-center justify-center">{activeOverlayCount}</span>
+              <span className="text-[13px] font-black tabular-nums ml-auto bg-[var(--accent)] text-white w-5 h-5 flex items-center justify-center">{activeOverlayCount}</span>
             )}
           </div>
           <div className="max-h-[240px] overflow-y-auto no-scrollbar">
             {Object.entries(overlaysByCategory).map(([cat, overlays]) => (
               <div key={cat} className="border-b border-black/10 last:border-0">
-                <div className="px-3 py-1 text-[7px] font-black uppercase tracking-[0.3em] opacity-30 bg-gray-50">{cat}</div>
+                <div className="px-3 py-1 text-[12px] font-black uppercase tracking-[0.3em] opacity-30 bg-gray-50">{cat}</div>
                 <div className="grid grid-cols-3 gap-[1px] bg-black/5 px-[1px] pb-[1px]">
                   {overlays.map(ov => {
                     const active = activeOverlayIds.has(ov.id);
@@ -850,10 +850,10 @@ export default function BorderMap({
                         onClick={() => toggleOverlay(ov.id)}
                         className={`py-1.5 px-2 flex items-center gap-1.5 transition-all w-full ${active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                       >
-                        {active && <Check size={8} strokeWidth={4} />}
+                        {active && <Check size={11} strokeWidth={4} />}
                         <div className="min-w-0">
-                          <div className="text-[9px] font-black tracking-wider leading-none">{ov.label}</div>
-                          <div className="text-[5.5px] font-medium opacity-40 uppercase truncate leading-tight mt-0.5">{ov.name}</div>
+                          <div className="text-[13px] font-black tracking-wider leading-none">{ov.label}</div>
+                          <div className="text-[11px] font-medium opacity-40 uppercase truncate leading-tight mt-0.5">{ov.name}</div>
                         </div>
                       </button>
                     );
@@ -877,8 +877,8 @@ export default function BorderMap({
               onClick={() => toggle.set(!toggle.active)}
               className={`flex-1 flex items-center justify-center gap-1 transition-all ${toggle.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
             >
-              <toggle.icon size={9} />
-              <span className="text-[6.5px] font-black tracking-wider">{toggle.label}</span>
+              <toggle.icon size={12} />
+              <span className="text-[12px] font-black tracking-wider">{toggle.label}</span>
             </button>
           ))}
         </div>
@@ -899,8 +899,8 @@ export default function BorderMap({
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
               <button onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
-                <t.icon size={9} />
-                <span className="text-[6.5px] font-black tracking-wider">{t.label}</span>
+                <t.icon size={12} />
+                <span className="text-[12px] font-black tracking-wider">{t.label}</span>
               </button>
             );
             return tip ? <CommandTooltip key={t.label} content={tip} position="bottom">{btn}</CommandTooltip> : <div key={t.label}>{btn}</div>;
@@ -910,12 +910,12 @@ export default function BorderMap({
         {/* ── Status bar ── */}
         <div className="flex bg-black text-white h-7 items-center justify-between border border-black px-3">
           <div className="flex items-center gap-2">
-            <Layers size={10} className="text-[var(--accent)]" />
-            <span className="text-[9px] font-black uppercase tracking-[0.15em]">Active: {activeLayersCount + activeOverlayCount}</span>
+            <Layers size={12} className="text-[var(--accent)]" />
+            <span className="text-[13px] font-black uppercase tracking-[0.15em]">Active: {activeLayersCount + activeOverlayCount}</span>
             <button
               type="button"
               onClick={() => toggleOverlay("NGT")}
-              className={`ml-2 inline-flex items-center gap-1 border px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.14em] ${
+              className={`ml-2 inline-flex items-center gap-1 border px-1.5 py-0.5 text-[12px] font-black uppercase tracking-[0.14em] ${
                 activeOverlayIds.has("NGT")
                   ? "border-[var(--accent)] text-[var(--accent)]"
                   : "border-white/25 text-white/50"
@@ -927,22 +927,22 @@ export default function BorderMap({
                 {new Date().toISOString().slice(0, 10)}
               </span>
             </button>
-            <span className="text-[8px] font-mono uppercase tracking-[0.12em] text-white/40">
+            <span className="text-[12px] font-mono uppercase tracking-[0.12em] text-white/40">
               FIRMS {fires.length}
             </span>
           </div>
-          <button onClick={handleClearAll} className="text-[8px] font-black underline uppercase opacity-40 hover:opacity-100 transition-all">Reset</button>
+          <button onClick={handleClearAll} className="text-[12px] font-black underline uppercase opacity-40 hover:opacity-100 transition-all">Reset</button>
         </div>
 
         {feedAlerts.length > 0 && (
           <div className="border border-black bg-[#fff7ed] px-3 py-2 text-[#9a3412]">
-            <div className="text-[8px] font-black uppercase tracking-[0.22em]">Feed Integrity</div>
+            <div className="text-[12px] font-black uppercase tracking-[0.22em]">Feed Integrity</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {feedAlerts.map((alert) => (
                 <span
                   key={alert.id}
                   title={alert.details}
-                  className="border border-[#f59e0b]/40 bg-white px-2 py-1 text-[8px] font-black uppercase tracking-[0.14em]"
+                  className="border border-[#f59e0b]/40 bg-white px-2 py-1 text-[12px] font-black uppercase tracking-[0.14em]"
                 >
                   {alert.label} {alert.state}
                 </span>
@@ -953,18 +953,18 @@ export default function BorderMap({
 
         {/* ── Opacity slider ── */}
         <div className="flex bg-white h-7 items-center border border-black px-3 gap-2">
-          <Eye size={10} className="opacity-40" />
-          <span className="text-[7px] font-black uppercase opacity-30 shrink-0">Base</span>
+          <Eye size={12} className="opacity-40" />
+          <span className="text-[12px] font-black uppercase opacity-30 shrink-0">Base</span>
           <input type="range" className="flex-1 accent-black h-1" value={baseMapOpacity} onChange={e => setBaseMapOpacity(parseInt(e.target.value))} />
-          <span className="text-[10px] font-black tabular-nums opacity-40 w-8 text-right">{baseMapOpacity}%</span>
+          <span className="text-[13px] font-black tabular-nums opacity-40 w-8 text-right">{baseMapOpacity}%</span>
         </div>
       </div>
 
       {/* ── Operational Intelligence HUD ── */}
       <div className="pointer-events-none absolute bottom-6 left-6 z-40 hidden space-y-2 xl:block">
         <div className="flex items-center gap-4 bg-black text-white px-4 py-2 border border-white/20">
-          <Zap size={12} className="text-[var(--accent)] animate-pulse" />
-          <span className="text-[11px] font-black uppercase tracking-[0.2em]">Operational Pulse</span>
+          <Zap size={14} className="text-[var(--accent)] animate-pulse" />
+          <span className="text-[14px] font-black uppercase tracking-[0.2em]">Operational Pulse</span>
           <div className="h-4 w-[1px] bg-white/20" />
           <div className="flex gap-6">
             {[
@@ -977,8 +977,8 @@ export default function BorderMap({
               { label: "PULSE", val: recentSignals?.length || 0 },
             ].map(m => (
               <div key={m.label} className="flex flex-col">
-                <span className="text-[9px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>
-                <span className="text-[14px] font-black tabular-nums leading-none">{m.val}</span>
+                <span className="text-[13px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>
+                <span className="text-[16px] font-black tabular-nums leading-none">{m.val}</span>
               </div>
             ))}
           </div>
@@ -992,15 +992,15 @@ export default function BorderMap({
           { label: "Thermal", value: fires.length },
         ].map((metric) => (
           <div key={metric.label} className="flex items-center justify-between border-r border-white/10 px-2 last:border-r-0">
-            <span className="text-[8px] font-black uppercase tracking-[0.08em] text-white/45">{metric.label}</span>
-            <span className="text-[12px] font-black tabular-nums">{metric.value}</span>
+            <span className="text-[12px] font-black uppercase tracking-[0.08em] text-white/45">{metric.label}</span>
+            <span className="text-[14px] font-black tabular-nums">{metric.value}</span>
           </div>
         ))}
       </div>
 
       <div className="absolute bottom-3 right-3 z-40 flex flex-col gap-1 xl:bottom-6 xl:right-6">
         <button onClick={focusNationalFrame} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
-          <Compass size={14} strokeWidth={3} />
+          <Compass size={15} strokeWidth={3} />
         </button>
         <button
           onClick={() => {
@@ -1018,7 +1018,7 @@ export default function BorderMap({
           }}
           className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all"
         >
-          <Maximize2 size={14} strokeWidth={3} />
+          <Maximize2 size={15} strokeWidth={3} />
         </button>
       </div>
     </div>

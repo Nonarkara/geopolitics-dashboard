@@ -20,10 +20,10 @@ const THEATER_ORDER: BorderAreaId[] = [
 ];
 
 const THEATER_META: Record<BorderAreaId, { icon: React.ReactNode; accent: string; short: string }> = {
-  "myanmar-frontier": { icon: <AlertTriangle size={10} />, accent: "var(--accent)", short: "MYANMAR" },
-  "cambodia-frontier": { icon: <Shield size={10} />, accent: "var(--hazard)", short: "CAMBODIA" },
-  "deep-south": { icon: <Flame size={10} />, accent: "#e11d48", short: "DEEP SOUTH" },
-  "malaysia-frontier": { icon: <TrendingUp size={10} />, accent: "var(--safe)", short: "MALAYSIA" },
+  "myanmar-frontier": { icon: <AlertTriangle size={12} />, accent: "var(--accent)", short: "MYANMAR" },
+  "cambodia-frontier": { icon: <Shield size={12} />, accent: "var(--hazard)", short: "CAMBODIA" },
+  "deep-south": { icon: <Flame size={12} />, accent: "#e11d48", short: "DEEP SOUTH" },
+  "malaysia-frontier": { icon: <TrendingUp size={12} />, accent: "var(--safe)", short: "MALAYSIA" },
 };
 
 function postureColor(posture: string) {
@@ -44,11 +44,11 @@ export default function TheaterStrip({ areas, onFlyTo }: TheaterStripProps) {
       <div className="grid-cell shrink-0 px-3 py-2 border-b border-white/10">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 bg-[var(--accent)] rounded-full animate-pulse" />
-          <span className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">
+          <span className="text-[13px] font-black uppercase tracking-[0.18em] text-white/70">
             Theater Recon
           </span>
         </div>
-        <div className="text-[7px] font-mono uppercase tracking-[0.12em] text-white/25 mt-0.5">
+        <div className="text-[12px] font-mono uppercase tracking-[0.12em] text-white/25 mt-0.5">
           Live split-screen — 4 operational theaters
         </div>
       </div>
@@ -81,12 +81,12 @@ export default function TheaterStrip({ areas, onFlyTo }: TheaterStripProps) {
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <span style={{ color: meta.accent }}>{meta.icon}</span>
-                      <span className="text-[8px] font-black uppercase tracking-[0.14em] text-white/80">
+                      <span className="text-[12px] font-black uppercase tracking-[0.14em] text-white/80">
                         {meta.short}
                       </span>
                     </div>
                     <span
-                      className="text-[7px] font-black uppercase tracking-[0.1em] px-1.5 py-0.5"
+                      className="text-[12px] font-black uppercase tracking-[0.1em] px-1.5 py-0.5"
                       style={{
                         color,
                         background: `color-mix(in srgb, ${color} 12%, transparent)`,
@@ -100,14 +100,14 @@ export default function TheaterStrip({ areas, onFlyTo }: TheaterStripProps) {
                   {/* Score gauge inline */}
                   <div className="flex items-center gap-2 mb-1">
                     <TheaterEscalationGauge score={score} compact />
-                    <span className="text-[7px] font-mono text-white/30">
+                    <span className="text-[12px] font-mono text-white/30">
                       {score}/100
                     </span>
                   </div>
                 </div>
 
                 {/* Metrics */}
-                <div className="flex gap-2 text-[7px] font-mono">
+                <div className="flex gap-2 text-[12px] font-mono">
                   <span className="text-white/30">
                     <span style={{ color: (area?.incidentCount ?? 0) > 0 ? "var(--accent)" : "var(--safe)" }} className="font-bold">
                       {area?.incidentCount ?? 0}
@@ -127,7 +127,7 @@ export default function TheaterStrip({ areas, onFlyTo }: TheaterStripProps) {
 
                 {/* First watchpoint */}
                 {area?.watchpoints?.[0] && (
-                  <div className="text-[7px] text-white/25 leading-tight mt-1 line-clamp-1">
+                  <div className="text-[12px] text-white/25 leading-tight mt-1 line-clamp-1">
                     {area.watchpoints[0]}
                   </div>
                 )}

@@ -50,7 +50,7 @@ export default function GlassCard({
           )}
           {collapsible && (
             <ChevronDown
-              size={14}
+              size={15}
               style={{
                 transition: "transform 0.3s ease",
                 transform: collapsed ? "rotate(-90deg)" : "rotate(0deg)",

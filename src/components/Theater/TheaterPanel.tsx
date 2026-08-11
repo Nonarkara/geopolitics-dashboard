@@ -16,10 +16,10 @@ const THEATER_ACCENTS: Record<BorderAreaId, string> = {
 };
 
 const THEATER_ICONS: Record<BorderAreaId, React.ReactNode> = {
-  "myanmar-frontier": <AlertTriangle size={12} />,
-  "cambodia-frontier": <Shield size={12} />,
-  "deep-south": <Flame size={12} />,
-  "malaysia-frontier": <TrendingUp size={12} />,
+  "myanmar-frontier": <AlertTriangle size={14} />,
+  "cambodia-frontier": <Shield size={14} />,
+  "deep-south": <Flame size={14} />,
+  "malaysia-frontier": <TrendingUp size={14} />,
 };
 
 function posturePill(posture: string, color: string) {
@@ -38,7 +38,7 @@ function posturePill(posture: string, color: string) {
 
   return (
     <span
-      className="text-[7px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
+      className="text-[12px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded"
       style={{ color, background: bg, border: `1px solid ${border}` }}
     >
       {posture}
@@ -100,7 +100,7 @@ export default function TheaterPanel({
 
         {/* Summary */}
         {status?.summary && (
-          <p className="text-[9px] text-white/50 leading-tight line-clamp-2">
+          <p className="text-[13px] text-white/50 leading-tight line-clamp-2">
             {status.summary}
           </p>
         )}
@@ -108,13 +108,13 @@ export default function TheaterPanel({
         {/* Key metrics row */}
         <div className="flex gap-1.5 flex-wrap">
           <MetricChip
-            icon={<AlertTriangle size={9} />}
+            icon={<AlertTriangle size={12} />}
             label="Incidents"
             value={status?.incidentCount ?? 0}
             color={accent}
           />
           <MetricChip
-            icon={<Flame size={9} />}
+            icon={<Flame size={12} />}
             label="Fatalities"
             value={status?.fatalityCount ?? 0}
             color={
@@ -122,7 +122,7 @@ export default function TheaterPanel({
             }
           />
           <MetricChip
-            icon={<Users size={9} />}
+            icon={<Users size={12} />}
             label="Cameras"
             value={`${status?.verifiedCameras ?? 0}/${status?.candidateCameras ?? 0}`}
             color="rgba(255,255,255,0.3)"
@@ -135,7 +135,7 @@ export default function TheaterPanel({
             {status.watchpoints.slice(0, 2).map((wp, i) => (
               <div
                 key={i}
-                className="flex items-start gap-1 text-[8px] text-white/35 leading-tight"
+                className="flex items-start gap-1 text-[12px] text-white/35 leading-tight"
               >
                 <div
                   className="mt-1 h-1 w-1 rounded-full shrink-0"
@@ -164,7 +164,7 @@ function MetricChip({
 }) {
   return (
     <div
-      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-mono"
+      className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[12px] font-mono"
       style={{
         background: "rgba(255,255,255,0.04)",
         border: "1px solid rgba(255,255,255,0.06)",

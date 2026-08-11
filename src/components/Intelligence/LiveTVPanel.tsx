@@ -153,8 +153,8 @@ function TVSlot({ channel }: { channel: TVChannel }) {
       <div className="relative aspect-video w-full bg-black">
         {error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-            <Tv size={16} className="text-[#ef4444]" />
-            <span className="text-[9px] text-[var(--muted)]">Offline</span>
+            <Tv size={17} className="text-[#ef4444]" />
+            <span className="text-[13px] text-[var(--muted)]">Offline</span>
           </div>
         ) : visible && embedUrl ? (
           <iframe
@@ -178,7 +178,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center">
-            <Tv size={16} className="text-[var(--dim)]" />
+            <Tv size={17} className="text-[var(--dim)]" />
           </div>
         )}
 
@@ -196,18 +196,18 @@ function TVSlot({ channel }: { channel: TVChannel }) {
         <div className="flex flex-col">
           <div className="flex items-center gap-1">
             <span
-              className="text-[7px] font-bold uppercase tracking-[0.1em]"
+              className="text-[12px] font-bold uppercase tracking-[0.1em]"
               style={{ color: channel.color }}
             >
               {channel.code}
             </span>
-            <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] truncate">
+            <span className="text-[12px] font-bold uppercase tracking-[0.1em] text-[var(--muted)] truncate">
               {channel.name}
             </span>
           </div>
           <span className="flex items-center gap-0.5 mt-0.5">
             <span className="inline-block h-1 w-1 animate-pulse bg-[#ef4444]" />
-            <span className="text-[6px] font-bold uppercase tracking-[0.15em] text-[var(--dim)]">
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--dim)]">
               LIVE
             </span>
           </span>
@@ -221,7 +221,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
             className="flex h-5 w-5 items-center justify-center bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-dim)]"
             title={muted ? "Unmute" : "Mute"}
           >
-            {muted ? <VolumeX size={10} /> : <Volume2 size={10} />}
+            {muted ? <VolumeX size={12} /> : <Volume2 size={12} />}
           </button>
           <a
             href={channel.externalUrl}
@@ -230,7 +230,7 @@ function TVSlot({ channel }: { channel: TVChannel }) {
             className="flex h-5 w-5 items-center justify-center bg-[var(--bg-raised)] text-[var(--ink)] transition-colors hover:bg-[var(--bg-surface)] hover:text-white border border-[var(--line-dim)]"
             title="Open Stream"
           >
-            <ExternalLink size={9} />
+            <ExternalLink size={12} />
           </a>
         </div>
       </div>
@@ -243,10 +243,10 @@ export default function LiveTVPanel() {
     <section className="flex h-full flex-col bg-[var(--bg-surface)] p-3 overflow-visible">
       <div className="flex items-center justify-between pb-2">
         <div className="flex items-center gap-2">
-          <Tv size={12} className="text-[var(--tech)]" />
+          <Tv size={14} className="text-[var(--tech)]" />
           <div className="eyebrow">Thailand / south</div>
         </div>
-        <span className="text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
+        <span className="text-[12px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
           6 channels
         </span>
       </div>
@@ -257,7 +257,7 @@ export default function LiveTVPanel() {
         ))}
       </div>
 
-      <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+      <div className="mt-1 text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
         Source: YouTube Live feeds with strong Phuket and southern Thailand coverage
       </div>
     </section>

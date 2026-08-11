@@ -32,43 +32,43 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
       <div className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.35fr)_120px_120px_180px_auto] lg:items-start">
         <div className="min-w-0">
           <div className="eyebrow">Selected place</div>
-          <h2 className="pt-1 text-[22px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
+          <h2 className="pt-1 text-[24px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
             {province.name}
           </h2>
-          <p className="pt-1 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+          <p className="pt-1 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
             {province.type ?? `Sector: ${province.iso ?? "Regional"}`}
           </p>
-          <p className="pt-3 text-[12px] leading-5 text-[var(--muted)]">{summaryLine}</p>
+          <p className="pt-3 text-[14px] leading-5 text-[var(--muted)]">{summaryLine}</p>
         </div>
 
         <div>
-          <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
+          <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
             Readiness
           </div>
-          <div className="pt-1 font-mono text-[28px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
+          <div className="pt-1 font-mono text-[30px] font-semibold tracking-[-0.04em] text-[var(--ink)]">
             {readinessIndex}
           </div>
-          <div className="text-[9px] text-[var(--dim)]">out of 10</div>
+          <div className="text-[13px] text-[var(--dim)]">out of 10</div>
         </div>
 
         <div>
-          <div className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
+          <div className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
             Signals
           </div>
           <div
-            className={`flex items-center gap-1 pt-1 font-mono text-[28px] font-semibold tracking-[-0.04em] ${
+            className={`flex items-center gap-1 pt-1 font-mono text-[30px] font-semibold tracking-[-0.04em] ${
               signalCount > 0 ? "text-[#f59e0b]" : "text-[var(--cool)]"
             }`}
           >
             {signalCount}
-            <TrendingUp size={12} />
+            <TrendingUp size={14} />
           </div>
-          <div className="text-[9px] text-[var(--dim)]">{attentionLevel}</div>
+          <div className="text-[13px] text-[var(--dim)]">{attentionLevel}</div>
         </div>
 
         <div className="space-y-3 lg:border-l lg:border-[var(--line)] lg:pl-4">
           <div>
-            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="flex items-center justify-between text-[12px] uppercase tracking-[0.16em] text-[var(--dim)]">
               <span>Weather pressure</span>
               <span>{signalCount > 0 ? "Elevated" : "Seasonal"}</span>
             </div>
@@ -78,7 +78,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
           </div>
 
           <div>
-            <div className="flex items-center justify-between text-[8px] uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="flex items-center justify-between text-[12px] uppercase tracking-[0.16em] text-[var(--dim)]">
               <span>Tourism pulse</span>
               <span className="text-[var(--cool)]">{tourismTone}</span>
             </div>
@@ -92,7 +92,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
           onClick={onClose}
           className="inline-flex h-9 w-9 items-center justify-center border border-[var(--line)] text-[var(--muted)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
         >
-          <X size={14} />
+          <X size={15} />
         </button>
       </div>
 
@@ -101,7 +101,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
           {guidance.map((item) => (
             <div
               key={item}
-              className="border border-[var(--line)] px-3 py-2 text-[10px] leading-4 text-[var(--muted)]"
+              className="border border-[var(--line)] px-3 py-2 text-[13px] leading-4 text-[var(--muted)]"
             >
               {item}
             </div>
@@ -109,8 +109,8 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
         </div>
 
         <div className="flex items-center gap-2 border border-[var(--line)] px-3 py-2">
-          <Globe size={12} className="text-[var(--cool)]" />
-          <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+          <Globe size={14} className="text-[var(--cool)]" />
+          <span className="text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
             {province.eventDate
               ? `Event ${province.eventDate}`
               : `Sector ${province.iso ?? province.name}`}

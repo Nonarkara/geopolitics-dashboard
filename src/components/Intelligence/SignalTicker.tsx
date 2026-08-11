@@ -69,7 +69,7 @@ export default function SignalTicker({
   if (ticker.items.length === 0) {
     return (
       <div
-        className="flex items-center gap-3 whitespace-nowrap text-[10px] font-black uppercase tracking-[0.16em] text-white/55"
+        className="flex items-center gap-3 whitespace-nowrap text-[13px] font-black uppercase tracking-[0.16em] text-white/55"
         role="status"
         aria-live="polite"
       >
@@ -97,18 +97,18 @@ export default function SignalTicker({
             key={`${item.id}-${idx}`}
             className="flex items-center gap-3 px-5 shrink-0"
           >
-            <span className="text-[8px] font-black uppercase tracking-widest opacity-40">
+            <span className="text-[12px] font-black uppercase tracking-widest opacity-40">
               {item.label}
             </span>
-            <span className="text-[11px] font-black tabular-nums tracking-tight">
+            <span className="text-[14px] font-black tabular-nums tracking-tight">
               {item.value}
             </span>
-            <span className={`flex items-center gap-0.5 text-[9px] font-black tabular-nums ${
+            <span className={`flex items-center gap-0.5 text-[13px] font-black tabular-nums ${
               item.tone === "up" ? "text-[var(--safe)]" :
               item.tone === "down" ? "text-[var(--accent)]" :
               "text-[var(--dim)]"
             }`}>
-              <Icon size={10} strokeWidth={3} />
+              <Icon size={12} strokeWidth={3} />
               {item.delta}
             </span>
             <div className="h-2 w-[1px] bg-white/20 ml-2" />

@@ -838,7 +838,7 @@ export default function BorderMap({
                   }}
                 >
                   <span className="flex items-center justify-center">
-                    <Camera size={14} />
+                    <Camera size={15} />
                   </span>
                 </button>
               );
@@ -860,9 +860,9 @@ export default function BorderMap({
         <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-1.5 xl:px-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="text-[14px] font-bold tracking-tight text-[var(--ink)] uppercase">Operating Surface</div>
+              <div className="text-[16px] font-bold tracking-tight text-[var(--ink)] uppercase">Operating Surface</div>
               <div className="h-3 w-[1px] bg-[var(--line)]" />
-              <div className="flex gap-3 text-[9px] font-mono font-bold text-[var(--dim)] uppercase tracking-tight">
+              <div className="flex gap-3 text-[13px] font-mono font-bold text-[var(--dim)] uppercase tracking-tight">
                 <span>SIG {signalCount}</span>
                 <span>AQI {airQuality.length}</span>
                 <span>FLT {flights.length}</span>
@@ -894,7 +894,7 @@ export default function BorderMap({
                     setSatelliteOverlay(option.id);
                   }}
                   onClick={() => setSatelliteOverlay(option.id)}
-                  className={`px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                  className={`px-2 py-1 text-[13px] font-bold uppercase tracking-wider transition-colors ${
                     satelliteOverlay === option.id
                       ? "text-[var(--ink)] underline underline-offset-4"
                       : "text-[var(--dim)] hover:text-[var(--ink)]"
@@ -914,13 +914,13 @@ export default function BorderMap({
                   aria-label={`Toggle ${control.label}`}
                   data-testid={`map-mode-${control.id}`}
                   onClick={control.onClick}
-                  className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                  className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[13px] font-bold uppercase tracking-wider transition-colors ${
                     control.active
                       ? "border-[var(--cool)] bg-[rgba(15,111,136,0.06)] text-[var(--cool)]"
                       : "border-[var(--line)] text-[var(--dim)] hover:text-[var(--ink)]"
                   }`}
                 >
-                  <Icon size={11} />
+                  <Icon size={13} />
                   {control.shortLabel}
                 </button>
               );
@@ -939,14 +939,14 @@ export default function BorderMap({
                     ...preset.view,
                   }))
                 }
-                className="whitespace-nowrap rounded border border-[var(--line)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
+                className="whitespace-nowrap rounded border border-[var(--line)] px-2 py-0.5 text-[13px] font-bold uppercase tracking-wider text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
               >
                 {preset.label}
               </button>
             ))}
           </div>
         <div className={`flex items-center gap-2 min-w-[140px] ${showSatelliteOverlay ? "opacity-100" : "opacity-40"}`}>
-            <span className="text-[9px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
+            <span className="text-[13px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
             <input
               type="range"
               min="20"
@@ -963,14 +963,14 @@ export default function BorderMap({
         </div>
         {feedAlerts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 border-t border-[var(--line)] px-3 py-1.5 xl:px-4">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.16em] text-[#b45309]">
+            <span className="text-[13px] font-mono font-bold uppercase tracking-[0.16em] text-[#b45309]">
               Feed Integrity
             </span>
             {feedAlerts.map((alert) => (
               <span
                 key={alert.id}
                 title={alert.details}
-                className="rounded-full border border-[#f59e0b]/40 bg-[#fff7ed] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9a3412]"
+                className="rounded-full border border-[#f59e0b]/40 bg-[#fff7ed] px-2 py-0.5 text-[13px] font-bold uppercase tracking-[0.14em] text-[#9a3412]"
               >
                 {alert.label} {alert.state}
               </span>
@@ -1000,8 +1000,8 @@ export default function BorderMap({
                   title={`${control.label} · ${control.detail}`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Icon size={10} className="shrink-0" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                    <Icon size={12} className="shrink-0" />
+                    <span className="text-[13px] font-bold uppercase tracking-wider">
                       {control.shortLabel}
                     </span>
                   </div>

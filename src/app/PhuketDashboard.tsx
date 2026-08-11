@@ -72,7 +72,7 @@ export default function PhuketDashboard() {
               type="button"
               onClick={() => setIsPanelsOpen(true)}
               aria-label="Open command panels"
-              className="absolute left-2 top-2 z-40 flex h-11 items-center gap-2 border border-[var(--line)] bg-[var(--bg-raised)] px-3 text-[11px] font-black uppercase tracking-[0.18em] text-[var(--ink)] xl:hidden"
+              className="absolute left-2 top-2 z-40 flex h-11 items-center gap-2 border border-[var(--line)] bg-[var(--bg-raised)] px-3 text-[14px] font-black uppercase tracking-[0.18em] text-[var(--ink)] xl:hidden"
             >
               <span aria-hidden="true">&#9776;</span> Panels
             </button>

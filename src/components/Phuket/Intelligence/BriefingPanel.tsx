@@ -90,14 +90,14 @@ export default function BriefingPanel() {
             <div className="eyebrow">Briefing</div>
             <span className="live-badge">LIVE</span>
             <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh intelligence packages">
-              <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+              <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
-          <h2 className="pt-2 text-[18px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+          <h2 className="pt-2 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
             Phuket packages
           </h2>
         </div>
-        <div className="text-right text-[9px] font-mono tabular-nums text-[var(--dim)]">
+        <div className="text-right text-[13px] font-mono tabular-nums text-[var(--dim)]">
           {formatTimestamp(payload.generatedAt)}
         </div>
       </div>
@@ -110,15 +110,15 @@ export default function BriefingPanel() {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+                <div className="text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
                   {pkg.title}
                 </div>
-                <div className="pt-1 text-[11px] leading-5 text-[var(--muted)]">
+                <div className="pt-1 text-[14px] leading-5 text-[var(--muted)]">
                   {pkg.headline}
                 </div>
               </div>
               <span
-                className={`rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.16em] ${statusClass(pkg.status)}`}
+                className={`rounded-full px-2 py-1 text-[12px] font-bold uppercase tracking-[0.16em] ${statusClass(pkg.status)}`}
               >
                 {pkg.status}
               </span>
@@ -128,7 +128,7 @@ export default function BriefingPanel() {
               {pkg.dominantTags.map((tag) => (
                 <span
                   key={tag}
-                  className="border border-[var(--line)] px-2 py-0.5 text-[9px] text-[var(--cool)]"
+                  className="border border-[var(--line)] px-2 py-0.5 text-[13px] text-[var(--cool)]"
                 >
                   {tag}
                 </span>
@@ -139,14 +139,14 @@ export default function BriefingPanel() {
               {pkg.priorities.slice(0, 2).map((item) => (
                 <div
                   key={item}
-                  className="border-l border-[var(--line-bright)] pl-3 text-[10px] leading-4 text-[var(--muted)]"
+                  className="border-l border-[var(--line-bright)] pl-3 text-[13px] leading-4 text-[var(--muted)]"
                 >
                   {item}
                 </div>
               ))}
             </div>
 
-            <div className="mt-3 flex items-center justify-between text-[9px] font-mono tabular-nums text-[var(--dim)]">
+            <div className="mt-3 flex items-center justify-between text-[13px] font-mono tabular-nums text-[var(--dim)]">
               <span>{pkg.stats.elevated} elevated</span>
               <span>{formatTimestamp(pkg.updatedAt)}</span>
             </div>

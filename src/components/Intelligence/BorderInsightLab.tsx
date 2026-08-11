@@ -125,7 +125,7 @@ export default function BorderInsightLab({
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 shrink-0">
         <div>
           <div className="eyebrow text-white/90">Border Insight Lab</div>
-          <div className="text-[10px] font-black uppercase tracking-[0.04em] text-white/70">
+          <div className="text-[13px] font-black uppercase tracking-[0.04em] text-white/70">
             Air · Mekong · Growth / land spider — free APIs only
           </div>
         </div>
@@ -133,7 +133,7 @@ export default function BorderInsightLab({
           {(payload?.sources ?? []).map((source) => (
             <span
               key={source.id}
-              className={`border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-[0.12em] ${
+              className={`border px-1.5 py-0.5 text-[12px] font-black uppercase tracking-[0.12em] ${
                 source.status === "live"
                   ? "border-white/20 text-[var(--safe,#22c55e)]"
                   : "border-white/10 text-white/35"
@@ -151,12 +151,12 @@ export default function BorderInsightLab({
             <div className="eyebrow text-white/85">
               {error ? "Insight feeds delayed" : "Checking three public sources"}
             </div>
-            <p className="mt-2 text-[12px] leading-relaxed text-white/48">
+            <p className="mt-2 text-[14px] leading-relaxed text-white/48">
               {error
                 ? "The command map and cited news remain available. Air, river, and structural comparison data did not answer inside the eight-second display budget."
                 : "Open-Meteo air, GloFAS river discharge, and World Bank indicators are loading in parallel."}
             </p>
-            <div className="mt-3 flex items-center gap-3 text-[9px] font-mono uppercase tracking-[0.12em] text-white/35">
+            <div className="mt-3 flex items-center gap-3 text-[13px] font-mono uppercase tracking-[0.12em] text-white/35">
               <span>Air</span><span>River</span><span>World Bank</span>
               {error ? (
                 <button
@@ -175,7 +175,7 @@ export default function BorderInsightLab({
           {/* AIR */}
           <div className="col-span-1 bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:overflow-y-auto">
             <div className="eyebrow text-white/80 mb-2">Air & CO₂ (CAMS model)</div>
-            <p className="text-[11px] leading-snug text-white/45 mb-3">
+            <p className="text-[14px] leading-snug text-white/45 mb-3">
               Border crossings vs Bangkok. CO₂ is near-surface model ppm — educational, not a satellite plume map.
             </p>
             <div className="space-y-1.5">
@@ -186,21 +186,21 @@ export default function BorderInsightLab({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <div className="text-[12px] font-black uppercase tracking-tight text-white/90">
+                      <div className="text-[14px] font-black uppercase tracking-tight text-white/90">
                         {site.label}
                       </div>
-                      <div className="text-[10px] text-white/40">{site.theater}</div>
+                      <div className="text-[13px] text-white/40">{site.theater}</div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[16px] font-black tabular-nums text-white">
+                      <div className="text-[18px] font-black tabular-nums text-white">
                         {site.usAqi ?? "—"}
                       </div>
-                      <div className="text-[10px] uppercase tracking-[0.12em] text-white/35">
+                      <div className="text-[13px] uppercase tracking-[0.12em] text-white/35">
                         US AQI
                       </div>
                     </div>
                   </div>
-                  <div className="mt-1.5 flex gap-3 text-[11px] font-mono text-white/55">
+                  <div className="mt-1.5 flex gap-3 text-[14px] font-mono text-white/55">
                     <span>PM2.5 {site.pm25 ?? "—"}</span>
                     <span>CO₂ {site.co2Ppm ?? "—"} ppm</span>
                   </div>
@@ -212,7 +212,7 @@ export default function BorderInsightLab({
           {/* MEKONG */}
           <div className="col-span-1 bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:overflow-y-auto">
             <div className="eyebrow text-white/80 mb-2">Mekong pulse (GloFAS)</div>
-            <p className="text-[11px] leading-snug text-white/45 mb-3">
+            <p className="text-[14px] leading-snug text-white/45 mb-3">
               Thai-bank gauges. Upstream dam ops in China/Laos reshape the flood pulse — MRC holds the official stations; this is a free simulation for teaching the pressure.
             </p>
             <div className="space-y-2">
@@ -223,21 +223,21 @@ export default function BorderInsightLab({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div>
-                      <div className="text-[12px] font-black uppercase tracking-tight text-white/90">
+                      <div className="text-[14px] font-black uppercase tracking-tight text-white/90">
                         {river.name}
                       </div>
                       <div
-                        className="text-[10px] font-black uppercase tracking-[0.14em] mt-0.5"
+                        className="text-[13px] font-black uppercase tracking-[0.14em] mt-0.5"
                         style={{ color: riskColor(river.riskLevel) }}
                       >
                         {river.riskLevel} · {river.trend}
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-[16px] font-black tabular-nums">
+                      <div className="text-[18px] font-black tabular-nums">
                         {river.currentDischarge}
                       </div>
-                      <div className="text-[10px] text-white/35">m³/s now</div>
+                      <div className="text-[13px] text-white/35">m³/s now</div>
                     </div>
                   </div>
                   <div className="mt-2 flex items-end gap-[2px] h-10">
@@ -257,7 +257,7 @@ export default function BorderInsightLab({
                       );
                     })}
                   </div>
-                  <div className="mt-1 text-[10px] text-white/35">
+                  <div className="mt-1 text-[13px] text-white/35">
                     Peak {river.forecastPeak} m³/s
                     {river.forecastPeakDate ? ` · ${river.forecastPeakDate}` : ""}
                   </div>
@@ -269,7 +269,7 @@ export default function BorderInsightLab({
           {/* SPIDER */}
           <div className="col-span-1 flex min-h-[360px] flex-col bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:min-h-0 xl:overflow-hidden">
             <div className="eyebrow text-white/80 mb-2">Compare · spider</div>
-            <p className="text-[11px] leading-snug text-white/45 mb-2">
+            <p className="text-[14px] leading-snug text-white/45 mb-2">
               GDP growth, urbanisation, forest cover, air clarity, and calm score (inverse frontier pressure). China sits upstream on water politics; Myanmar leads conflict pressure.
             </p>
             <div className="min-h-0 flex-1 relative">
@@ -318,10 +318,10 @@ export default function BorderInsightLab({
                   key={country.iso3}
                   className="border border-white/10 px-1 py-1 text-center"
                 >
-                  <div className="text-[10px] font-black uppercase text-white/70">
+                  <div className="text-[13px] font-black uppercase text-white/70">
                     {country.iso3}
                   </div>
-                  <div className="text-[11px] font-mono tabular-nums text-white/90">
+                  <div className="text-[14px] font-mono tabular-nums text-white/90">
                     {country.gdpGrowthPct ?? "—"}%
                   </div>
                 </div>

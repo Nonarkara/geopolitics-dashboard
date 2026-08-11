@@ -18,7 +18,7 @@ const SECONDARY_LOGOS = [
 export default function LogoStrip({ className }: { className?: string }) {
   return (
     <div className={`flex items-center gap-3 ${className ?? ""}`}>
-      <div className="hidden xl:block text-[7px] font-black uppercase tracking-[0.22em] text-white/25">
+      <div className="hidden xl:block text-[12px] font-black uppercase tracking-[0.22em] text-white/25">
         Backed by
       </div>
       <div className="h-8 w-px bg-white/10 shrink-0" />

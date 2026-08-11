@@ -158,13 +158,13 @@ export default function EconomicMonitor() {
       <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
         <div>
           <div className="eyebrow">Economic radar</div>
-          <h3 className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+          <h3 className="pt-1 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
             Tourism & cost
           </h3>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh market data">
-            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
           <span className="live-badge">LIVE / MACRO</span>
         </div>
@@ -173,10 +173,10 @@ export default function EconomicMonitor() {
       <div className="mt-3 space-y-4 flex-1">
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+            <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
               Live operating signals
             </span>
-            <span className="text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+            <span className="text-[12px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
               90s refresh
             </span>
           </div>
@@ -187,19 +187,19 @@ export default function EconomicMonitor() {
                 className="flex items-center justify-between px-3 py-2"
               >
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
+                  <span className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
                     {item.category ?? "REF"}
                   </span>
-                  <span className="truncate text-[12px] font-bold text-[var(--ink)]">
+                  <span className="truncate text-[14px] font-bold text-[var(--ink)]">
                     {item.label}
                   </span>
                 </div>
                 <div className="flex flex-shrink-0 items-center gap-3">
-                  <span className="font-mono text-[13px] font-bold tabular-nums text-[var(--ink)]">
+                  <span className="font-mono text-[15px] font-bold tabular-nums text-[var(--ink)]">
                     {formatSignalValue(item)}
                   </span>
                   <span
-                    className={`font-mono text-[10px] font-bold tabular-nums ${
+                    className={`font-mono text-[13px] font-bold tabular-nums ${
                       item.up ? "text-[#22c55e]" : "text-[#ef4444]"
                     }`}
                   >
@@ -213,15 +213,15 @@ export default function EconomicMonitor() {
 
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+            <span className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
               Regional GDP context
             </span>
-            <span className="text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+            <span className="text-[12px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
               {formatMacroCoverage(aseanGdp)}
             </span>
           </div>
           <div className="overflow-hidden rounded-lg border border-[var(--line)] bg-[var(--bg)]">
-            <div className="grid grid-cols-[minmax(0,1fr)_72px_72px_40px] gap-2 border-b border-[var(--line)] px-3 py-2 text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="grid grid-cols-[minmax(0,1fr)_72px_72px_40px] gap-2 border-b border-[var(--line)] px-3 py-2 text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
               <span>Country</span>
               <span className="text-right">GDP</span>
               <span className="text-right">GDP/cap</span>
@@ -231,7 +231,7 @@ export default function EconomicMonitor() {
               {aseanGdp.map((entry) => (
                 <div
                   key={entry.countryCode}
-                  className="grid grid-cols-[minmax(0,1fr)_72px_72px_40px] gap-2 border-b border-[var(--line)] px-3 py-2 text-[10px] leading-4 last:border-b-0"
+                  className="grid grid-cols-[minmax(0,1fr)_72px_72px_40px] gap-2 border-b border-[var(--line)] px-3 py-2 text-[13px] leading-4 last:border-b-0"
                 >
                   <span className="truncate font-semibold text-[var(--ink)]">
                     {entry.country}
@@ -255,7 +255,7 @@ export default function EconomicMonitor() {
           </div>
         </div>
       </div>
-      <div className="mt-2 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+      <div className="mt-2 text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
         Source: {sources.join(" · ")}. GDP uses the latest annual official release.
       </div>
     </section>

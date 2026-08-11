@@ -41,7 +41,7 @@ export default function LiveIntelligenceFeed({
   if (news.length === 0 && !error) {
     return (
       <div className="flex h-8 items-center justify-center">
-        <span className="text-[9px] text-white/25 tracking-wide">
+        <span className="text-[13px] text-white/25 tracking-wide">
           Live headline feeds connecting...
         </span>
       </div>
@@ -62,7 +62,7 @@ export default function LiveIntelligenceFeed({
       {/* Badge */}
       <div className="flex items-center gap-3 mr-4 shrink-0">
         <span
-          className="text-[9px] font-bold px-1.5 py-0.5 rounded text-black"
+          className="text-[13px] font-bold px-1.5 py-0.5 rounded text-black"
           style={{
             background: isStale ? "#f59e0b" : "#3b82f6",
           }}
@@ -75,7 +75,7 @@ export default function LiveIntelligenceFeed({
           title="Refresh feed"
         >
           <RefreshCw
-            size={12}
+            size={14}
             className={isRefreshing ? "animate-spin" : ""}
           />
         </button>
@@ -85,7 +85,7 @@ export default function LiveIntelligenceFeed({
       <div className="flex-1 overflow-hidden relative">
         <div className="flex animate-marquee whitespace-nowrap gap-8">
           {[...news, ...news].map((item, i) => (
-            <span key={i} className="inline-flex items-center gap-1.5 text-[10px]">
+            <span key={i} className="inline-flex items-center gap-1.5 text-[13px]">
               <span
                 className="font-bold uppercase tracking-wide"
                 style={{ color: sourceColor(item.source), fontSize: "9px" }}
@@ -94,7 +94,7 @@ export default function LiveIntelligenceFeed({
               </span>
               <span className="text-white/60">{item.title}</span>
               {item.tag && (
-                <span className="text-[8px] text-blue-400/60">
+                <span className="text-[12px] text-blue-400/60">
                   #{item.tag}
                 </span>
               )}

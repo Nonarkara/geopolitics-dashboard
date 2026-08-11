@@ -190,22 +190,22 @@ function SummaryCard({
           {icon}
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             {label}
           </div>
-          <div className="mt-1 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+          <div className="mt-1 text-[26px] font-bold tracking-[-0.03em] text-[var(--ink)]">
             {value}
           </div>
         </div>
       </div>
-      <p className="mt-3 text-[12px] leading-5 text-[var(--muted)]">{helper}</p>
+      <p className="mt-3 text-[14px] leading-5 text-[var(--muted)]">{helper}</p>
     </article>
   );
 }
 
 function Pill({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--ink)]">
+    <span className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink)]">
       {children}
     </span>
   );
@@ -216,25 +216,25 @@ function OverviewTab() {
     <div className="space-y-5">
       <section className="grid gap-4 xl:grid-cols-4">
         <SummaryCard
-          icon={<Server size={18} />}
+          icon={<Server size={19} />}
           label="Internal APIs"
           value={String(architectureSummary.internalApiCount)}
           helper="Every browser-facing route is documented here, grouped by domain."
         />
         <SummaryCard
-          icon={<Cloud size={18} />}
+          icon={<Cloud size={19} />}
           label="External Providers"
           value={String(architectureSummary.externalProviderCount)}
           helper="Feeds, tile servers, market data, mobility, optional AI, and media services."
         />
         <SummaryCard
-          icon={<Map size={18} />}
+          icon={<Map size={19} />}
           label="UI Surfaces"
           value={String(architectureSummary.uiSurfaceCount)}
           helper="The core operator surfaces that turn normalized signals into decisions."
         />
         <SummaryCard
-          icon={<Network size={18} />}
+          icon={<Network size={19} />}
           label="Architecture Layers"
           value={String(architectureSummary.architectureLayerCount)}
           helper="Client, API, fusion, storage, and external provider boundaries."
@@ -251,26 +251,26 @@ function OverviewTab() {
                 className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4"
               >
                 <div className="flex flex-wrap items-center gap-3">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
+                  <span className="font-mono text-[13px] uppercase tracking-[0.18em] text-[var(--muted)]">
                     L{index + 1}
                   </span>
                   <span
-                    className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${toneClasses(layer.tone)}`}
+                    className={`rounded-full border px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] ${toneClasses(layer.tone)}`}
                   >
                     {layer.tone}
                   </span>
-                  <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                  <h3 className="text-[16px] font-semibold text-[var(--ink)]">
                     {layer.title}
                   </h3>
                 </div>
-                <p className="mt-3 text-[13px] leading-6 text-[var(--ink)]">
+                <p className="mt-3 text-[15px] leading-6 text-[var(--ink)]">
                   {layer.summary}
                 </p>
                 <div className="mt-3 space-y-2">
                   {layer.bullets.map((bullet) => (
                     <p
                       key={`${layer.id}-${bullet}`}
-                      className="rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] px-3 py-2 text-[12px] leading-5 text-[var(--muted)]"
+                      className="rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] px-3 py-2 text-[14px] leading-5 text-[var(--muted)]"
                     >
                       {bullet}
                     </p>
@@ -289,10 +289,10 @@ function OverviewTab() {
                 key={surface.id}
                 className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3"
               >
-                <h3 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
+                <h3 className="text-[15px] font-semibold uppercase tracking-[0.12em] text-[var(--ink)]">
                   {surface.title}
                 </h3>
-                <p className="mt-2 text-[12px] leading-5 text-[var(--muted)]">
+                <p className="mt-2 text-[14px] leading-5 text-[var(--muted)]">
                   {surface.summary}
                 </p>
               </article>
@@ -313,14 +313,14 @@ function FlowTab() {
           {architectureFlowSteps.map((step, index) => (
             <article key={step.id} className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
               <div className="flex flex-wrap items-center gap-3">
-                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] text-[11px] font-bold text-[var(--cool)]">
+                <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] text-[14px] font-bold text-[var(--cool)]">
                   {index + 1}
                 </span>
-                <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                <h3 className="text-[16px] font-semibold text-[var(--ink)]">
                   {step.title}
                 </h3>
               </div>
-              <p className="mt-3 text-[13px] leading-6 text-[var(--ink)]">
+              <p className="mt-3 text-[15px] leading-6 text-[var(--ink)]">
                 {step.summary}
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -340,7 +340,7 @@ function FlowTab() {
             {resiliencePatterns.map((pattern) => (
               <p
                 key={pattern}
-                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[12px] leading-5 text-[var(--muted)]"
+                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[14px] leading-5 text-[var(--muted)]"
               >
                 {pattern}
               </p>
@@ -354,7 +354,7 @@ function FlowTab() {
             {storageNotes.map((note) => (
               <p
                 key={note}
-                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[12px] leading-5 text-[var(--muted)]"
+                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[14px] leading-5 text-[var(--muted)]"
               >
                 {note}
               </p>
@@ -370,17 +370,17 @@ function InternalApiCard({ entry }: { entry: InternalApiDescriptor }) {
   return (
     <article className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <code className="rounded-lg border border-[var(--line-bright)] bg-[var(--bg-raised)] px-2.5 py-1.5 text-[12px] text-[var(--ink)]">
+        <code className="rounded-lg border border-[var(--line-bright)] bg-[var(--bg-raised)] px-2.5 py-1.5 text-[14px] text-[var(--ink)]">
           GET {entry.path}
         </code>
-        <span className="rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
+        <span className="rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
           {entry.category}
         </span>
       </div>
-      <p className="mt-3 text-[13px] leading-6 text-[var(--ink)]">{entry.purpose}</p>
-      <div className="mt-4 space-y-3 text-[12px] leading-5 text-[var(--muted)]">
+      <p className="mt-3 text-[15px] leading-6 text-[var(--ink)]">{entry.purpose}</p>
+      <div className="mt-4 space-y-3 text-[14px] leading-5 text-[var(--muted)]">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             Consumed by
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -390,7 +390,7 @@ function InternalApiCard({ entry }: { entry: InternalApiDescriptor }) {
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             Upstreams
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -400,7 +400,7 @@ function InternalApiCard({ entry }: { entry: InternalApiDescriptor }) {
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             Fallback
           </div>
           <p className="mt-2">{entry.fallback}</p>
@@ -421,11 +421,11 @@ function InternalApisTab() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="eyebrow">{category}</div>
-                <h2 className="mt-1 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                   {category} APIs
                 </h2>
               </div>
-              <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+              <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
                 {entries.length} routes
               </div>
             </div>
@@ -445,20 +445,20 @@ function ExternalProviderCard({ entry }: { entry: ExternalProviderDescriptor }) 
   return (
     <article className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h3 className="text-[14px] font-semibold text-[var(--ink)]">{entry.label}</h3>
-        <span className="rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
+        <h3 className="text-[16px] font-semibold text-[var(--ink)]">{entry.label}</h3>
+        <span className="rounded-full border border-[var(--line-bright)] bg-[var(--line-bright)] px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
           {entry.category}
         </span>
         {entry.optional ? (
-          <span className="rounded-full border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.12)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+          <span className="rounded-full border border-[rgba(245,158,11,0.18)] bg-[rgba(245,158,11,0.12)] px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
             Optional
           </span>
         ) : null}
       </div>
-      <p className="mt-3 text-[13px] leading-6 text-[var(--ink)]">{entry.description}</p>
-      <div className="mt-4 space-y-3 text-[12px] leading-5 text-[var(--muted)]">
+      <p className="mt-3 text-[15px] leading-6 text-[var(--ink)]">{entry.description}</p>
+      <div className="mt-4 space-y-3 text-[14px] leading-5 text-[var(--muted)]">
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             Used by
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
@@ -468,14 +468,14 @@ function ExternalProviderCard({ entry }: { entry: ExternalProviderDescriptor }) 
           </div>
         </div>
         <div>
-          <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+          <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
             Endpoints
           </div>
           <div className="mt-2 space-y-2">
             {entry.endpoints.map((endpoint) => (
               <code
                 key={`${entry.id}-${endpoint}`}
-                className="block overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] px-3 py-2 text-[11px] text-[var(--ink)]"
+                className="block overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--bg-raised)] px-3 py-2 text-[14px] text-[var(--ink)]"
               >
                 {endpoint}
               </code>
@@ -498,11 +498,11 @@ function ExternalProvidersTab() {
             <div className="flex items-center justify-between gap-3">
               <div>
                 <div className="eyebrow">{category}</div>
-                <h2 className="mt-1 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                   {category} Providers
                 </h2>
               </div>
-              <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+              <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
                 {entries.length} services
               </div>
             </div>
@@ -533,16 +533,16 @@ function RuntimeTab({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <div className="eyebrow">Live Runtime Status</div>
-            <h2 className="mt-1 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+            <h2 className="mt-1 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
               Service posture
             </h2>
           </div>
           <button
             type="button"
             onClick={onRefresh}
-            className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+            className="inline-flex items-center gap-2 rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
           >
-            <RefreshCw size={14} className={isRefreshing ? "animate-spin" : ""} />
+            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
             Refresh status
           </button>
         </div>
@@ -551,19 +551,19 @@ function RuntimeTab({
           <>
             <div className="mt-4 grid gap-4 xl:grid-cols-3">
               <SummaryCard
-                icon={<Network size={18} />}
+                icon={<Network size={19} />}
                 label="Runtime status"
                 value={statusPayload.status}
                 helper={`Version ${statusPayload.version} checked ${formatRuntimeTimestamp(statusPayload.checkedAt)} with signal strength ${statusPayload.signal_strength.toFixed(2)}.`}
               />
               <SummaryCard
-                icon={<Database size={18} />}
+                icon={<Database size={19} />}
                 label="Healthy datasets"
                 value={`${countHealthyDatasets(statusPayload.datasets)}/${statusPayload.datasets.length}`}
                 helper="Live and on-demand datasets are counted as healthy. Stale and fallback posture are not."
               />
               <SummaryCard
-                icon={<Server size={18} />}
+                icon={<Server size={19} />}
                 label="Service flags"
                 value={String(Object.keys(statusPayload.services).length)}
                 helper="These flags capture security posture, optional integrations, and fail-safe switches."
@@ -576,11 +576,11 @@ function RuntimeTab({
                   className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4"
                 >
                   <div className="flex flex-wrap items-center gap-3">
-                    <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                    <h3 className="text-[16px] font-semibold text-[var(--ink)]">
                       {prettifyServiceName(serviceName)}
                     </h3>
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
+                      className={`rounded-full border px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
                         state,
                       )}`}
                     >
@@ -594,7 +594,7 @@ function RuntimeTab({
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="eyebrow">Dataset Freshness</div>
-                  <p className="mt-1 text-[12px] leading-5 text-[var(--muted)]">
+                  <p className="mt-1 text-[14px] leading-5 text-[var(--muted)]">
                     This reads stored snapshots and known fallback posture. It does not pretend every upstream is live just because the app is online.
                   </p>
                 </div>
@@ -607,15 +607,15 @@ function RuntimeTab({
                   >
                     <div className="flex flex-wrap items-start justify-between gap-3">
                       <div>
-                        <h3 className="text-[14px] font-semibold text-[var(--ink)]">
+                        <h3 className="text-[16px] font-semibold text-[var(--ink)]">
                           {dataset.label}
                         </h3>
-                        <p className="mt-1 text-[11px] leading-5 text-[var(--muted)]">
+                        <p className="mt-1 text-[14px] leading-5 text-[var(--muted)]">
                           {dataset.source}
                         </p>
                       </div>
                       <span
-                        className={`rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
+                        className={`rounded-full border px-2.5 py-1 text-[13px] font-bold uppercase tracking-[0.16em] ${stateBadgeClasses(
                           dataset.state,
                         )}`}
                       >
@@ -632,7 +632,7 @@ function RuntimeTab({
                         Target {formatRuntimeAge(dataset.freshnessTargetMinutes)}
                       </Pill>
                     </div>
-                    <p className="mt-3 text-[12px] leading-5 text-[var(--muted)]">
+                    <p className="mt-3 text-[14px] leading-5 text-[var(--muted)]">
                       {dataset.details}
                     </p>
                   </article>
@@ -641,7 +641,7 @@ function RuntimeTab({
             </div>
           </>
         ) : (
-          <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[12px] leading-5 text-[var(--muted)]">
+          <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[14px] leading-5 text-[var(--muted)]">
             Runtime status has not loaded yet. Use refresh to query `/api/status`.
           </div>
         )}
@@ -654,7 +654,7 @@ function RuntimeTab({
             {storageNotes.map((note) => (
               <p
                 key={note}
-                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[12px] leading-5 text-[var(--muted)]"
+                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[14px] leading-5 text-[var(--muted)]"
               >
                 {note}
               </p>
@@ -668,7 +668,7 @@ function RuntimeTab({
             {resiliencePatterns.map((pattern) => (
               <p
                 key={pattern}
-                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[12px] leading-5 text-[var(--muted)]"
+                className="rounded-2xl border border-[var(--line)] bg-[rgba(10,15,26,0.72)] px-4 py-3 text-[14px] leading-5 text-[var(--muted)]"
               >
                 {pattern}
               </p>
@@ -857,26 +857,26 @@ export default function DashboardArchitectureModal({
       >
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
-              <Network size={14} />
+            <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
+              <Network size={15} />
               APIs And System Architecture
             </div>
             <h2
               id={titleId}
-              className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[28px]"
+              className="mt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[30px]"
             >
               {activeSectionMeta.label}
             </h2>
             <p
               id={descriptionId}
-              className="mt-1 max-w-4xl text-[12px] leading-5 text-[var(--muted)] sm:text-[13px]"
+              className="mt-1 max-w-4xl text-[14px] leading-5 text-[var(--muted)] sm:text-[15px]"
             >
               {activeSectionMeta.description}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+            <div className="rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
               {architectureSummary.internalApiCount} APIs / {architectureSummary.externalProviderCount} providers
             </div>
             <button
@@ -886,7 +886,7 @@ export default function DashboardArchitectureModal({
               className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
               aria-label="Close architecture reference"
             >
-              <X size={16} />
+              <X size={17} />
             </button>
           </div>
         </header>
@@ -911,10 +911,10 @@ export default function DashboardArchitectureModal({
                       : "border-[var(--line)] bg-[var(--bg-surface)] hover:border-[var(--line-bright)]"
                   }`}
                 >
-                  <div className="text-[13px] font-semibold text-[var(--ink)]">
+                  <div className="text-[15px] font-semibold text-[var(--ink)]">
                     {section.label}
                   </div>
-                  <div className="mt-1 text-[11px] leading-4 text-[var(--muted)]">
+                  <div className="mt-1 text-[14px] leading-4 text-[var(--muted)]">
                     {section.description}
                   </div>
                 </button>

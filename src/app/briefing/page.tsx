@@ -188,7 +188,7 @@ export default async function BriefingPage() {
       />
 
       {/* PRINT BUTTON */}
-      <button className="fixed top-4 right-4 bg-black text-white px-4 py-2 text-[10px] font-mono uppercase tracking-wider hover:bg-gray-800 print:hidden shadow-lg z-50">
+      <button className="fixed top-4 right-4 bg-black text-white px-4 py-2 text-[13px] font-mono uppercase tracking-wider hover:bg-gray-800 print:hidden shadow-lg z-50">
         Print / Save PDF
       </button>
       <script
@@ -201,23 +201,23 @@ export default async function BriefingPage() {
       <header className="bg-[#0a0a0a] text-white px-8 py-6 border-b-4 border-[#f59e0b]">
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-mono uppercase tracking-[0.3em] text-white/50 mb-1">
+            <div className="text-[14px] font-mono uppercase tracking-[0.3em] text-white/50 mb-1">
               Thailand Geopolitical Watch
             </div>
-            <h1 className="text-[28px] font-black uppercase tracking-tight">
+            <h1 className="text-[30px] font-black uppercase tracking-tight">
               Situation Briefing
             </h1>
           </div>
           <div className="text-right">
-            <div className="text-[13px] font-mono tabular-nums text-white/80">
+            <div className="text-[15px] font-mono tabular-nums text-white/80">
               {date} {time} ICT
             </div>
-            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-white/40 mt-1">
+            <div className="text-[13px] font-mono uppercase tracking-[0.2em] text-white/40 mt-1">
               V6.3.0 // Auto-generated
             </div>
           </div>
         </div>
-        <div className="mt-3 text-[9px] font-mono uppercase tracking-[0.25em] text-[#f59e0b]">
+        <div className="mt-3 text-[13px] font-mono uppercase tracking-[0.25em] text-[#f59e0b]">
           Unclassified // For Official Use Only
         </div>
       </header>
@@ -225,8 +225,8 @@ export default async function BriefingPage() {
       <div className="px-8 py-6">
         {/* 1. COMMAND POSTURE */}
         <section>
-          <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
-            <span className="text-[10px] font-mono text-gray-400">01</span>
+          <h2 className="text-[15px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
+            <span className="text-[13px] font-mono text-gray-400">01</span>
             Command Posture
           </h2>
           <table>
@@ -274,12 +274,12 @@ export default async function BriefingPage() {
 
         {/* 2. AI NARRATIVE */}
         <section className="mt-8">
-          <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
-            <span className="text-[10px] font-mono text-gray-400">02</span>
+          <h2 className="text-[15px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
+            <span className="text-[13px] font-mono text-gray-400">02</span>
             Situation Summary
           </h2>
-          <p className="text-[11px] leading-[1.8]">{narrativeResult.narrative}</p>
-          <p className="mt-1.5 text-[8px] font-mono uppercase tracking-[0.12em] text-gray-400">
+          <p className="text-[14px] leading-[1.8]">{narrativeResult.narrative}</p>
+          <p className="mt-1.5 text-[12px] font-mono uppercase tracking-[0.12em] text-gray-400">
             Generated {new Date(narrativeResult.generatedAt).toLocaleString("en-GB", { timeZone: "Asia/Bangkok" })} ICT
             {narrativeResult.signalCount > 0
               ? ` // ${narrativeResult.signalCount} signals analyzed`
@@ -289,8 +289,8 @@ export default async function BriefingPage() {
 
         {/* 3. KEY SIGNALS */}
         <section className="mt-8">
-          <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
-            <span className="text-[10px] font-mono text-gray-400">03</span>
+          <h2 className="text-[15px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
+            <span className="text-[13px] font-mono text-gray-400">03</span>
             Key Signals (Last 24h)
           </h2>
           {signalsResult.signals.length > 0 ? (
@@ -332,12 +332,12 @@ export default async function BriefingPage() {
               </tbody>
             </table>
           ) : (
-            <p className="text-[10px] text-gray-400 italic">
+            <p className="text-[13px] text-gray-400 italic">
               No signals available. Database may not be configured.
             </p>
           )}
           {signalsResult.total > 10 && (
-            <p className="mt-1 text-[8px] font-mono uppercase tracking-[0.12em] text-gray-400">
+            <p className="mt-1 text-[12px] font-mono uppercase tracking-[0.12em] text-gray-400">
               Showing 10 of {signalsResult.total} total signals
             </p>
           )}
@@ -345,8 +345,8 @@ export default async function BriefingPage() {
 
         {/* 4. ECONOMIC INDICATORS */}
         <section className="mt-8">
-          <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
-            <span className="text-[10px] font-mono text-gray-400">04</span>
+          <h2 className="text-[15px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
+            <span className="text-[13px] font-mono text-gray-400">04</span>
             Economic Indicators
           </h2>
           {marketData.rows.length > 0 ? (
@@ -395,7 +395,7 @@ export default async function BriefingPage() {
               </tbody>
             </table>
           ) : (
-            <p className="text-[10px] text-gray-400 italic">
+            <p className="text-[13px] text-gray-400 italic">
               Economic data unavailable. Database may not be configured.
             </p>
           )}
@@ -403,8 +403,8 @@ export default async function BriefingPage() {
 
         {/* 5. SOURCE FRESHNESS */}
         <section className="mt-8">
-          <h2 className="text-[13px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
-            <span className="text-[10px] font-mono text-gray-400">05</span>
+          <h2 className="text-[15px] font-black uppercase tracking-[0.1em] mb-3 pb-2 border-b-2 border-black flex items-center gap-2">
+            <span className="text-[13px] font-mono text-gray-400">05</span>
             Source Freshness
           </h2>
           {freshnessData.rows.length > 0 ? (
@@ -460,7 +460,7 @@ export default async function BriefingPage() {
               </tbody>
             </table>
           ) : (
-            <p className="text-[10px] text-gray-400 italic">
+            <p className="text-[13px] text-gray-400 italic">
               Freshness data unavailable. Database may not be configured.
             </p>
           )}
@@ -468,15 +468,15 @@ export default async function BriefingPage() {
 
         {/* FOOTER */}
         <footer className="mt-12 pt-6 border-t-2 border-black">
-          <div className="text-[9px] font-mono uppercase tracking-[0.2em] text-gray-500 mb-2">
+          <div className="text-[13px] font-mono uppercase tracking-[0.2em] text-gray-500 mb-2">
             Distribution
           </div>
-          <p className="text-[9px] text-gray-500 leading-relaxed">
+          <p className="text-[13px] text-gray-500 leading-relaxed">
             This briefing is generated automatically by the Thailand Geopolitical Watch V6.3.0 intelligence platform.
             All data points are provenance-linked to their original sources. Signal archive contains {signalCount} records
             across {sourceCount} providers. Materialized views refreshed at {viewRefreshTime}.
           </p>
-          <div className="mt-4 text-center text-[8px] font-mono uppercase tracking-[0.3em] text-gray-400">
+          <div className="mt-4 text-center text-[12px] font-mono uppercase tracking-[0.3em] text-gray-400">
             — End of Briefing —
           </div>
         </footer>

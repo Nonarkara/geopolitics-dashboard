@@ -147,18 +147,18 @@ export default function ConflictTrends() {
           <div className="flex items-center justify-between gap-3">
             <div className="eyebrow">By province</div>
             <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh local trend data">
-              <RefreshCw size={11} className={refreshing ? "animate-spin" : ""} />
+              <RefreshCw size={13} className={refreshing ? "animate-spin" : ""} />
             </button>
           </div>
-            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+            <div className="pt-1 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
               Road safety
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
               Cur / base
             </div>
-            <div className="pt-0.5 text-[13px] font-mono font-bold tabular-nums text-[var(--ink)]">
+            <div className="pt-0.5 text-[15px] font-mono font-bold tabular-nums text-[var(--ink)]">
               {totalCurrent} / {totalBaseline}
             </div>
           </div>
@@ -166,7 +166,7 @@ export default function ConflictTrends() {
         <div className="flex-1">
           <Bar options={options} data={provincialData} />
         </div>
-        <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+        <div className="mt-1 text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
           Source: local incident cache · Refreshes every 5 min
         </div>
       </div>
@@ -175,15 +175,15 @@ export default function ConflictTrends() {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
             <div className="eyebrow">Weather cycle</div>
-            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+            <div className="pt-1 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
               Rain burden
             </div>
           </div>
           <div className="text-right">
-            <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
               Latest
             </div>
-            <div className="pt-0.5 text-[13px] font-mono font-bold tabular-nums text-[#f59e0b]">
+            <div className="pt-0.5 text-[15px] font-mono font-bold tabular-nums text-[#f59e0b]">
               {latestRainfallValue}
             </div>
           </div>
@@ -191,7 +191,7 @@ export default function ConflictTrends() {
         <div className="flex-1">
           <Line options={options} data={rainfallTrend} />
         </div>
-        <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+        <div className="mt-1 text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
           Source: weekly pressure proxy · 5-min polling
         </div>
       </div>

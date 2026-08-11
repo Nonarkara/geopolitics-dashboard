@@ -200,15 +200,15 @@ export default function BorderMarketPulse() {
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div>
           <div className="eyebrow mb-0.5 text-white/90">Market Pulse</div>
-          <div className="text-[10px] font-black uppercase tracking-[0.03em] text-white/90">
+          <div className="text-[13px] font-black uppercase tracking-[0.03em] text-white/90">
             {payload.mode === "historical-empty"
               ? "No archived market snapshot for this playback day"
               : "Cross-border pricing with source links"}
           </div>
         </div>
-        <div className="inline-flex items-center gap-1.5 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35">
+        <div className="inline-flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-[0.14em] text-white/35">
           <FreshnessDot lastUpdated={payload.generatedAt} />
-          <RefreshCw size={10} />
+          <RefreshCw size={12} />
           {formatGeneratedAt(payload.generatedAt)}
         </div>
       </div>
@@ -224,20 +224,20 @@ export default function BorderMarketPulse() {
       ) : (
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         {loadError ? (
-          <div className="border-l-2 border-[var(--accent)] bg-black px-3 py-2 text-[10px] leading-relaxed text-white/55">
-            <div className="mb-1 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">
+          <div className="border-l-2 border-[var(--accent)] bg-black px-3 py-2 text-[13px] leading-relaxed text-white/55">
+            <div className="mb-1 text-[13px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">
               Market snapshot unavailable
             </div>
             {loadError} The panel will retry automatically without substituting demo prices.
           </div>
         ) : null}
         {isHistorical && timeWindow ? (
-          <div className="border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
+          <div className="border border-white/10 bg-black px-2.5 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white/70">
             Playback window: {bangkokDay ? formatBangkokDayLabel(bangkokDay) : ""} ICT
           </div>
         ) : null}
         {payload.mode === "historical-empty" ? (
-          <div className="flex flex-1 items-center justify-center border border-dashed border-white/10 bg-white/[0.04] px-4 text-center text-[10px] font-black uppercase tracking-[0.12em] text-white/35">
+          <div className="flex flex-1 items-center justify-center border border-dashed border-white/10 bg-white/[0.04] px-4 text-center text-[13px] font-black uppercase tracking-[0.12em] text-white/35">
             No archived market data for this Bangkok command day.
           </div>
         ) : null}
@@ -245,20 +245,20 @@ export default function BorderMarketPulse() {
           <div className="relative overflow-hidden border border-white/15 bg-black p-3 text-white">
             <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
+              <div className="text-[13px] font-black uppercase tracking-[0.18em] text-white/45">
                 Primary FX anchor
               </div>
-              <span className="border border-white/15 bg-white/10 px-2 py-1 text-[7px] font-black uppercase tracking-[0.16em] text-white/80">
+              <span className="border border-white/15 bg-white/10 px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/80">
                 {primary.source ?? "FX"}
               </span>
             </div>
             <div className="mt-2 flex items-end justify-between gap-2">
               <div>
-                <div className="text-[10px] font-black uppercase tracking-[0.16em] text-white/45">
+                <div className="text-[13px] font-black uppercase tracking-[0.16em] text-white/45">
                   {primary.label}
                 </div>
                 <div className="mt-1 flex items-end gap-2">
-                  <AnimatedNumber value={typeof primary.value === 'number' ? primary.value : 0} format={(n) => formatIndicatorValue({...primary, value: n})} className="text-[31px] font-black tabular-nums leading-none tracking-[-0.04em]" />
+                  <AnimatedNumber value={typeof primary.value === 'number' ? primary.value : 0} format={(n) => formatIndicatorValue({...primary, value: n})} className="text-[32px] font-black tabular-nums leading-none tracking-[-0.04em]" />
                   {sparklines[primary.label]?.length > 2 && (
                     <Sparkline
                       data={sparklines[primary.label]}
@@ -271,18 +271,18 @@ export default function BorderMarketPulse() {
                 </div>
               </div>
               <div className="text-right">
-                <div className="text-[11px] font-black tabular-nums text-[var(--accent)]">
+                <div className="text-[14px] font-black tabular-nums text-[var(--accent)]">
                   {formatIndicatorChange(primary.change)}
                 </div>
-                <div className="mt-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/35">
+                <div className="mt-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/35">
                   1 USD in baht today
                 </div>
               </div>
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-3 border-t border-white/10 pt-2.5 text-[8px] uppercase tracking-[0.14em] text-white/55">
+            <div className="mt-2.5 grid grid-cols-2 gap-3 border-t border-white/10 pt-2.5 text-[12px] uppercase tracking-[0.14em] text-white/55">
               <div>
                 <div>Sampled</div>
-                <div className="mt-0.5 text-[9px] font-mono font-black tabular-nums leading-tight text-white/75">
+                <div className="mt-0.5 text-[13px] font-mono font-black tabular-nums leading-tight text-white/75">
                   {formatGeneratedAt(payload.generatedAt)} ICT
                 </div>
               </div>
@@ -292,10 +292,10 @@ export default function BorderMarketPulse() {
                   href="https://open.er-api.com/v6/latest/USD"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-0.5 inline-flex items-center gap-0.5 text-[9px] font-black leading-tight text-white/75 hover:text-white transition-colors"
+                  className="mt-0.5 inline-flex items-center gap-0.5 text-[13px] font-black leading-tight text-white/75 hover:text-white transition-colors"
                 >
                   {primary.source ?? "ExchangeRate API"}
-                  <ExternalLink size={7} className="opacity-40" />
+                  <ExternalLink size={10} className="opacity-40" />
                 </a>
               </div>
             </div>
@@ -310,22 +310,22 @@ export default function BorderMarketPulse() {
                 className="border border-white/10 bg-white/[0.04] p-2.5 backdrop-blur-sm"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[8px] font-black uppercase tracking-[0.16em] opacity-40">
+                  <span className="text-[12px] font-black uppercase tracking-[0.16em] opacity-40">
                     {indicator.category ?? "signal"}
                   </span>
                   <span
-                    className={`text-[8px] font-black tabular-nums ${
+                    className={`text-[12px] font-black tabular-nums ${
                       indicator.up ? "text-white/70" : "text-[var(--accent)]"
                     }`}
                   >
                     {formatIndicatorChange(indicator.change)}
                   </span>
                 </div>
-                <div className="mt-1.5 text-[10px] font-black uppercase tracking-tight">
+                <div className="mt-1.5 text-[13px] font-black uppercase tracking-tight">
                   {indicator.label}
                 </div>
                 <div className="flex items-end justify-between gap-1">
-                  <AnimatedNumber value={typeof indicator.value === 'number' ? indicator.value : 0} format={(n) => formatIndicatorValue({...indicator, value: n})} className="text-[16px] font-black tabular-nums leading-none tracking-[-0.03em]" />
+                  <AnimatedNumber value={typeof indicator.value === 'number' ? indicator.value : 0} format={(n) => formatIndicatorValue({...indicator, value: n})} className="text-[18px] font-black tabular-nums leading-none tracking-[-0.03em]" />
                   {sparklines[indicator.label]?.length > 2 && (
                     <Sparkline
                       data={sparklines[indicator.label]}
@@ -335,7 +335,7 @@ export default function BorderMarketPulse() {
                     />
                   )}
                 </div>
-                <div className="mt-1.5 flex items-center gap-1 border-t border-white/[0.06] pt-1 text-[6px] font-mono uppercase tracking-[0.08em] opacity-35">
+                <div className="mt-1.5 flex items-center gap-1 border-t border-white/[0.06] pt-1 text-[11px] font-mono uppercase tracking-[0.08em] opacity-35">
                   <span>{indicator.source ?? "FX API"}</span>
                   <span>·</span>
                   <span className="tabular-nums">{formatGeneratedAt(payload.generatedAt)}</span>
@@ -347,8 +347,8 @@ export default function BorderMarketPulse() {
 
         {payload.mode !== "historical-empty" && payload.data.length > 0 ? (
           <div className="mt-auto border-t border-white/[0.06] pt-2">
-            <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35">
-              <Activity size={10} className="text-[var(--accent)]" />
+            <div className="mb-1.5 inline-flex items-center gap-2 text-[12px] font-mono uppercase tracking-[0.12em] text-white/35">
+              <Activity size={12} className="text-[var(--accent)]" />
               Source stack — verified providers
             </div>
             <div className="flex flex-wrap gap-1">
@@ -364,11 +364,11 @@ export default function BorderMarketPulse() {
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35 transition-colors hover:border-white/40 hover:text-white"
+                  className="inline-flex items-center border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[12px] font-mono uppercase tracking-[0.12em] text-white/35 transition-colors hover:border-white/40 hover:text-white"
                 >
-                  <Coins size={8} className="mr-1 opacity-60" />
+                  <Coins size={11} className="mr-1 opacity-60" />
                   {source.label}
-                  <ExternalLink size={6} className="ml-0.5 opacity-30" />
+                  <ExternalLink size={10} className="ml-0.5 opacity-30" />
                 </a>
               ))}
             </div>

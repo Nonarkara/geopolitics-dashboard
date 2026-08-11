@@ -43,9 +43,9 @@ export default function ProvenanceBadge({
   compact,
 }: ProvenanceBadgeProps) {
   return (
-    <div className="flex items-center gap-1.5 text-[7px] font-mono uppercase tracking-[0.1em] text-[var(--dim)]">
+    <div className="flex items-center gap-1.5 text-[12px] font-mono uppercase tracking-[0.1em] text-[var(--dim)]">
       {provider && provider !== source && (
-        <span className="inline-flex items-center px-1 py-px bg-black/5 text-[6px] font-black tracking-[0.16em]">
+        <span className="inline-flex items-center px-1 py-px bg-black/5 text-[11px] font-black tracking-[0.16em]">
           {provider}
         </span>
       )}
@@ -58,7 +58,7 @@ export default function ProvenanceBadge({
           title={`Source: ${source}`}
         >
           {source}
-          <ExternalLink size={7} className="opacity-50" />
+          <ExternalLink size={10} className="opacity-50" />
         </a>
       ) : (
         <span>{source}</span>

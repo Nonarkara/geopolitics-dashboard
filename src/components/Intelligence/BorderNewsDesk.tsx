@@ -143,7 +143,7 @@ export default function BorderNewsDesk() {
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div className="min-w-0">
           <div className="eyebrow text-white/90 mb-0.5">Border News Wire</div>
-          <div className="text-[10px] font-black uppercase tracking-[0.03em] text-white/90">
+          <div className="text-[13px] font-black uppercase tracking-[0.03em] text-white/90">
             Cited headlines with source links
           </div>
           {sources.length > 0 ? (
@@ -151,7 +151,7 @@ export default function BorderNewsDesk() {
               {sources.map((source) => (
                 <span
                   key={source.id}
-                  className={`inline-flex items-center gap-1 border px-1.5 py-0.5 text-[7px] font-black uppercase tracking-[0.12em] ${sourceChipClass(source.status)}`}
+                  className={`inline-flex items-center gap-1 border px-1.5 py-0.5 text-[12px] font-black uppercase tracking-[0.12em] ${sourceChipClass(source.status)}`}
                   title={source.message ?? source.label}
                 >
                   {source.label}
@@ -161,10 +161,10 @@ export default function BorderNewsDesk() {
             </div>
           ) : null}
         </div>
-        <div className="inline-flex flex-col items-end gap-0.5 text-[8px] font-mono uppercase tracking-[0.14em] text-white/35 shrink-0">
+        <div className="inline-flex flex-col items-end gap-0.5 text-[12px] font-mono uppercase tracking-[0.14em] text-white/35 shrink-0">
           <span className="inline-flex items-center gap-1.5">
             <FreshnessDot lastUpdated={display.generatedAt} />
-            <RefreshCw size={10} />
+            <RefreshCw size={12} />
             {display.generatedAt === EMPTY_LIVE.generatedAt
               ? "—"
               : formatHeaderTime(display.generatedAt)}
@@ -183,7 +183,7 @@ export default function BorderNewsDesk() {
       ) : (
       <div className="min-h-0 flex-1 overflow-y-auto p-2.5 no-scrollbar">
         {isHistorical && timeWindow ? (
-          <div className="mb-2 border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
+          <div className="mb-2 border border-white/10 bg-black px-2.5 py-2 text-[12px] font-black uppercase tracking-[0.18em] text-white/70">
             Playback window: {formatBangkokDayLabel(bangkokDay ?? "")} ICT
           </div>
         ) : null}
@@ -194,7 +194,7 @@ export default function BorderNewsDesk() {
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">
                   <div
-                    className={`text-[7px] font-black px-1.5 py-0.5 uppercase tracking-widest ${
+                    className={`text-[12px] font-black px-1.5 py-0.5 uppercase tracking-widest ${
                       display.news[0].severity === "alert"
                         ? "bg-[var(--accent)] text-white"
                         : display.news[0].severity === "watch"
@@ -205,17 +205,17 @@ export default function BorderNewsDesk() {
                     Lead {display.news[0].tag}
                   </div>
                   {display.news[0].provider && (
-                    <span className="text-[6px] font-black uppercase tracking-[0.16em] px-1 py-px bg-white/[0.06] text-white/35">
+                    <span className="text-[11px] font-black uppercase tracking-[0.16em] px-1 py-px bg-white/[0.06] text-white/35">
                       {display.news[0].provider}
                     </span>
                   )}
                 </div>
-                <time className="text-[7px] font-mono tabular-nums opacity-40">
+                <time className="text-[12px] font-mono tabular-nums opacity-40">
                   {formatDatetime(display.news[0].publishedAt)}
                 </time>
               </div>
 
-              <h3 className="mt-1.5 text-[13px] font-black uppercase leading-[1.15] tracking-tight text-white/90">
+              <h3 className="mt-1.5 text-[15px] font-black uppercase leading-[1.15] tracking-tight text-white/90">
                 {display.news[0].sourceUrl ? (
                   <a
                     href={display.news[0].sourceUrl}
@@ -229,7 +229,7 @@ export default function BorderNewsDesk() {
                   display.news[0].title
                 )}
               </h3>
-              <p className="mt-1.5 text-[9px] leading-[1.45] text-white/50 line-clamp-2">
+              <p className="mt-1.5 text-[13px] leading-[1.45] text-white/50 line-clamp-2">
                 {display.news[0].summary}
               </p>
 
@@ -239,20 +239,20 @@ export default function BorderNewsDesk() {
                     href={display.news[0].sourceUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.14em] text-white/35 hover:text-white/90 transition-colors"
+                    className="inline-flex items-center gap-1 text-[12px] font-black uppercase tracking-[0.14em] text-white/35 hover:text-white/90 transition-colors"
                     title={`Open source: ${display.news[0].source}`}
                   >
-                    <Newspaper size={9} />
+                    <Newspaper size={12} />
                     {display.news[0].source}
-                    <ExternalLink size={7} className="opacity-40" />
+                    <ExternalLink size={10} className="opacity-40" />
                   </a>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.14em] text-white/35">
-                    <Newspaper size={9} />
+                  <span className="inline-flex items-center gap-1 text-[12px] font-black uppercase tracking-[0.14em] text-white/35">
+                    <Newspaper size={12} />
                     {display.news[0].source}
                   </span>
                 )}
-                <span className="text-[7px] font-black uppercase tracking-[0.16em] text-[var(--tech)]">
+                <span className="text-[12px] font-black uppercase tracking-[0.16em] text-[var(--tech)]">
                   cited
                 </span>
               </div>
@@ -267,16 +267,16 @@ export default function BorderNewsDesk() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1">
-                        <span className="text-[7px] font-black uppercase tracking-[0.16em] opacity-40">
+                        <span className="text-[12px] font-black uppercase tracking-[0.16em] opacity-40">
                           {item.tag}
                         </span>
                         {item.provider && (
-                          <span className="text-[6px] font-black uppercase tracking-[0.12em] px-1 py-px bg-white/[0.06] text-white/35">
+                          <span className="text-[11px] font-black uppercase tracking-[0.12em] px-1 py-px bg-white/[0.06] text-white/35">
                             {item.provider}
                           </span>
                         )}
                       </div>
-                      <h3 className="mt-0.5 text-[10px] font-black uppercase leading-[1.2] tracking-tight text-white/90">
+                      <h3 className="mt-0.5 text-[13px] font-black uppercase leading-[1.2] tracking-tight text-white/90">
                         {item.sourceUrl ? (
                           <a
                             href={item.sourceUrl}
@@ -291,7 +291,7 @@ export default function BorderNewsDesk() {
                         )}
                       </h3>
                     </div>
-                    <time className="text-[7px] font-mono tabular-nums opacity-30 shrink-0 whitespace-nowrap">
+                    <time className="text-[12px] font-mono tabular-nums opacity-30 shrink-0 whitespace-nowrap">
                       {formatDatetime(item.publishedAt)}
                     </time>
                   </div>
@@ -301,20 +301,20 @@ export default function BorderNewsDesk() {
                         href={item.sourceUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-0.5 text-[7px] font-black uppercase tracking-[0.14em] text-white/35 hover:text-white/90 transition-colors"
+                        className="inline-flex items-center gap-0.5 text-[12px] font-black uppercase tracking-[0.14em] text-white/35 hover:text-white/90 transition-colors"
                       >
-                        <Newspaper size={8} />
+                        <Newspaper size={11} />
                         {item.source}
-                        <ExternalLink size={6} className="opacity-40" />
+                        <ExternalLink size={10} className="opacity-40" />
                       </a>
                     ) : (
-                      <span className="inline-flex items-center gap-1 text-[7px] font-black uppercase tracking-[0.14em] text-white/35">
-                        <Newspaper size={8} />
+                      <span className="inline-flex items-center gap-1 text-[12px] font-black uppercase tracking-[0.14em] text-white/35">
+                        <Newspaper size={11} />
                         {item.source}
                       </span>
                     )}
                     <span
-                      className={`text-[7px] font-black uppercase tracking-[0.16em] ${
+                      className={`text-[12px] font-black uppercase tracking-[0.16em] ${
                         item.severity === "alert"
                           ? "text-[var(--accent)]"
                           : item.severity === "watch"
@@ -337,7 +337,7 @@ export default function BorderNewsDesk() {
                 : "LIVE UNAVAILABLE"}
             </span>
             {errorCode && display.mode !== "historical-empty" ? (
-              <span className="text-[8px] font-mono uppercase tracking-[0.16em] text-white/40">
+              <span className="text-[12px] font-mono uppercase tracking-[0.16em] text-white/40">
                 {errorCode}
               </span>
             ) : null}
