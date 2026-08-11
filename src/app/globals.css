@@ -378,48 +378,55 @@ h1, h2, h3, h4, h5, h6 {
   --success: var(--ok);
 }
 
-/* ── Command shell readability (v2.0) — 16" laptop floor ── */
-.theme-border {
-  --cmd-micro: 11px;
-  --cmd-body: 13px;
-  --cmd-lead: 16px;
-  --cmd-title: 18px;
+/* ── Command shell readability — 16" laptop floor ──────────────────
+   Backstop only. c294498 keeps every text-[Npx] in source at ≥11px,
+   so this block's only job is to (a) catch any future sub-11px
+   text-[Npx] that ever leaks into source, and (b) lift the few
+   legacy custom CSS classes that hardcode a smaller font-size to
+   the 11px floor.
+
+   Do NOT remap 11+ text upward — that destroys the Championship-
+   Manager density the layout was designed around and overflows
+   containers that were sized for the source sizes. ────────────── */
+.theme-border,
+.theme-phuket {
+  --cmd-floor: 11px;
 }
 
-/* Remap legacy micro type used across Border panels */
+/* Backstop: any text-[Npx] below 11px that ever leaks in is lifted to
+   the floor, not amplified further. Applied on both Border and Phuket. */
 .theme-border :is(
-  .text-\[5\.5px\],
-  .text-\[6px\],
-  .text-\[6\.5px\],
-  .text-\[7px\],
-  .text-\[8px\]
-) {
-  font-size: var(--cmd-micro) !important;
+    .text-\[5\.5px\],
+    .text-\[6px\],
+    .text-\[6\.5px\],
+    .text-\[7px\],
+    .text-\[8px\]
+  ),
+.theme-phuket :is(
+    .text-\[5\.5px\],
+    .text-\[6px\],
+    .text-\[6\.5px\],
+    .text-\[7px\],
+    .text-\[8px\]
+  ) {
+  font-size: var(--cmd-floor) !important;
   letter-spacing: 0.06em;
   line-height: 1.35;
 }
 
-.theme-border :is(.text-\[9px\], .text-\[10px\]) {
-  font-size: var(--cmd-body) !important;
+.theme-border :is(.text-\[9px\], .text-\[10px\]),
+.theme-phuket :is(.text-\[9px\], .text-\[10px\]) {
+  font-size: var(--cmd-floor) !important;
   line-height: 1.4;
 }
 
-.theme-border :is(.text-\[11px\], .text-\[13px\]) {
-  font-size: var(--cmd-lead) !important;
-  line-height: 1.35;
-}
-
-.theme-border .text-\[15px\] {
-  font-size: var(--cmd-title) !important;
-  line-height: 1.25;
-}
-
-.theme-border .rams-label,
-.theme-border .rams-btn {
-  font-size: var(--cmd-micro);
-}
-
-.theme-border .eyebrow {
-  font-size: var(--cmd-micro);
-  letter-spacing: 0.14em;
+/* Custom CSS classes that hardcode sub-11px font-sizes in globals.css.
+   Without this, .stat-pill (10px) and .live-badge (9px) win the cascade
+   over the .theme-border backstop because their base rules come later
+   in the same file. !important lifts them to the floor on both themes. */
+.theme-border .stat-pill,
+.theme-border .live-badge,
+.theme-phuket .stat-pill,
+.theme-phuket .live-badge {
+  font-size: var(--cmd-floor) !important;
 }
