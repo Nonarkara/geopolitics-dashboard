@@ -542,7 +542,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         <Divider />
 
         {/* ── Command Status + Refresh ────────────────── */}
-        <div className="shrink-0 ml-auto flex items-center gap-3">
+        <div className="shrink-0 flex items-center gap-3">
           {/* 3-state feed health dots */}
           <div className="flex flex-col gap-[3px]">
             <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={120_000} nowMs={nowMs} />

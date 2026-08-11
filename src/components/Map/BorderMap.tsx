@@ -820,7 +820,7 @@ export default function BorderMap({
                   className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all w-full ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                 >
                   <span className="text-[9px] font-black tracking-wider leading-none">{bm.label}</span>
-                  <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center">{bm.name}</span>
+                  <span className="text-[5.5px] font-medium opacity-40 uppercase leading-tight text-center break-words hyphens-auto w-full">{bm.name}</span>
                 </button>
               );
               return tip ? <CommandTooltip key={bm.id} content={tip} position="right">{btn}</CommandTooltip> : btn;
