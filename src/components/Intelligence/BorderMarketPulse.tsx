@@ -81,7 +81,11 @@ export default function BorderMarketPulse() {
 
         if (isMarketRadarResponse(nextPayload)) {
           setPayload(nextPayload);
-          setLoadError(null);
+          setLoadError(
+            nextPayload.data.length === 0
+              ? "No live FX or market values were available in the latest source sweep."
+              : null,
+          );
           if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
           return;
         }

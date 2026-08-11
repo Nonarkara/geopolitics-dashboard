@@ -75,7 +75,10 @@ export default function BorderNewsDesk() {
   useEffect(() => {
     const load = async () => {
       try {
-        const response = await fetch(buildUrl("/api/border/news"), { cache: "no-store" });
+        const response = await fetch(buildUrl("/api/border/news"), {
+          cache: "no-store",
+          signal: AbortSignal.timeout(8_000),
+        });
         const payload: unknown = await response.json();
 
         if (!response.ok) {
@@ -100,7 +103,7 @@ export default function BorderNewsDesk() {
         }
 
         if (isNewsResponse(payload)) {
-          setErrorCode(null);
+          setErrorCode(payload.news.length === 0 ? "NO_MATCHED_HEADLINES" : null);
           setNews(payload);
           if (!hasLoadedRef.current) {
             hasLoadedRef.current = true;
@@ -135,7 +138,7 @@ export default function BorderNewsDesk() {
   return (
     <section
       data-testid="border-news-desk"
-      className="flex h-full flex-col overflow-hidden border-l border-white/10 bg-[linear-gradient(180deg,#08090e_0%,#0c0f16_100%)] select-none"
+      className="flex h-full flex-col overflow-hidden border-l border-white/10 bg-[var(--bg-panel)] select-none"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div className="min-w-0">
