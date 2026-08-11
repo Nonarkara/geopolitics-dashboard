@@ -434,7 +434,7 @@ export async function loadBorderCommandBrief(): Promise<BorderCommandBrief> {
       ...osint.sources
         .filter((source) => source.status !== "offline")
         .map((source) => source.label),
-      "Border incident monitor",
+      ...(incidents.length > 0 ? ["Border incident monitor"] : []),
       "Reference market indicators",
       "Critical camera network",
     ],

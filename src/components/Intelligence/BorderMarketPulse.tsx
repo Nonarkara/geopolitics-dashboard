@@ -153,7 +153,7 @@ export default function BorderMarketPulse() {
   return (
     <section
       data-testid="border-market-pulse"
-      className="flex h-full flex-col overflow-hidden border-r border-white/10 bg-[linear-gradient(180deg,#08090e_0%,#0c0f16_100%)] select-none"
+      className="flex h-full flex-col overflow-hidden border-r border-white/10 bg-[var(--bg-panel)] select-none"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div>
@@ -182,7 +182,7 @@ export default function BorderMarketPulse() {
       ) : (
       <div className="flex flex-1 flex-col gap-2.5 p-3">
         {isHistorical && timeWindow ? (
-          <div className="rounded-sm border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
+          <div className="border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
             Playback window: {bangkokDay ? formatBangkokDayLabel(bangkokDay) : ""} ICT
           </div>
         ) : null}
@@ -192,13 +192,13 @@ export default function BorderMarketPulse() {
           </div>
         ) : null}
         {primary ? (
-          <div className="relative overflow-hidden border border-black bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_36%),linear-gradient(135deg,#06090f_0%,#121722_100%)] p-3 text-white">
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[linear-gradient(90deg,#f97316_0%,#facc15_45%,#22c55e_100%)]" />
+          <div className="relative overflow-hidden border border-white/15 bg-black p-3 text-white">
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
             <div className="flex items-center justify-between gap-2">
               <div className="text-[9px] font-black uppercase tracking-[0.18em] text-white/45">
                 Primary FX anchor
               </div>
-              <span className="rounded-full border border-white/15 bg-white/10 px-2 py-1 text-[7px] font-black uppercase tracking-[0.16em] text-white/80">
+              <span className="border border-white/15 bg-white/10 px-2 py-1 text-[7px] font-black uppercase tracking-[0.16em] text-white/80">
                 {primary.source ?? "FX"}
               </span>
             </div>
@@ -214,7 +214,7 @@ export default function BorderMarketPulse() {
                       data={sparklines[primary.label]}
                       width={56}
                       height={20}
-                      color={primary.up ? "#86efac" : "#fda4af"}
+                      color="var(--accent)"
                       fillOpacity={0.15}
                     />
                   )}
@@ -223,7 +223,7 @@ export default function BorderMarketPulse() {
               <div className="text-right">
                 <div
                   className={`text-[11px] font-black tabular-nums ${
-                    primary.up ? "text-[#86efac]" : "text-[#fda4af]"
+                    "text-[var(--accent)]"
                   }`}
                 >
                   {formatIndicatorChange(primary.change)}
@@ -269,7 +269,7 @@ export default function BorderMarketPulse() {
                   </span>
                   <span
                     className={`text-[8px] font-black tabular-nums ${
-                      indicator.up ? "text-[var(--safe)]" : "text-[var(--accent)]"
+                      indicator.up ? "text-white/70" : "text-[var(--accent)]"
                     }`}
                   >
                     {formatIndicatorChange(indicator.change)}
@@ -285,7 +285,7 @@ export default function BorderMarketPulse() {
                       data={sparklines[indicator.label]}
                       width={44}
                       height={14}
-                      color={indicator.up ? "var(--safe)" : "var(--accent)"}
+                      color={indicator.up ? "var(--ink-dim)" : "var(--accent)"}
                     />
                   )}
                 </div>
@@ -302,7 +302,7 @@ export default function BorderMarketPulse() {
         {payload.mode !== "historical-empty" ? (
           <div className="mt-auto border-t border-white/[0.06] pt-2">
             <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35">
-              <Activity size={10} className="text-[var(--tech)]" />
+              <Activity size={10} className="text-[var(--accent)]" />
               Source stack — verified providers
             </div>
             <div className="flex flex-wrap gap-1">
@@ -318,7 +318,7 @@ export default function BorderMarketPulse() {
                   href={source.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-full border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35 hover:border-white/40 hover:text-white transition-colors"
+                  className="inline-flex items-center border border-white/10 bg-white/[0.06] px-2 py-0.5 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35 transition-colors hover:border-white/40 hover:text-white"
                 >
                   <Coins size={8} className="mr-1 opacity-60" />
                   {source.label}

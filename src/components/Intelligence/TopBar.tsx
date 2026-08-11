@@ -9,7 +9,7 @@ import LogoStrip from "../Identity/LogoStrip";
 import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { formatBangkokDayLabel } from "../../lib/time-window";
-import type { BorderCommandBrief } from "../../types/dashboard";
+import type { BorderCommandBrief, DashboardStatusPayload } from "../../types/dashboard";
 
 // ── WORLD CLOCKS ─────────────────────────────────────────────────────────────
 // Use IANA timezone IDs so DST is handled automatically.
@@ -73,16 +73,17 @@ const GROUP_LABELS: Record<string, string> = {
 function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
   switch (posture) {
     case "priority":
-      return "border-[var(--accent)] bg-[rgba(255,59,48,0.08)] text-[var(--accent)]";
+      return "border-[var(--accent)] bg-black text-[var(--accent)]";
     case "watch":
-      return "border-[var(--hazard)] bg-[rgba(245,158,11,0.08)] text-[var(--hazard)]";
+      return "border-[var(--accent)] bg-black text-[var(--accent)]";
     default:
-      return "border-[var(--safe)] bg-[rgba(34,197,94,0.08)] text-[var(--safe)]";
+      return "border-white/20 bg-black text-white/65";
   }
 }
 
 interface TopBarProps {
   brief: BorderCommandBrief | null;
+  status: DashboardStatusPayload | null;
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
   onOpenDataExplorer?: () => void;
@@ -90,6 +91,7 @@ interface TopBarProps {
 
 export default function TopBar({
   brief,
+  status,
   onOpenManual,
   onOpenArchitecture,
   onOpenDataExplorer,
@@ -105,20 +107,23 @@ export default function TopBar({
     return () => clearInterval(timer);
   }, []);
 
+  const runtimePosture = status?.posture ?? (status?.status === "ok" ? "live" : "fallback");
+  const databasePosture = status?.services.database ?? "checking";
+
   return (
-    <header className="flex h-20 w-full items-stretch justify-between border-b border-white/10 bg-[radial-gradient(circle_at_top_left,rgba(255,59,48,0.12),transparent_24%),linear-gradient(180deg,#08090e_0%,#090b11_100%)] select-none">
-      <div className="flex items-center gap-4 border-r border-white/10 px-5">
-        <div className="flex h-11 w-11 items-center justify-center border border-[rgba(255,59,48,0.22)] bg-[rgba(255,59,48,0.08)]">
+    <header className="flex h-16 w-full items-stretch justify-between overflow-hidden border-b border-white/10 bg-[#090a0e] select-none sm:h-[72px]">
+      <div className="flex shrink-0 items-center gap-3 border-r border-white/10 px-3 sm:px-4">
+        <div className="flex h-9 w-9 items-center justify-center border border-[var(--accent)] bg-black sm:h-10 sm:w-10">
           <Shield size={18} className="text-[var(--accent)]" strokeWidth={3} />
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
-            <div className="text-[13px] font-black tracking-[-0.02em] leading-none text-white/92">
+            <div className="max-w-[170px] text-[12px] font-black leading-tight tracking-[-0.02em] text-white/92 sm:max-w-none sm:text-[13px]">
               THAILAND GEOPOLITICAL WATCH
             </div>
-            <DashboardVersionBadge className="border-white/15 text-white/60" />
+            <DashboardVersionBadge className="hidden border-white/15 text-white/60 sm:inline-flex" />
           </div>
-          <div className="mt-1 flex items-center gap-2 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
+          <div className="mt-1 hidden items-center gap-2 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40 lg:flex">
             <span>Myanmar</span>
             <span className="h-[3px] w-[3px] bg-white/20" />
             <span>Cambodia</span>
@@ -126,13 +131,20 @@ export default function TopBar({
             <span>Southern theatre</span>
           </div>
         </div>
-        <div className="hidden 2xl:block h-10 w-px bg-white/10 shrink-0" />
-        <LogoStrip />
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[1750px]:block" />
+        <LogoStrip className="hidden min-[1750px]:flex" />
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-3 px-5">
+      <div className="hidden min-w-0 flex-1 items-center gap-3 px-4 md:flex">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center border px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] ${
+              runtimePosture === "live"
+                ? "border-white/20 text-white/75"
+                : "border-[var(--accent)] text-[var(--accent)]"
+            }`}>
+              {runtimePosture === "live" ? "Live sources" : `${runtimePosture} data`}
+            </span>
             <span
               className={`inline-flex items-center border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${
                 brief ? postureClasses(brief.overallPosture) : "border-white/15 text-white/40"
@@ -147,7 +159,7 @@ export default function TopBar({
               {isHistorical ? "Archive playback" : "Live command"}
             </span>
             {isHistorical && timeWindow ? (
-              <span className="inline-flex items-center border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+              <span className="inline-flex items-center border border-[var(--accent)] bg-black px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
                 Playback {formatBangkokDayLabel(bangkokDay ?? "")}
               </span>
             ) : null}
@@ -155,13 +167,13 @@ export default function TopBar({
           <div className="mt-2 text-[14px] font-black uppercase tracking-tight text-white/90 truncate">
             {brief?.headline ?? "Building the tri-border command picture"}
           </div>
-          <div className="mt-1 text-[10px] leading-tight text-white/50 line-clamp-2">
+          <div className="mt-1 hidden text-[10px] leading-tight text-white/50 xl:line-clamp-1">
             {brief?.summary ??
               "Synchronizing incidents, market signals, and border cameras for the executive view."}
           </div>
         </div>
 
-        <div className="hidden min-w-0 flex-1 gap-[1px] bg-white/5 lg:grid lg:grid-cols-3">
+        <div className="hidden min-w-0 flex-1 gap-[1px] bg-white/5 2xl:grid 2xl:grid-cols-3">
           {(brief?.areas ?? []).slice(0, 3).map((area) => {
             const postureColor =
               area.posture === "priority"
@@ -195,9 +207,9 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-l border-white/10 px-3 overflow-x-auto scrollbar-none">
+      <div className="hidden items-center gap-2 border-l border-white/10 px-3 xl:flex">
         {/* World Clocks — grouped with subtle dividers between regions */}
-        <div className="flex items-center gap-0 shrink-0">
+        <div className="hidden items-center gap-0 shrink-0 min-[1750px]:flex">
           {COUNTRY_CLOCKS.map((clock, idx) => {
             const prevGroup = idx > 0 ? COUNTRY_CLOCKS[idx - 1].group : null;
             const showDivider = prevGroup && prevGroup !== clock.group;
@@ -231,7 +243,7 @@ export default function TopBar({
           })}
         </div>
 
-        <div className="h-10 w-px bg-white/10 shrink-0" />
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[1750px]:block" />
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
@@ -273,6 +285,17 @@ export default function TopBar({
             <Printer size={9} strokeWidth={3} />
             PDF
           </a>
+        </div>
+      </div>
+
+      <div className="flex min-w-[92px] flex-col items-end justify-center px-3 md:hidden">
+        <div className={`text-[9px] font-black uppercase tracking-[0.16em] ${
+          runtimePosture === "live" ? "text-white/70" : "text-[var(--accent)]"
+        }`}>
+          {runtimePosture}
+        </div>
+        <div className="mt-1 max-w-[112px] truncate text-[8px] uppercase tracking-[0.1em] text-white/35">
+          {databasePosture}
         </div>
       </div>
     </header>

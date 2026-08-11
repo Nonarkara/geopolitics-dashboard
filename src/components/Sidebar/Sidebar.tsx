@@ -33,9 +33,9 @@ import {
 function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
   switch (posture) {
     case "priority":
-      return "border-[var(--accent)] bg-[rgba(255,59,48,0.06)]";
+      return "border-[var(--accent)] bg-black";
     case "watch":
-      return "border-[var(--hazard)] bg-[rgba(245,158,11,0.06)]";
+      return "border-[var(--accent)] bg-black";
     default:
       return "border-white/10 bg-white/[0.03]";
   }
@@ -197,7 +197,7 @@ export default function Sidebar({ brief }: SidebarProps) {
   }, [buildUrl]);
 
   return (
-    <aside className="flex h-full flex-col select-none overflow-hidden bg-[linear-gradient(180deg,#0a0c12_0%,#0e1118_100%)]">
+    <aside className="flex h-full flex-col select-none overflow-hidden bg-[var(--bg-panel)]">
       <div className="border-b-[1.5px] border-white/10 p-4 shrink-0">
         <div className="flex items-center justify-between gap-3">
           <div>

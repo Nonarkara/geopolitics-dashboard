@@ -7,6 +7,7 @@ import {
   resolveBorderAreaLabel,
 } from "./border-regions";
 import { loadThailandIncidents } from "./thailand-monitor";
+import { fallbackIncidents } from "./mock-data";
 import type {
   BorderHumanitarianSnapshot,
   BorderNarrativeSignal,
@@ -605,6 +606,14 @@ function buildIncidentNewsItem(incident: IncidentFeature): NewsItem {
 export async function loadBorderIncidents(): Promise<IncidentFeature[]> {
   try {
     const incidents = await loadThailandIncidents();
+
+    // Packaged rows are useful in static demos, but must never drive a live
+    // command score. They are re-dated on every process start and would look
+    // indistinguishable from current ACLED observations in production.
+    if (incidents === fallbackIncidents) {
+      return [];
+    }
+
     const borderIncidents = incidents.filter((incident) =>
       BORDER_AREAS.some((area) => incidentMatchesBorderArea(area, incident)),
     );

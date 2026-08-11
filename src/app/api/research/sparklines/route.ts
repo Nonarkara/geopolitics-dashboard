@@ -52,6 +52,18 @@ export async function GET(request: NextRequest) {
     days = parseSparklineDays(searchParams.get("days"));
 
     if (!sparklineRouteDeps.isDatabaseConfigured()) {
+      if (playback.mode === "live") {
+        return noStoreJson(
+          { values: [], metric, days, mode: "unavailable" as const },
+          {
+            headers: {
+              "x-request-id": requestId,
+              "x-data-source": "unavailable",
+            },
+          },
+        );
+      }
+
       throw new PlaybackApiError(
         "ARCHIVE_UNAVAILABLE",
         "Sparkline storage is not configured for playback queries.",

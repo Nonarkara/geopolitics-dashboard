@@ -294,7 +294,7 @@ test("markets route fails closed when neither live nor stored snapshots exist", 
   assert.equal("data" in body, false);
 });
 
-test("sparklines route rejects unsupported metrics and archive unavailability truthfully", async (t) => {
+test("sparklines degrade quietly in live mode but keep playback truthful", async (t) => {
   let response = await getSparklines(
     new NextRequest("http://localhost/api/research/sparklines?metric=foo:bar"),
   );
@@ -309,6 +309,16 @@ test("sparklines route rejects unsupported metrics and archive unavailability tr
 
   response = await getSparklines(
     new NextRequest("http://localhost/api/research/sparklines?metric=USD/THB"),
+  );
+  body = await response.json();
+  assert.equal(response.status, 200);
+  assert.deepEqual(body.values, []);
+  assert.equal(body.mode, "unavailable");
+
+  response = await getSparklines(
+    new NextRequest(
+      `http://localhost/api/research/sparklines?metric=USD/THB&from=${encodeURIComponent(canonicalWindow.from)}&to=${encodeURIComponent(canonicalWindow.to)}`,
+    ),
   );
   body = await response.json();
   assert.equal(response.status, 503);

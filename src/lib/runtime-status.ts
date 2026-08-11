@@ -440,6 +440,13 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
   );
   const posture =
     hasCoreIssue ? "fallback" : hasOptionalIssue || hasCronIssue ? "hybrid" : "live";
+  const databaseOperational =
+    isDatabaseConfigured &&
+    datasets.some((dataset) =>
+      dataset.state === "live" ||
+      dataset.state === "stale" ||
+      dataset.state === "on_demand",
+    );
 
   return {
     status:
@@ -454,7 +461,11 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
     posture,
     services: {
       app_runtime: process.env.APP_RUNTIME?.trim() || (process.env.VERCEL === "1" ? "vercel" : "local"),
-      database: isDatabaseConfigured ? "supabase-postgres" : "fallback",
+      database: databaseOperational
+        ? "supabase-postgres"
+        : isDatabaseConfigured
+          ? "unavailable"
+          : "not configured",
       scheduler: process.env.CRON_SECRET?.trim()
         ? hasCronIssue
           ? "degraded"
@@ -467,7 +478,7 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
       fallback_posture: posture,
       conflict_refresh: hasConfiguredAcledRefresh() ? "configured" : "disabled",
       thermal_refresh: hasConfiguredFirmsRefresh() ? "configured" : "disabled",
-      intelligence_cache: isDatabaseConfigured ? "hybrid" : "memory",
+      intelligence_cache: databaseOperational ? "hybrid" : "memory",
       // determine ai_summary by probing local Ollama first, then OpenAI
       ai_summary: await (async () => {
         const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 2500);

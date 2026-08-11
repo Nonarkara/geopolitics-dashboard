@@ -32,8 +32,8 @@ function normAqi(value: number | null) {
 
 function riskColor(level: string) {
   if (level === "critical" || level === "high") return "var(--accent)";
-  if (level === "moderate") return "var(--hazard, #f59e0b)";
-  return "var(--safe, #22c55e)";
+  if (level === "moderate") return "var(--ink)";
+  return "var(--ink-dim)";
 }
 
 export default function BorderInsightLab({
@@ -43,12 +43,16 @@ export default function BorderInsightLab({
 }) {
   const [payload, setPayload] = useState<BorderInsightsPayload | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     let active = true;
     const load = async () => {
       try {
-        const response = await fetch("/api/border/insights", { cache: "no-store" });
+        const response = await fetch("/api/border/insights", {
+          cache: "no-store",
+          signal: AbortSignal.timeout(8_000),
+        });
         const json = (await response.json()) as {
           success?: boolean;
           data?: BorderInsightsPayload;
@@ -61,8 +65,12 @@ export default function BorderInsightLab({
         }
         setError(null);
         setPayload(json.data);
-      } catch {
-        if (active) setError("FETCH_FAILED");
+      } catch (caughtError) {
+        if (active) {
+          setError(caughtError instanceof DOMException && caughtError.name === "TimeoutError"
+            ? "UPSTREAM_TIMEOUT"
+            : "FETCH_FAILED");
+        }
       }
     };
     void load();
@@ -71,7 +79,7 @@ export default function BorderInsightLab({
       active = false;
       clearInterval(id);
     };
-  }, []);
+  }, [reloadKey]);
 
   const spider = useMemo(() => {
     if (!payload) return null;
@@ -91,7 +99,7 @@ export default function BorderInsightLab({
     };
 
     const labels = ["GDP growth", "Urban %", "Forest %", "Air clarity", "Calm score"];
-    const colors = ["#f5f5f5", "#e24a3f", "#f59e0b", "#5a7a4a", "#7dd3fc"];
+    const colors = ["#f5f5f5", "#f59e0b", "#a0a0a0", "#6a6a6a", "#d6d3d1"];
 
     return {
       labels,
@@ -113,7 +121,7 @@ export default function BorderInsightLab({
   }, [payload, brief]);
 
   return (
-    <section className="flex h-full flex-col overflow-hidden bg-[linear-gradient(180deg,#08090e_0%,#0c0f16_100%)] select-none">
+    <section className="flex h-full flex-col overflow-hidden bg-[var(--bg-panel)] select-none">
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2 shrink-0">
         <div>
           <div className="eyebrow text-white/90">Border Insight Lab</div>
@@ -138,13 +146,34 @@ export default function BorderInsightLab({
       </div>
 
       {!payload ? (
-        <div className="flex flex-1 items-center justify-center text-[11px] font-mono uppercase tracking-[0.16em] text-white/40">
-          {error ? `LIVE UNAVAILABLE · ${error}` : "Loading educational feeds"}
+        <div className="grid flex-1 place-items-center px-6">
+          <div className="max-w-xl border-l-2 border-[var(--accent)] pl-4">
+            <div className="eyebrow text-white/85">
+              {error ? "Insight feeds delayed" : "Checking three public sources"}
+            </div>
+            <p className="mt-2 text-[12px] leading-relaxed text-white/48">
+              {error
+                ? "The command map and cited news remain available. Air, river, and structural comparison data did not answer inside the eight-second display budget."
+                : "Open-Meteo air, GloFAS river discharge, and World Bank indicators are loading in parallel."}
+            </p>
+            <div className="mt-3 flex items-center gap-3 text-[9px] font-mono uppercase tracking-[0.12em] text-white/35">
+              <span>Air</span><span>River</span><span>World Bank</span>
+              {error ? (
+                <button
+                  type="button"
+                  onClick={() => setReloadKey((value) => value + 1)}
+                  className="ml-auto h-9 border border-[var(--accent)] px-3 text-[var(--accent)]"
+                >
+                  Retry
+                </button>
+              ) : null}
+            </div>
+          </div>
         </div>
       ) : (
-        <div className="min-h-0 flex-1 grid grid-cols-12 gap-[1.5px] bg-[var(--line)] overflow-hidden">
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-[1.5px] overflow-y-auto bg-[var(--line)] xl:grid-cols-12 xl:overflow-hidden">
           {/* AIR */}
-          <div className="col-span-4 bg-[var(--bg-panel)] p-3 overflow-y-auto no-scrollbar">
+          <div className="col-span-1 bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:overflow-y-auto">
             <div className="eyebrow text-white/80 mb-2">Air & CO₂ (CAMS model)</div>
             <p className="text-[11px] leading-snug text-white/45 mb-3">
               Border crossings vs Bangkok. CO₂ is near-surface model ppm — educational, not a satellite plume map.
@@ -181,7 +210,7 @@ export default function BorderInsightLab({
           </div>
 
           {/* MEKONG */}
-          <div className="col-span-4 bg-[var(--bg-panel)] p-3 overflow-y-auto no-scrollbar">
+          <div className="col-span-1 bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:overflow-y-auto">
             <div className="eyebrow text-white/80 mb-2">Mekong pulse (GloFAS)</div>
             <p className="text-[11px] leading-snug text-white/45 mb-3">
               Thai-bank gauges. Upstream dam ops in China/Laos reshape the flood pulse — MRC holds the official stations; this is a free simulation for teaching the pressure.
@@ -238,7 +267,7 @@ export default function BorderInsightLab({
           </div>
 
           {/* SPIDER */}
-          <div className="col-span-4 bg-[var(--bg-panel)] p-3 overflow-hidden flex flex-col">
+          <div className="col-span-1 flex min-h-[360px] flex-col bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:min-h-0 xl:overflow-hidden">
             <div className="eyebrow text-white/80 mb-2">Compare · spider</div>
             <p className="text-[11px] leading-snug text-white/45 mb-2">
               GDP growth, urbanisation, forest cover, air clarity, and calm score (inverse frontier pressure). China sits upstream on water politics; Myanmar leads conflict pressure.

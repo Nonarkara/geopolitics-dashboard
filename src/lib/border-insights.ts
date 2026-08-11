@@ -110,6 +110,32 @@ const COUNTRIES = [
   { iso3: "CHN", label: "China" },
 ] as const;
 
+const INSIGHT_SOURCE_BUDGET_MS = 5_000;
+const INSIGHT_CACHE_TTL_MS = 15 * 60 * 1000;
+
+let insightCache: { payload: BorderInsightsPayload; cachedAt: number } | null = null;
+
+export async function settleWithin<T>(
+  work: Promise<T>,
+  fallback: T,
+  timeoutMs = INSIGHT_SOURCE_BUDGET_MS,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  try {
+    return await Promise.race([
+      work,
+      new Promise<T>((resolve) => {
+        timer = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } catch {
+    return fallback;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 type AirCurrent = {
   time?: string;
   us_aqi?: number;
@@ -298,13 +324,27 @@ async function fetchWorldBankIndicator(
 }
 
 export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
+  if (insightCache && Date.now() - insightCache.cachedAt < INSIGHT_CACHE_TTL_MS) {
+    return insightCache.payload;
+  }
+
   const generatedAt = new Date().toISOString();
+  const emptyRivers = MEKONG_SITES.map((site) => ({
+    ...site,
+    currentDischarge: 0,
+    forecastPeak: 0,
+    forecastPeakDate: "",
+    trend: "stable" as const,
+    riskLevel: "low" as const,
+    series: [],
+  }));
+  const emptyIndicator = new Map<string, { value: number; year: string }>();
   const [air, rivers, gdp, urban, forest] = await Promise.all([
-    fetchAirBatch(),
-    Promise.all(MEKONG_SITES.map(fetchRiver)),
-    fetchWorldBankIndicator("NY.GDP.MKTP.KD.ZG"),
-    fetchWorldBankIndicator("SP.URB.TOTL.IN.ZS"),
-    fetchWorldBankIndicator("AG.LND.FRST.ZS"),
+    settleWithin(fetchAirBatch(), AIR_SITES.map(emptyAir)),
+    settleWithin(Promise.all(MEKONG_SITES.map(fetchRiver)), emptyRivers),
+    settleWithin(fetchWorldBankIndicator("NY.GDP.MKTP.KD.ZG"), emptyIndicator),
+    settleWithin(fetchWorldBankIndicator("SP.URB.TOTL.IN.ZS"), emptyIndicator),
+    settleWithin(fetchWorldBankIndicator("AG.LND.FRST.ZS"), emptyIndicator),
   ]);
 
   const countries: InsightCountryAxis[] = COUNTRIES.map((country) => {
@@ -325,7 +365,7 @@ export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
   const riverLive = rivers.some((point) => point.currentDischarge > 0);
   const econLive = countries.some((country) => country.gdpGrowthPct !== null);
 
-  return {
+  const payload: BorderInsightsPayload = {
     generatedAt,
     air,
     rivers,
@@ -357,4 +397,18 @@ export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
       },
     ],
   };
+
+  if (airLive || riverLive || econLive) {
+    insightCache = { payload, cachedAt: Date.now() };
+  } else if (insightCache) {
+    return {
+      ...insightCache.payload,
+      sources: insightCache.payload.sources.map((source) => ({
+        ...source,
+        status: "stale" as const,
+      })),
+    };
+  }
+
+  return payload;
 }

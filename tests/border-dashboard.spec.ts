@@ -519,6 +519,7 @@ function isHistoricalUrl(rawUrl: string) {
 
 async function mockBorderDashboard(page: Page) {
   const sparklineRequests: string[] = [];
+  await page.clock.setFixedTime(new Date("2026-03-15T09:00:00.000Z"));
 
   await page.route("**/api/border-command/brief**", async (route) => {
     await route.fulfill({
@@ -766,7 +767,11 @@ async function mockBorderDashboard(page: Page) {
         status: "ok",
         version: "test-build",
         signal_strength: 92,
+        checkedAt: "2026-03-15T09:00:00.000Z",
+        posture: "live",
+        datasets: [],
         services: {
+          database: "supabase-postgres",
           markets: "live",
           border_command: "live",
           satellite_layers: "live",
@@ -873,6 +878,32 @@ test("opens the top-bar command modals from the border dashboard", async ({
   await page.getByRole("button", { name: "Docs" }).click();
   await expect(page.getByText("Operator Manual", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Close dashboard manual" }).click();
+});
+
+test("gives phone users a map-first shell with reachable intelligence panels", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mockBorderDashboard(page);
+
+  await page.goto("/");
+
+  const title = page.getByText("THAILAND GEOPOLITICAL WATCH");
+  await expect(title).toBeVisible();
+  const titleBox = await title.boundingBox();
+  expect(titleBox?.x ?? 400).toBeLessThan(390);
+  expect((titleBox?.x ?? 0) + (titleBox?.width ?? 400)).toBeLessThanOrEqual(390);
+
+  await page.getByRole("button", { name: "Open mobile intelligence panels" }).click();
+  const commandPanels = page.getByRole("dialog", { name: "Command Panels" });
+  await expect(commandPanels).toBeVisible();
+  await expect(commandPanels.getByRole("button", { name: "brief" })).toHaveAttribute("aria-pressed", "true");
+
+  await commandPanels.getByRole("button", { name: "news" }).click();
+  await expect(commandPanels.getByText("Border News Wire", { exact: true })).toBeVisible();
+
+  await commandPanels.getByRole("button", { name: "history" }).click();
+  await expect(commandPanels.getByTestId("time-machine-day-2026-03-14")).toBeVisible();
 });
 
 test("replays archived command surfaces while keeping live-only panels labeled", async ({

@@ -90,7 +90,7 @@ function CriticalCameraCard({ camera, nowMs }: { camera: PublicCamera; nowMs: nu
   return (
     <article
       data-testid={`critical-camera-card-${camera.id}`}
-      className="flex h-full w-[200px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#0b1018_0%,#121925_100%)] text-white"
+      className="flex h-full w-[200px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[var(--bg-panel)] text-white"
     >
       <div className="relative h-[110px] overflow-hidden bg-black">
         {camera.snapshotUrl && !imageFailed ? (
@@ -115,7 +115,7 @@ function CriticalCameraCard({ camera, nowMs }: { camera: PublicCamera; nowMs: nu
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(4,8,15,0.18)_0%,rgba(4,8,15,0.1)_35%,rgba(4,8,15,0.88)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-black/45" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 px-2 py-2">
           <span className={`${statusClass(resolvedStatus)} text-[7px]`}>
             {resolvedStatus}
@@ -154,7 +154,7 @@ function CriticalCameraCard({ camera, nowMs }: { camera: PublicCamera; nowMs: nu
             href={camera.sourcePageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-white/82 transition-colors hover:text-[#fda4af]"
+            className="inline-flex items-center gap-1 text-white/82 transition-colors hover:text-[var(--accent)]"
             aria-label={`Open source feed for ${camera.label}`}
           >
             <ExternalLink size={11} />
@@ -180,7 +180,7 @@ export default function CriticalCameraRail() {
   return (
     <section
       data-testid="critical-camera-rail"
-      className="flex h-full flex-col overflow-hidden bg-[linear-gradient(180deg,#05070b_0%,#0b1017_100%)] text-white select-none"
+      className="flex h-full flex-col overflow-hidden bg-[var(--bg-panel)] text-white select-none"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
         <div>
@@ -189,7 +189,7 @@ export default function CriticalCameraRail() {
             Border chokepoints, scout coverage, and live visual confirmation
           </div>
           {isHistorical && timeWindow ? (
-            <div className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[#fda4af]">
+            <div className="mt-1 text-[8px] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
               Live reference only during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}
             </div>
           ) : null}
@@ -211,11 +211,11 @@ export default function CriticalCameraRail() {
 
       <div className="flex items-center gap-4 border-b border-white/10 px-3 py-2 text-[8px] font-mono uppercase tracking-[0.14em] text-white/42">
         <div className="inline-flex items-center gap-1.5">
-          <Camera size={11} className="text-[#f97316]" />
+          <Camera size={11} className="text-[var(--accent)]" />
           {cameras.length || 0} feeds
         </div>
         <div className="inline-flex items-center gap-1.5">
-          <MapPin size={11} className="text-[#67e8f9]" />
+          <MapPin size={11} className="text-white/60" />
           {verifiedCount} verified / {candidateCount} scout
         </div>
       </div>

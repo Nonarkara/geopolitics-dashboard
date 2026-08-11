@@ -28,14 +28,14 @@
   --ink-muted: #6a6a6a;
   --ink-faint: #3a3a3a;
 
-  /* Single accent — alert red, used sparingly */
-  --accent: #e24a3f;
-  --accent-dim: #8a2e26;
+  /* Single accent — command amber, used only for attention and action */
+  --accent: #f59e0b;
+  --accent-dim: #8a5a08;
 
-  /* Semantic, muted */
-  --ok: #5a7a4a;
-  --warn: #a07a2a;
-  --crit: #e24a3f;
+  /* Semantic states stay neutral unless operator attention is required */
+  --ok: #a0a0a0;
+  --warn: #f59e0b;
+  --crit: #f59e0b;
 }
 
 /* ── Reset ────────────────────────────────────────────────── */

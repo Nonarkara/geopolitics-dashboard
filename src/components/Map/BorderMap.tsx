@@ -58,7 +58,6 @@ try {
   luma.registerAdapters([webgl2Adapter]);
 } catch (err) {
   if (typeof window !== "undefined") {
-    // eslint-disable-next-line no-console
     console.warn("[BorderMap] luma.registerAdapters failed", err);
   }
 }
@@ -384,10 +383,8 @@ function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: stri
 
 export default function BorderMap({
   onProvinceSelect,
-  flyToTheater,
 }: {
   onProvinceSelect?: (p: ProvinceSelection) => void;
-  flyToTheater?: string | null;
 }) {
   const { isHistorical, timeWindow } = useTimeWindow();
   const [viewState, setViewState] = useState(() =>
@@ -406,6 +403,7 @@ export default function BorderMap({
   const [showGrid, setShowGrid] = useState(false);
   const [showVessels, setShowVessels] = useState(false);
   const [showSignalPulse, setShowSignalPulse] = useState(false);
+  const [areControlsOpen, setAreControlsOpen] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
   const [activeOverlayIds, setActiveOverlayIds] = useState<Set<string>>(
@@ -541,13 +539,6 @@ export default function BorderMap({
     setSelectedOperationalNodeId(null);
     jumpToView(theater.focusView as MapViewState);
   }, [jumpToView, operationsMap]);
-
-  // Handle external fly-to-theater requests from TheaterPanel clicks
-  useEffect(() => {
-    if (flyToTheater) {
-      focusTheater(flyToTheater as "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south");
-    }
-  }, [flyToTheater, focusTheater]);
 
   const focusNode = useCallback((nodeId: string) => {
     const node = operationsMap?.nodes.find((item) => item.id === nodeId);
@@ -691,17 +682,9 @@ export default function BorderMap({
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-black select-none">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_24%_22%,rgba(255,59,48,0.16),transparent_22%),radial-gradient(circle_at_78%_74%,rgba(20,184,166,0.12),transparent_26%),radial-gradient(circle_at_58%_40%,rgba(245,158,11,0.08),transparent_20%),linear-gradient(180deg,#08111d_0%,#04070c_58%,#010203_100%)]" />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.16]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)",
-          backgroundSize: "72px 72px",
-        }}
-      />
+      <div className="pointer-events-none absolute inset-0 bg-[#05070a]" />
       <div className="pointer-events-none absolute inset-0 z-10">
-        <div className="absolute right-6 top-6 max-w-[260px] border border-white/15 bg-black/55 px-3 py-2 text-[9px] leading-relaxed text-white/70 backdrop-blur-sm">
+        <div className="absolute right-6 top-6 hidden max-w-[260px] border border-white/15 bg-black px-3 py-2 text-[9px] leading-relaxed text-white/70 xl:block">
           <div className="text-[8px] font-black uppercase tracking-[0.22em] text-white/45">
             Tri-Border Operations
           </div>
@@ -736,8 +719,17 @@ export default function BorderMap({
         style={{ position: "absolute", inset: "0" }}
       />
 
+      <button
+        type="button"
+        onClick={() => setAreControlsOpen(true)}
+        aria-label="Open map controls"
+        className="absolute left-3 top-3 z-40 h-11 border border-white/30 bg-black px-3 text-[10px] font-black uppercase tracking-[0.16em] text-white xl:hidden"
+      >
+        Map · {activeBase.label}
+      </button>
+
       {/* ── Layer Control Panel ─────────────────────────────── */}
-      <div className="absolute top-6 left-6 z-40 flex flex-col gap-1.5 w-72">
+      <div className={`absolute left-3 top-3 z-50 max-h-[calc(100%-24px)] w-[calc(100%-24px)] max-w-72 flex-col gap-1.5 overflow-y-auto xl:left-6 xl:top-6 xl:flex xl:max-h-none xl:w-72 xl:overflow-visible ${areControlsOpen ? "flex" : "hidden"}`}>
 
         <div className="bg-white border border-black overflow-hidden">
           <div className="px-3 py-2 bg-black text-white flex items-center gap-2">
@@ -746,6 +738,14 @@ export default function BorderMap({
             <span className="text-[8px] font-mono opacity-40 ml-auto">
               {activeTheater?.counterpart ?? "THA+"}
             </span>
+            <button
+              type="button"
+              onClick={() => setAreControlsOpen(false)}
+              aria-label="Close map controls"
+              className="ml-1 flex h-8 w-8 items-center justify-center border border-white/20 text-lg xl:hidden"
+            >
+              &times;
+            </button>
           </div>
           <div className="grid grid-cols-2 gap-[1px] bg-black/10 p-[1px]">
             <button
@@ -961,7 +961,7 @@ export default function BorderMap({
       </div>
 
       {/* ── Operational Intelligence HUD ── */}
-      <div className="absolute bottom-6 left-6 z-40 space-y-2 pointer-events-none">
+      <div className="pointer-events-none absolute bottom-6 left-6 z-40 hidden space-y-2 xl:block">
         <div className="flex items-center gap-4 bg-black text-white px-4 py-2 border border-white/20">
           <Zap size={12} className="text-[var(--accent)] animate-pulse" />
           <span className="text-[11px] font-black uppercase tracking-[0.2em]">Operational Pulse</span>
@@ -985,7 +985,20 @@ export default function BorderMap({
         </div>
       </div>
 
-      <div className="absolute bottom-6 right-6 z-40 flex flex-col gap-1">
+      <div className="pointer-events-none absolute bottom-3 left-3 right-14 z-40 grid h-10 grid-cols-3 border border-white/20 bg-black text-white xl:hidden">
+        {[
+          { label: "Signals", value: incidents.length },
+          { label: "Road", value: trafficIncidents.length },
+          { label: "Thermal", value: fires.length },
+        ].map((metric) => (
+          <div key={metric.label} className="flex items-center justify-between border-r border-white/10 px-2 last:border-r-0">
+            <span className="text-[8px] font-black uppercase tracking-[0.08em] text-white/45">{metric.label}</span>
+            <span className="text-[12px] font-black tabular-nums">{metric.value}</span>
+          </div>
+        ))}
+      </div>
+
+      <div className="absolute bottom-3 right-3 z-40 flex flex-col gap-1 xl:bottom-6 xl:right-6">
         <button onClick={focusNationalFrame} className="h-8 w-8 bg-white border border-black flex items-center justify-center hover:bg-black hover:text-white transition-all">
           <Compass size={14} strokeWidth={3} />
         </button>

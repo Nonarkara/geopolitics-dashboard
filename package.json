@@ -14,7 +14,7 @@
     "build:worker": "opennextjs-cloudflare build && node scripts/scrub-worker-env.mjs",
     "preview:worker": "opennextjs-cloudflare preview",
     "deploy": "npm run build:worker && wrangler deploy",
-    "test:backend": "tsx --test tests/playback-backend.test.mts",
+    "test:backend": "tsx --test tests/*.test.mts",
     "test:ui": "playwright test",
     "ingest:all": "python3 ingestion/run_all.py",
     "ingest:list": "python3 ingestion/run_all.py --list",

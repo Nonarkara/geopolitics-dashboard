@@ -40,8 +40,7 @@ Core variables:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`
-- `CRON_SECRET`: bearer secret required for Vercel cron routes in production
+- `CRON_SECRET`: bearer secret required by the GitHub Actions refresh workflow
 
 Optional upstreams and enrichers:
 
@@ -85,9 +84,9 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Vercel Cron
+## Scheduled Refresh
 
-The production scheduler is the grouped Vercel-cron layer defined in [vercel.json](/Users/non/Projects/dashboards/geopolitics-dashboard/vercel.json).
+Cloudflare Workers cannot invoke the Next.js route handlers through an OpenNext `scheduled` event. Production refreshes therefore run from [`.github/workflows/cron-refresh.yml`](.github/workflows/cron-refresh.yml), which calls the secured Worker routes.
 
 Current grouped jobs:
 
@@ -112,7 +111,7 @@ These routes:
   - `warnings`
   - `errors`
 
-The schedules in `vercel.json` are intentionally `daily` and hobby-safe by default. If the linked Vercel project is on Pro, tighten the cadence there by editing the same cron entries rather than reintroducing a second scheduler system.
+The conflict and environment groups run every 30 minutes. Heavier maintenance and aggregation groups run daily at 01:17 UTC. Keep `CRON_SECRET` aligned between the Worker environment and the GitHub repository secret.
 
 ## Status and Runtime Truth
 
@@ -190,12 +189,12 @@ npx eslint src/app/api/cron src/lib/cron-jobs.ts src/lib/runtime-status.ts
 
 Recommended release path:
 
-1. Push a feature branch
-2. Open a PR
-3. Verify the Vercel preview deployment
-4. Smoke-check `/`, `/api/status`, playback routes, and `/api/cron/*`
-5. Merge to production
+1. Run `npm run check`
+2. Run `npm run test:backend` and the targeted browser suite
+3. Push the `overhaul` branch
+4. Run `npm run deploy`
+5. Smoke-check `/`, `/api/status`, playback routes, and `/api/cron/*` on the Worker
 
 ## Legacy Render Note
 
-`render.yaml` is retained only as legacy reference / migration scaffolding. It is not the primary production path anymore. Do not maintain parallel scheduler logic on Render and Vercel unless you are explicitly performing a migration rollback.
+`render.yaml` is retained only as legacy reference / migration scaffolding. It is not the primary production path anymore. Do not maintain a parallel scheduler unless you are explicitly performing a migration rollback.
