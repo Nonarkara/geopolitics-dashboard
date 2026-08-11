@@ -153,7 +153,7 @@ function BorderDashboardContent() {
         </button>
 
         {/* ROW 3: Secondary analysis. Mobile reaches this through the Intel drawer. */}
-        <div className="hidden h-[260px] shrink-0 connected-grid overflow-hidden bg-black xl:flex 2xl:h-[300px]">
+        <div className="!hidden h-[260px] shrink-0 connected-grid overflow-hidden bg-black xl:!flex 2xl:h-[300px]">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
             <ErrorBoundary name="Border Insight Lab">
               <BorderInsightLab brief={brief} />

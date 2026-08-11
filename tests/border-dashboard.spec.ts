@@ -893,11 +893,15 @@ test("gives phone users a map-first shell with reachable intelligence panels", a
   const titleBox = await title.boundingBox();
   expect(titleBox?.x ?? 400).toBeLessThan(390);
   expect((titleBox?.x ?? 0) + (titleBox?.width ?? 400)).toBeLessThanOrEqual(390);
+  await expect(page.getByTestId("border-market-pulse")).toBeHidden();
 
   await page.getByRole("button", { name: "Open mobile intelligence panels" }).click();
   const commandPanels = page.getByRole("dialog", { name: "Command Panels" });
   await expect(commandPanels).toBeVisible();
   await expect(commandPanels.getByRole("button", { name: "brief" })).toHaveAttribute("aria-pressed", "true");
+
+  await commandPanels.getByRole("button", { name: "markets" }).click();
+  await expect(commandPanels.getByTestId("border-market-pulse")).toBeVisible();
 
   await commandPanels.getByRole("button", { name: "news" }).click();
   await expect(commandPanels.getByText("Border News Wire", { exact: true })).toBeVisible();
