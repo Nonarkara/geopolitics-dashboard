@@ -131,8 +131,8 @@ export default function TopBar({
             <span>Southern theatre</span>
           </div>
         </div>
-        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[1750px]:block" />
-        <LogoStrip className="hidden min-[1750px]:flex" />
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[2400px]:block" />
+        <LogoStrip className="hidden min-[2400px]:flex" />
       </div>
 
       <div className="hidden min-w-0 flex-1 items-center gap-3 px-4 md:flex">
@@ -209,7 +209,7 @@ export default function TopBar({
 
       <div className="hidden items-center gap-2 border-l border-white/10 px-3 xl:flex">
         {/* World Clocks — grouped with subtle dividers between regions */}
-        <div className="hidden items-center gap-0 shrink-0 min-[1750px]:flex">
+        <div className="hidden items-center gap-0 shrink-0 min-[2400px]:flex">
           {COUNTRY_CLOCKS.map((clock, idx) => {
             const prevGroup = idx > 0 ? COUNTRY_CLOCKS[idx - 1].group : null;
             const showDivider = prevGroup && prevGroup !== clock.group;
@@ -243,7 +243,7 @@ export default function TopBar({
           })}
         </div>
 
-        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[1750px]:block" />
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[2400px]:block" />
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">

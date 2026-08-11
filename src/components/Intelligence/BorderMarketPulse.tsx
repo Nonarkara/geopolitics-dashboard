@@ -68,6 +68,7 @@ export default function BorderMarketPulse() {
   const [payload, setPayload] = useState<MarketRadarResponse>(
     fallbackMarketRadarResponse,
   );
+  const [loadError, setLoadError] = useState<string | null>(null);
   const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
   const [hasLoaded, setHasLoaded] = useState(isStatic);
   const hasLoadedRef = useRef(isStatic);
@@ -80,6 +81,7 @@ export default function BorderMarketPulse() {
 
         if (isMarketRadarResponse(nextPayload)) {
           setPayload(nextPayload);
+          setLoadError(null);
           if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
           return;
         }
@@ -91,10 +93,32 @@ export default function BorderMarketPulse() {
             data: nextPayload,
             signals: nextPayload,
           });
+          setLoadError(null);
           if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
+          return;
         }
+
+        setPayload({
+          generatedAt: new Date().toISOString(),
+          data: [],
+          signals: [],
+          aseanGdp: [],
+          sources: [],
+          mode: isHistorical ? "historical-empty" : "live",
+        });
+        setLoadError("Pricing sources did not return a usable snapshot.");
+        if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
       } catch {
-        setPayload(isHistorical ? { ...fallbackMarketRadarResponse, data: [], signals: [], aseanGdp: [], mode: "historical-empty" } : fallbackMarketRadarResponse);
+        setPayload({
+          generatedAt: new Date().toISOString(),
+          data: [],
+          signals: [],
+          aseanGdp: [],
+          sources: [],
+          mode: isHistorical ? "historical-empty" : "live",
+        });
+        setLoadError("Pricing sources are temporarily unavailable.");
+        if (!hasLoadedRef.current) { hasLoadedRef.current = true; setHasLoaded(true); }
       }
     };
 
@@ -181,6 +205,14 @@ export default function BorderMarketPulse() {
         </div>
       ) : (
       <div className="flex flex-1 flex-col gap-2.5 p-3">
+        {loadError ? (
+          <div className="border-l-2 border-[var(--accent)] bg-black px-3 py-2 text-[10px] leading-relaxed text-white/55">
+            <div className="mb-1 text-[9px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">
+              Market snapshot unavailable
+            </div>
+            {loadError} The panel will retry automatically without substituting demo prices.
+          </div>
+        ) : null}
         {isHistorical && timeWindow ? (
           <div className="border border-white/10 bg-black px-2.5 py-2 text-[8px] font-black uppercase tracking-[0.18em] text-white/70">
             Playback window: {bangkokDay ? formatBangkokDayLabel(bangkokDay) : ""} ICT
@@ -221,11 +253,7 @@ export default function BorderMarketPulse() {
                 </div>
               </div>
               <div className="text-right">
-                <div
-                  className={`text-[11px] font-black tabular-nums ${
-                    "text-[var(--accent)]"
-                  }`}
-                >
+                <div className="text-[11px] font-black tabular-nums text-[var(--accent)]">
                   {formatIndicatorChange(primary.change)}
                 </div>
                 <div className="mt-1 text-[8px] font-black uppercase tracking-[0.16em] text-white/35">
@@ -256,7 +284,7 @@ export default function BorderMarketPulse() {
           </div>
         ) : null}
 
-        {payload.mode !== "historical-empty" ? (
+        {payload.mode !== "historical-empty" && payload.data.length > 0 ? (
           <div className="grid grid-cols-2 gap-2">
             {secondary.slice(0, 4).map((indicator) => (
               <div
@@ -299,7 +327,7 @@ export default function BorderMarketPulse() {
           </div>
         ) : null}
 
-        {payload.mode !== "historical-empty" ? (
+        {payload.mode !== "historical-empty" && payload.data.length > 0 ? (
           <div className="mt-auto border-t border-white/[0.06] pt-2">
             <div className="mb-1.5 inline-flex items-center gap-2 text-[7px] font-mono uppercase tracking-[0.12em] text-white/35">
               <Activity size={10} className="text-[var(--accent)]" />
