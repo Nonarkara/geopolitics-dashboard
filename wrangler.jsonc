@@ -13,10 +13,13 @@
   "observability": {
     "enabled": true
   },
-  // geo.nonarkara.org custom domain: blocked by an existing externally
-  // managed DNS record (the 302-redirect). Delete that DNS record in the
-  // nonarkara.org zone, then restore:
-  // "routes": [{ "pattern": "geo.nonarkara.org", "custom_domain": true }],
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "geo.nonarkara.org",
+      "custom_domain": true
+    }
+  ],
   "vars": {
     "APP_RUNTIME": "cloudflare-workers",
     "NEXT_PUBLIC_SUPABASE_URL": "https://qbatksnulitgrhigzbta.supabase.co",

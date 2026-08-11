@@ -9,18 +9,15 @@ Updated 2026-08-11.
 - Deploy branch: `overhaul`. Deploy is manual: `npm run deploy` (build:worker + wrangler deploy). No CI deploy pipeline.
 - GitHub Pages (`github-pages.yml`) builds the **static mock demo** from `main` — unrelated to the Worker.
 
-## Custom domain — BLOCKED (one manual step)
+## Custom domain — FIXED 2026-08-11
 
-`geo.nonarkara.org` currently 302-redirects to workers.dev via an externally
-managed DNS record in the `nonarkara.org` zone. Wrangler cannot delete zone DNS
-records (OAuth token has workers scope only, no zone scope) — no CLI path for
-this specific action with current credentials. To fix:
-
-1. Delete the existing `geo` DNS record in the nonarkara.org zone (Cloudflare
-   dashboard → nonarkara.org → DNS, or any zone-scoped API token).
-2. Restore in `wrangler.jsonc`:
-   `"routes": [{ "pattern": "geo.nonarkara.org", "custom_domain": true }]`
-3. `npm run deploy` — wrangler attaches the custom domain automatically.
+`geo.nonarkara.org` now serves the Worker directly (HTTP 200, no redirect).
+The prior 302 to workers.dev was a stale CNAME (`geo → geopolitics-dashboard.pages.dev`,
+an old Cloudflare Pages project) left in the `nonarkara.org` zone; deleted via
+the Cloudflare dashboard, then `wrangler.jsonc` got both
+`"workers_dev": true` and the `geo.nonarkara.org` custom-domain route, and
+`wrangler deploy` attached it. Both hostnames are live:
+https://geo.nonarkara.org and https://geopolitics-dashboard.drnon.workers.dev.
 
 ## Database — NOT CONFIGURED (honest degraded state)
 
