@@ -2,10 +2,6 @@
 
 import React from "react";
 import { RefreshCw } from "lucide-react";
-import {
-  fallbackAseanGdp,
-  fallbackEconomicIndicators,
-} from "../../../lib/mock-data";
 import type {
   AseanGdpDatum,
   EconomicIndicator,
@@ -97,15 +93,15 @@ export default function EconomicMonitor() {
 
       if (isMarketRadarResponse(payload)) {
         setIndicators(payload.signals.length > 0 ? payload.signals : payload.data);
-        setAseanGdp(payload.aseanGdp.length > 0 ? payload.aseanGdp : fallbackAseanGdp);
+        setAseanGdp(payload.aseanGdp);
         setSources(payload.sources);
         return;
       }
 
       if (isEconomicIndicatorArray(payload)) {
         setIndicators(payload);
-        setAseanGdp(fallbackAseanGdp);
-        setSources(["Fallback markets"]);
+        setAseanGdp([]);
+        setSources([]);
         return;
       }
 
@@ -119,23 +115,22 @@ export default function EconomicMonitor() {
         setAseanGdp(
           "aseanGdp" in payload && isAseanGdpArray(payload.aseanGdp)
             ? payload.aseanGdp
-            : fallbackAseanGdp,
+            : [],
         );
         setSources(
           "sources" in payload && Array.isArray(payload.sources)
             ? payload.sources.filter((entry): entry is string => typeof entry === "string")
-            : ["Fallback markets"],
+            : [],
         );
         return;
       }
 
-      setIndicators(fallbackEconomicIndicators);
-      setAseanGdp(fallbackAseanGdp);
-      setSources(["Fallback markets", "Fallback macro snapshot"]);
+      // Unusable payload: fail closed instead of substituting demo figures.
+      setIndicators([]);
+      setAseanGdp([]);
+      setSources([]);
     } catch {
-      setIndicators(fallbackEconomicIndicators);
-      setAseanGdp(fallbackAseanGdp);
-      setSources(["Fallback markets", "Fallback macro snapshot"]);
+      // Fail closed: keep whatever honest state we already have.
     }
   }, []);
 

@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
-import { fallbackTicker } from "../../../lib/mock-data";
 import type { TickerResponse } from "../../../types/dashboard";
+
+const emptyTicker: TickerResponse = { items: [], generatedAt: "" };
 
 function isTickerResponse(value: unknown): value is TickerResponse {
   return (
@@ -15,7 +16,7 @@ function isTickerResponse(value: unknown): value is TickerResponse {
 }
 
 export default function SignalTicker() {
-  const [ticker, setTicker] = useState<TickerResponse>(fallbackTicker);
+  const [ticker, setTicker] = useState<TickerResponse>(emptyTicker);
 
   useEffect(() => {
     const load = async () => {
@@ -27,7 +28,7 @@ export default function SignalTicker() {
           setTicker(payload);
         }
       } catch {
-        setTicker(fallbackTicker);
+        // Fail closed: an empty strip beats fabricated signals.
       }
     };
 

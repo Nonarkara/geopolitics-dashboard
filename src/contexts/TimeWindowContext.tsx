@@ -4,7 +4,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -38,6 +40,19 @@ export function TimeWindowProvider({ children }: { children: ReactNode }) {
     "idle" | "entering-playback" | "entering-live"
   >("idle");
   const timeWindow = bangkokDay ? getUtcWindowForBangkokDay(bangkokDay) : null;
+  const transitionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    },
+    [],
+  );
+
+  const scheduleTransitionReset = useCallback(() => {
+    if (transitionTimer.current) clearTimeout(transitionTimer.current);
+    transitionTimer.current = setTimeout(() => setTransitionState("idle"), 800);
+  }, []);
 
   const selectBangkokDay = useCallback(
     (day: string | null) => {
@@ -45,21 +60,21 @@ export function TimeWindowProvider({ children }: { children: ReactNode }) {
       // If currently live, trigger entering-playback transition
       if (bangkokDay === null) {
         setTransitionState("entering-playback");
-        setTimeout(() => setTransitionState("idle"), 800);
+        scheduleTransitionReset();
       }
       setBangkokDay(day);
     },
-    [bangkokDay],
+    [bangkokDay, scheduleTransitionReset],
   );
 
   const clearTimeWindow = useCallback(() => {
     // If currently in historical mode, trigger entering-live transition
     if (bangkokDay !== null) {
       setTransitionState("entering-live");
-      setTimeout(() => setTransitionState("idle"), 800);
+      scheduleTransitionReset();
     }
     setBangkokDay(null);
-  }, [bangkokDay]);
+  }, [bangkokDay, scheduleTransitionReset]);
 
   const buildUrl = useCallback(
     (path: string, params?: Record<string, string | number | null | undefined>) =>

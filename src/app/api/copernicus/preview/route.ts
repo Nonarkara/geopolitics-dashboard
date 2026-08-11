@@ -1,6 +1,5 @@
 
 import { NextResponse } from "next/server";
-import { fallbackCopernicusPreview } from "../../../../lib/mock-data";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 
 function getSafeDate() {
@@ -27,6 +26,9 @@ export async function GET() {
       imagerySources,
     });
   } catch {
-    return NextResponse.json(fallbackCopernicusPreview, { status: 200 });
+    return NextResponse.json(
+      { errorCode: "LIVE_DATA_UNAVAILABLE" },
+      { status: 503, headers: { "X-Data-Source": "unavailable" } },
+    );
   }
 }

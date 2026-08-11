@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { fallbackSources } from "../../../lib/mock-data";
 import { buildMapOverlayCatalog } from "../../../lib/map-overlays";
 import type {
   ApiSourceResponse,
@@ -30,7 +29,10 @@ function isMapOverlayCatalogResponse(
 }
 
 export default function SourceStack() {
-  const [sources, setSources] = useState<ApiSourceResponse>(fallbackSources);
+  const [sources, setSources] = useState<ApiSourceResponse>({
+    generatedAt: "",
+    sources: [],
+  });
   const [catalog, setCatalog] = useState<MapOverlayCatalogResponse>(
     buildMapOverlayCatalog(),
   );
@@ -53,7 +55,7 @@ export default function SourceStack() {
         setCatalog(overlayPayload);
       }
     } catch {
-      setSources(fallbackSources);
+      // Fail closed on sources; the overlay catalog is a real static build.
       setCatalog(buildMapOverlayCatalog());
     }
   }, []);

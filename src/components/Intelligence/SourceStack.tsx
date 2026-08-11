@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  fallbackCopernicusPreview,
-  fallbackSources,
-} from "../../lib/mock-data";
 import type {
   ApiSourceResponse,
   CopernicusPreviewResponse,
 } from "../../types/dashboard";
+
+const emptySources: ApiSourceResponse = { generatedAt: "", sources: [] };
 
 function isApiSourceResponse(value: unknown): value is ApiSourceResponse {
   return (
@@ -31,10 +29,8 @@ function isCopernicusPreviewResponse(
 }
 
 export default function SourceStack() {
-  const [sources, setSources] = useState<ApiSourceResponse>(fallbackSources);
-  const [, setPreview] = useState<CopernicusPreviewResponse>(
-    fallbackCopernicusPreview,
-  );
+  const [sources, setSources] = useState<ApiSourceResponse>(emptySources);
+  const [, setPreview] = useState<CopernicusPreviewResponse | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -54,8 +50,7 @@ export default function SourceStack() {
           setPreview(previewPayload);
         }
       } catch {
-        setSources(fallbackSources);
-        setPreview(fallbackCopernicusPreview);
+        // Fail closed: keep the honest empty state instead of mock sources.
       }
     };
 

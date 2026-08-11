@@ -189,7 +189,7 @@ npx eslint src/app/api/cron src/lib/cron-jobs.ts src/lib/runtime-status.ts
 
 Recommended release path:
 
-1. Run `npm run check`
+1. Run `npm run lint`
 2. Run `npm run test:backend` and the targeted browser suite
 3. Push the `overhaul` branch
 4. Run `npm run deploy`

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fallbackBriefing } from "../../lib/mock-data";
 import type { BriefingPayload } from "../../types/dashboard";
 
 function isBriefingPayload(value: unknown): value is BriefingPayload {
@@ -25,7 +24,7 @@ function formatTimestamp(value: string) {
 }
 
 export default function BriefingPanel() {
-  const [briefing, setBriefing] = useState<BriefingPayload>(fallbackBriefing);
+  const [briefing, setBriefing] = useState<BriefingPayload | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -37,12 +36,27 @@ export default function BriefingPanel() {
           setBriefing(payload);
         }
       } catch {
-        setBriefing(fallbackBriefing);
+        // Fail closed: the honest empty state below stands in for mock copy.
       }
     };
 
     load();
   }, []);
+
+  if (!briefing) {
+    return (
+      <section className="flex flex-col gap-3">
+        <div className="border-b border-[var(--line)] pb-2">
+          <h2 className="text-[14px] font-black tracking-tight uppercase leading-tight">
+            Operational Briefing
+          </h2>
+        </div>
+        <div className="border border-[var(--line-dim)] border-dashed p-3 text-center text-[9px] font-black uppercase tracking-widest text-[var(--dim)]">
+          Live briefing unavailable
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="flex flex-col gap-3">

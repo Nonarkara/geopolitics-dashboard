@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fallbackNews } from "../../lib/mock-data";
 import type { NewsResponse } from "../../types/dashboard";
+
+const emptyNews: NewsResponse = { news: [], generatedAt: "" };
 
 function isNewsResponse(value: unknown): value is NewsResponse {
   return (
@@ -14,7 +15,7 @@ function isNewsResponse(value: unknown): value is NewsResponse {
 }
 
 export default function NewsDesk() {
-  const [news, setNews] = useState<NewsResponse>(fallbackNews);
+  const [news, setNews] = useState<NewsResponse>(emptyNews);
 
   useEffect(() => {
     const load = async () => {
@@ -25,7 +26,7 @@ export default function NewsDesk() {
           setNews(payload);
         }
       } catch {
-        setNews(fallbackNews);
+        // Fail closed: keep whatever honest state we already have.
       }
     };
 
@@ -33,6 +34,14 @@ export default function NewsDesk() {
     const poll = setInterval(load, 20000); // 20s Polling for Real-Time feel
     return () => clearInterval(poll);
   }, []);
+
+  if (news.news.length === 0) {
+    return (
+      <div className="border border-[var(--line-dim)] border-dashed p-3 text-center text-[9px] font-black uppercase tracking-widest text-[var(--dim)]">
+        Live feed unavailable
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">

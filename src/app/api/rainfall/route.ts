@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { query } from "../../../lib/db";
 import { getErrorMessage } from "../../../lib/errors";
-import { fallbackRainfall } from "../../../lib/mock-data";
 import type { RainfallPoint } from "../../../types/dashboard";
 
 interface RainfallRow {
@@ -48,9 +47,16 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(rainfall.length > 0 ? rainfall : fallbackRainfall);
+    return NextResponse.json(rainfall, {
+      headers: {
+        "X-Data-Source": rainfall.length > 0 ? "live" : "unavailable",
+      },
+    });
   } catch (error: unknown) {
     console.error("Rainfall query error:", getErrorMessage(error));
-    return NextResponse.json(fallbackRainfall, { status: 200 });
+    const empty: RainfallPoint[] = [];
+    return NextResponse.json(empty, {
+      headers: { "X-Data-Source": "unavailable" },
+    });
   }
 }

@@ -73,6 +73,21 @@ async function resolveConnectionString(): Promise<string | undefined> {
       }
       return _resolvedConnectionString;
     }
+
+    // No Hyperdrive binding: honor a DATABASE_URL Worker secret so the
+    // scrub-worker-env build step (which blanks the bundled value) can be
+    // recovered at runtime, as its docstring promises.
+    const secretString = (env as { DATABASE_URL?: string }).DATABASE_URL?.trim();
+
+    if (secretString) {
+      if (_resolvedConnectionString !== secretString) {
+        _resolvedConnectionString = secretString;
+        isDatabaseConfigured = true;
+        _pool = null;
+        _poolInitialized = false;
+      }
+      return _resolvedConnectionString;
+    }
   } catch {
     // Not inside a Cloudflare Worker (local dev / tests) — keep fallback.
   }

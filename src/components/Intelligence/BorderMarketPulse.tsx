@@ -29,7 +29,20 @@ function isMarketRadarResponse(value: unknown): value is MarketRadarResponse {
   );
 }
 
+const emptyMarketRadarResponse: MarketRadarResponse = {
+  generatedAt: "",
+  data: [],
+  signals: [],
+  aseanGdp: [],
+  sources: [],
+  mode: "live",
+};
+
 function formatGeneratedAt(value: string) {
+  if (!value) {
+    return "—";
+  }
+
   return new Date(value).toLocaleString("en-GB", {
     day: "2-digit",
     month: "short",
@@ -65,11 +78,12 @@ function formatIndicatorChange(change: number | string) {
 
 export default function BorderMarketPulse() {
   const { timeWindow, bangkokDay, buildUrl, isHistorical } = useTimeWindow();
+  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
+  // Mock prices are only ever legitimate in the static GitHub Pages demo.
   const [payload, setPayload] = useState<MarketRadarResponse>(
-    fallbackMarketRadarResponse,
+    isStatic ? fallbackMarketRadarResponse : emptyMarketRadarResponse,
   );
   const [loadError, setLoadError] = useState<string | null>(null);
-  const isStatic = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true";
   const [hasLoaded, setHasLoaded] = useState(isStatic);
   const hasLoadedRef = useRef(isStatic);
 
@@ -92,7 +106,7 @@ export default function BorderMarketPulse() {
 
         if (isEconomicIndicatorArray(nextPayload)) {
           setPayload({
-            ...fallbackMarketRadarResponse,
+            ...emptyMarketRadarResponse,
             generatedAt: new Date().toISOString(),
             data: nextPayload,
             signals: nextPayload,
