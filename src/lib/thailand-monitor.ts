@@ -111,10 +111,11 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
     // caller (and the API boundary's X-Data-Source header) reports it as live.
     return incidents;
   } catch (error) {
-    // Never swallow the DB failure silently — the caller substitutes mock
-    // data, so the real error must at least reach the server logs.
+    // Never swallow the DB failure silently. The fallbackIncidents reference
+    // is a sentinel: /api/incidents detects it and fails closed with an empty
+    // payload; only the static demo renders the mock records.
     console.error(
-      "Incident query failed — serving mock incidents:",
+      "Incident query failed — API will report unavailable:",
       getErrorMessage(error),
     );
     return fallbackIncidents;
