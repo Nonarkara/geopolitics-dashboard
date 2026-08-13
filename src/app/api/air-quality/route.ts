@@ -66,6 +66,9 @@ function asRows(payload: unknown): OpenMeteoCurrent[] {
   return [];
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET() {
   const latitudes = AIR_QUALITY_LOCATIONS.map((point) => point.lat).join(",");
   const longitudes = AIR_QUALITY_LOCATIONS.map((point) => point.lng).join(",");
@@ -144,7 +147,9 @@ export async function GET() {
 
     return NextResponse.json(live, {
       headers: {
-        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600",
+        "Cache-Control": live.length > 0
+          ? "public, s-maxage=900, stale-while-revalidate=3600"
+          : "no-store",
         "X-Data-Source": live.length > 0 ? "live" : "unavailable",
       },
     });

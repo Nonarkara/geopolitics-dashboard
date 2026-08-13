@@ -384,12 +384,12 @@ async function loadBorderInsightsFresh(): Promise<BorderInsightsPayload> {
     ],
   };
 
-  if (airLive || riverLive || econLive) {
+  if (airLive && riverLive && econLive) {
     insightCache = { payload, cachedAt: Date.now() };
     return payload;
   }
 
-  if (insightCache) {
+  if (!airLive && !riverLive && !econLive && insightCache) {
     return {
       ...insightCache.payload,
       sources: insightCache.payload.sources.map((source) => ({
