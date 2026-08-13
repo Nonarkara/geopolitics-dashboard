@@ -110,15 +110,15 @@ const COUNTRIES = [
   { iso3: "CHN", label: "China" },
 ] as const;
 
-const INSIGHT_SOURCE_BUDGET_MS = 5_000;
 const INSIGHT_CACHE_TTL_MS = 15 * 60 * 1000;
 
 let insightCache: { payload: BorderInsightsPayload; cachedAt: number } | null = null;
+let insightInflight: Promise<BorderInsightsPayload> | null = null;
 
 export async function settleWithin<T>(
   work: Promise<T>,
   fallback: T,
-  timeoutMs = INSIGHT_SOURCE_BUDGET_MS,
+  timeoutMs: number,
 ): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | null = null;
 
@@ -323,28 +323,14 @@ async function fetchWorldBankIndicator(
   return map;
 }
 
-export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
-  if (insightCache && Date.now() - insightCache.cachedAt < INSIGHT_CACHE_TTL_MS) {
-    return insightCache.payload;
-  }
-
+async function loadBorderInsightsFresh(): Promise<BorderInsightsPayload> {
   const generatedAt = new Date().toISOString();
-  const emptyRivers = MEKONG_SITES.map((site) => ({
-    ...site,
-    currentDischarge: 0,
-    forecastPeak: 0,
-    forecastPeakDate: "",
-    trend: "stable" as const,
-    riskLevel: "low" as const,
-    series: [],
-  }));
-  const emptyIndicator = new Map<string, { value: number; year: string }>();
   const [air, rivers, gdp, urban, forest] = await Promise.all([
-    settleWithin(fetchAirBatch(), AIR_SITES.map(emptyAir)),
-    settleWithin(Promise.all(MEKONG_SITES.map(fetchRiver)), emptyRivers),
-    settleWithin(fetchWorldBankIndicator("NY.GDP.MKTP.KD.ZG"), emptyIndicator),
-    settleWithin(fetchWorldBankIndicator("SP.URB.TOTL.IN.ZS"), emptyIndicator),
-    settleWithin(fetchWorldBankIndicator("AG.LND.FRST.ZS"), emptyIndicator),
+    fetchAirBatch(),
+    Promise.all(MEKONG_SITES.map(fetchRiver)),
+    fetchWorldBankIndicator("NY.GDP.MKTP.KD.ZG"),
+    fetchWorldBankIndicator("SP.URB.TOTL.IN.ZS"),
+    fetchWorldBankIndicator("AG.LND.FRST.ZS"),
   ]);
 
   const countries: InsightCountryAxis[] = COUNTRIES.map((country) => {
@@ -400,7 +386,10 @@ export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
 
   if (airLive || riverLive || econLive) {
     insightCache = { payload, cachedAt: Date.now() };
-  } else if (insightCache) {
+    return payload;
+  }
+
+  if (insightCache) {
     return {
       ...insightCache.payload,
       sources: insightCache.payload.sources.map((source) => ({
@@ -411,4 +400,16 @@ export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
   }
 
   return payload;
+}
+
+export async function loadBorderInsights(): Promise<BorderInsightsPayload> {
+  if (insightCache && Date.now() - insightCache.cachedAt < INSIGHT_CACHE_TTL_MS) {
+    return insightCache.payload;
+  }
+  if (insightInflight) return insightInflight;
+
+  insightInflight = loadBorderInsightsFresh().finally(() => {
+    insightInflight = null;
+  });
+  return insightInflight;
 }

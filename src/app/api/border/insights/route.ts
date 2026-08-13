@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { loadBorderInsights } from "../../../../lib/border-insights";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 900;
 
 export async function GET() {
   const data = await loadBorderInsights();
@@ -12,7 +11,7 @@ export async function GET() {
     { success: true, data },
     {
       headers: {
-        "Cache-Control": "no-store",
+        "Cache-Control": "public, s-maxage=900, stale-while-revalidate=3600",
         "X-Data-Source": liveCount > 0 ? "live" : "unavailable",
         "X-Data-Age": data.generatedAt,
       },

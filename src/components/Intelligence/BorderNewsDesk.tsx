@@ -77,7 +77,7 @@ export default function BorderNewsDesk() {
       try {
         const response = await fetch(buildUrl("/api/border/news"), {
           cache: "no-store",
-          signal: AbortSignal.timeout(8_000),
+          signal: AbortSignal.timeout(45_000),
         });
         const payload: unknown = await response.json();
 

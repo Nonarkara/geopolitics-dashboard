@@ -50,8 +50,7 @@ export default function BorderInsightLab({
     const load = async () => {
       try {
         const response = await fetch("/api/border/insights", {
-          cache: "no-store",
-          signal: AbortSignal.timeout(8_000),
+          cache: "default",
         });
         const json = (await response.json()) as {
           success?: boolean;
@@ -153,8 +152,8 @@ export default function BorderInsightLab({
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-white/48">
               {error
-                ? "The command map and cited news remain available. Air, river, and structural comparison data did not answer inside the eight-second display budget."
-                : "Open-Meteo air, GloFAS river discharge, and World Bank indicators are loading in parallel."}
+                ? "The map and cited news remain available. Retry if the three public sources timed out on this Worker."
+                : "Open-Meteo air, GloFAS river discharge, and World Bank indicators are loading. First Worker fetch can take a minute; then it holds for 15 minutes."}
             </p>
             <div className="mt-3 flex items-center gap-3 text-[13px] font-mono uppercase tracking-[0.12em] text-white/35">
               <span>Air</span><span>River</span><span>World Bank</span>

@@ -4,8 +4,6 @@ import { getErrorMessage } from "./errors";
 import {
   fallbackBriefing,
   fallbackIncidents,
-  fallbackNews,
-  fallbackTicker,
 } from "./mock-data";
 import { fetchReferenceEconomicIndicators } from "./reference-data";
 import type {
@@ -143,7 +141,11 @@ export function buildThailandNews(
   indicators: EconomicIndicator[],
 ): NewsResponse {
   if (incidents.length === 0) {
-    return fallbackNews;
+    return {
+      generatedAt: new Date().toISOString(),
+      news: [],
+      errorCode: "LIVE_DATA_UNAVAILABLE",
+    };
   }
 
   const fieldItems = incidents.slice(0, 4).map<NewsItem>((incident) => ({
@@ -187,7 +189,10 @@ export function buildThailandTicker(
   indicators: EconomicIndicator[],
 ): TickerResponse {
   if (incidents.length === 0 && indicators.length === 0) {
-    return fallbackTicker;
+    return {
+      generatedAt: new Date().toISOString(),
+      items: [],
+    };
   }
 
   const latestIncident = incidents[0];
@@ -215,7 +220,6 @@ export function buildThailandTicker(
         value: `${incidents.length} active`,
         delta:
           latestIncident?.properties.location ??
-          fallbackTicker.items[0]?.delta ??
           "monitor",
         tone: incidents.length >= 4 ? "up" : "neutral",
       },

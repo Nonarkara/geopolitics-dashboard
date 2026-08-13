@@ -56,9 +56,18 @@ data is legitimate ONLY in the static GitHub Pages demo
 `tests/fail-closed-routes.test.mts` and the fails-closed tests in
 `tests/playback-backend.test.mts`.
 
+`/api/air-quality` fails closed (`[]` + `X-Data-Source: unavailable`).
+`/api/border/insights` waits for Open-Meteo/World Bank, then caches 15 minutes
+in-process and `s-maxage=900` at the edge. Do not wrap those upstreams in a
+short `AbortSignal.timeout` or `settleWithin` budget — cold GloFAS from
+Workers often exceeds 12s.
+
+Desktop ROW 3 is Insight Lab + news only. Markets and cameras stay in the
+Intel drawer.
+
 ## Tests
 
-- `npm run test:backend` — node:test unit suite (14 tests).
+- `npm run test:backend` — node:test unit suite (16 tests).
 - `npx playwright test tests/border-dashboard.spec.ts tests/phuket-dashboard.spec.ts`
   — browser suites (4 + 5). Note: a bare `npx playwright test` also collects the
   `.test.mts` node:test files and crashes on them; run the spec files explicitly.

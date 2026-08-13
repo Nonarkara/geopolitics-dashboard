@@ -152,20 +152,14 @@ function BorderDashboardContent() {
           <span className="h-1.5 w-1.5 bg-[var(--accent)]" aria-hidden="true" /> Intel
         </button>
 
-        {/* ROW 3: Secondary analysis. Mobile reaches this through the Intel drawer. */}
-        <div className="!hidden h-[260px] shrink-0 connected-grid overflow-hidden bg-black xl:!flex 2xl:h-[300px]">
+        {/* ROW 3: Insight Lab + news only. Markets/cameras stay in the Intel drawer. */}
+        <div className="!hidden h-[340px] shrink-0 connected-grid overflow-hidden bg-black xl:!flex">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
             <ErrorBoundary name="Border Insight Lab">
               <BorderInsightLab brief={brief} />
             </ErrorBoundary>
           </div>
-          <div className="w-[320px] shrink-0 grid-cell overflow-hidden">
-            <BorderMarketPulse />
-          </div>
-          <div className="w-[360px] shrink-0 grid-cell overflow-hidden">
-            <CriticalCameraRail />
-          </div>
-          <div className="w-[360px] shrink-0 grid-cell overflow-hidden">
+          <div className="w-[380px] shrink-0 grid-cell overflow-hidden">
             <BorderNewsDesk />
           </div>
         </div>

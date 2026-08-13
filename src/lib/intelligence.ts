@@ -1699,6 +1699,14 @@ export async function loadIntelligencePackages(): Promise<IntelligencePackageRes
 
 export async function buildNewsFromPackages(): Promise<NewsResponse> {
   const payload = await loadIntelligencePackages();
+  if (payload.mode !== "live") {
+    return {
+      generatedAt: payload.generatedAt,
+      news: [],
+      errorCode: "LIVE_DATA_UNAVAILABLE",
+    };
+  }
+
   const allItems = payload.packages.flatMap((pkg) => pkg.items);
   const rankedItems = buildRankedNewsItems(allItems, 6);
   const items = rankedItems.map<NewsItem>((item) => ({
@@ -1712,26 +1720,29 @@ export async function buildNewsFromPackages(): Promise<NewsResponse> {
     }));
 
   return {
-    generatedAt: getLatestTimestamp(rankedItems.map((item) => item.publishedAt)),
-    news: items.length > 0 ? items : fallbackNews.news,
+    generatedAt:
+      getLatestTimestamp(rankedItems.map((item) => item.publishedAt)) ??
+      payload.generatedAt,
+    news: items,
   };
 }
 
 export async function buildTickerFromPackages(): Promise<TickerResponse> {
-  const [payload, indicators, incidents] = await Promise.all([
+  const [payload, indicators, incidentsRaw] = await Promise.all([
     loadIntelligencePackages(),
-    loadThailandEconomics().catch(() => fallbackEconomicIndicators),
-    loadThailandIncidents().catch(() => fallbackIncidents),
+    loadThailandEconomics().catch(() => [] as EconomicIndicator[]),
+    loadThailandIncidents().catch(() => [] as IncidentFeature[]),
   ]);
+  const incidents = incidentsRaw === fallbackIncidents ? [] : incidentsRaw;
   const topPackage = payload.packages[0];
-  const leadIndicator = indicators[0] ?? fallbackEconomicIndicators[0];
+  const leadIndicator = indicators[0];
   const dominantTheme = topPackage?.dominantTags[0] ?? "conditions";
 
   const items: TickerItem[] = [
     {
       id: "package-load",
       label: "Packages",
-      value: `${payload.packages.length} live`,
+      value: `${payload.packages.length} ${payload.mode}`,
       delta: topPackage?.status ?? payload.mode,
       tone: payload.mode === "live" ? "up" : "neutral",
     },
@@ -1742,25 +1753,29 @@ export async function buildTickerFromPackages(): Promise<TickerResponse> {
       delta: topPackage?.title ?? "Thailand",
       tone: incidents.length >= 4 ? "up" : "neutral",
     },
-    {
-      id: "market-lead",
-      label: leadIndicator.label,
-      value:
-        typeof leadIndicator.value === "number"
-          ? leadIndicator.value.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })
-          : leadIndicator.value,
-      delta: formatIndicatorChange(leadIndicator.change),
-      tone:
-        typeof leadIndicator.change === "number"
-          ? leadIndicator.change > 0
-            ? "up"
-            : leadIndicator.change < 0
-              ? "down"
-              : "neutral"
-          : "neutral",
-    },
+    ...(leadIndicator
+      ? [
+          {
+            id: "market-lead",
+            label: leadIndicator.label,
+            value:
+              typeof leadIndicator.value === "number"
+                ? leadIndicator.value.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })
+                : String(leadIndicator.value),
+            delta: formatIndicatorChange(leadIndicator.change),
+            tone:
+              typeof leadIndicator.change === "number"
+                ? leadIndicator.change > 0
+                  ? ("up" as const)
+                  : leadIndicator.change < 0
+                    ? ("down" as const)
+                    : ("neutral" as const)
+                : ("neutral" as const),
+          },
+        ]
+      : []),
     {
       id: "dominant-theme",
       label: "Theme",
@@ -1772,14 +1787,14 @@ export async function buildTickerFromPackages(): Promise<TickerResponse> {
 
   return {
     generatedAt: payload.generatedAt,
-    items: items.length > 0 ? items : fallbackTicker.items,
+    items,
   };
 }
 
 export async function buildLatestBriefing(): Promise<BriefingPayload> {
   const [payload, indicators] = await Promise.all([
     loadIntelligencePackages(),
-    loadThailandEconomics().catch(() => fallbackEconomicIndicators),
+    loadThailandEconomics().catch(() => [] as EconomicIndicator[]),
   ]);
   const leadPackage =
     payload.packages
