@@ -19,34 +19,58 @@ the Cloudflare dashboard, then `wrangler.jsonc` got both
 `wrangler deploy` attached it. Both hostnames are live:
 https://geo.nonarkara.org and https://geopolitics-dashboard.drnon.workers.dev.
 
-## Database — NOT CONFIGURED (honest degraded state)
+## Database — Localbase on this machine (2026-08-13)
 
-Production has no database. `/api/status` correctly reports
-`"database": "not configured"`, and every DB-backed route now fails closed
-(`[]` + `X-Data-Source: unavailable`) instead of serving mock data.
+Production Worker still has no cloud Postgres. Local work now uses **Localbase**,
+the existing Docker Postgres on this Mac — not a second database.
 
-Facts discovered 2026-08-11:
+```
+Postgres:  postgresql://postgres:postgres@127.0.0.1:54322/postgres
+API:       http://127.0.0.1:54321
+Studio:    http://127.0.0.1:54323
+```
 
-- `DATABASE_URL` in `.env.local` and `shared/.secrets-backup/dashboards_geopolitics-dashboard_.env`
-  is `postgresql://localhost:5432/geopolitics_db` — local dev only. **No cloud
-  Postgres credential exists anywhere on disk.**
-- The Supabase project referenced in `wrangler.jsonc`
-  (`qbatksnulitgrhigzbta`) is alive, but it holds the **globalmonitor**
-  schema (`gm_`-prefixed tables). The geopolitics schema (`events`,
-  `market_data`, `rainfall_data`, …) does not exist there.
-- `src/lib/db.ts` now accepts either an `env.HYPERDRIVE` binding or a
-  `DATABASE_URL` Worker secret (`wrangler secret put DATABASE_URL`).
+Boot after reboot:
 
-To connect a real database (in order):
+```bash
+colima start
+cd /Users/nonarkara/Projects/_infra/localbase && supabase start
+```
 
-1. Decide the target: a dedicated Supabase project for geopolitics, or a new
-   schema in an existing project. (Needs Dr Non's call — cost/ownership.)
-2. Apply schema: `npm run db:schema` then `npm run db:migrate` against it.
-3. Either `wrangler hyperdrive create geopolitics-db --connection-string=...`
-   plus a `hyperdrive` binding in `wrangler.jsonc`, **or** simply
-   `wrangler secret put DATABASE_URL` (supported since 2026-08-11).
-4. Populate via `npm run ingest:all` and the `/api/cron/*` refresh endpoints
-   (GitHub Actions `cron-refresh.yml` already curls them on schedule).
+Then from this repo: `npm run db:schema` and `npm run db:migrate`
+(both now read `.env.local`). Core tables are on Localbase: `events`,
+`market_data`, `fire_events`, `air_quality_snapshots`, plus the existing
+geowatch `signal_archive` / `data_snapshots`. Migrations 003–005 applied.
+001 and 002 stay pending (`CREATE POLICY IF NOT EXISTS` is invalid on this
+Postgres).
+
+`.env.local` points `DATABASE_URL` and `NEXT_PUBLIC_SUPABASE_URL` at Localbase.
+Ingestion (`python3 ingestion/run_all.py`) reads `.env` then `.env.local`.
+
+Local yield (2026-08-13, after SSDIY ingest):
+
+| table | rows |
+|---|---|
+| signal_archive | 2076 |
+| signal_daily_summary | 183 (2019-06-16 → 2026-04-05) |
+| country_economic_indicators | 50 |
+| macro_country_snapshots | 10 |
+| air_quality_snapshots | 12 |
+| rainfall_data | 9 |
+| market_data | 4 |
+| events / fire_events | 0 (no ACLED / FIRMS keys) |
+
+Rebuild summaries: `.venv-ingestion/bin/python ingestion/build_daily_summary.py --all`
+World Bank cash-balance series `GC.BAL.CASH.GD.ZS` is archived; profiles skip unknown indicators.
+
+Do not put that localhost URL in Worker secrets or `wrangler.jsonc` — the
+OpenNext scrub step blanks bundled `DATABASE_URL`, and Hyperdrive is the
+only path that can reach a database from Cloudflare.
+
+To attach the live Worker later: expose Localbase via `db.nonarkara.org`
+(see `_infra/localbase/context.md`) or put a real cloud connection string
+in `wrangler secret put DATABASE_URL`. Until then production DB routes
+stay fail-closed.
 
 ## Data honesty invariant
 

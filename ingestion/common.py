@@ -1,6 +1,13 @@
 import os
 import sys
+from pathlib import Path
 from typing import Callable, Optional, TypeVar
+
+from dotenv import load_dotenv
+
+_ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(_ROOT / ".env")
+load_dotenv(_ROOT / ".env.local", override=True)
 
 T = TypeVar("T")
 
