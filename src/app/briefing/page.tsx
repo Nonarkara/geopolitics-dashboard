@@ -434,7 +434,11 @@ export default async function BriefingPage() {
                           })
                         : "--"}
                     </td>
-                    <td>{f.staleness_hours.toFixed(1)}h</td>
+                    <td>
+                      {typeof f.staleness_hours === "number"
+                        ? `${f.staleness_hours.toFixed(1)}h`
+                        : "—"}
+                    </td>
                     <td
                       style={{
                         color:

@@ -250,6 +250,13 @@ export const INTEL_TOGGLE_TOOLTIPS: Record<string, TooltipContent> = {
     source: "DrNon Global Satellite Toolkit",
     sourceUrl: "https://github.com/Nonarkara/DrNon-Global-Satellite-Toolkit",
   },
+  DAM: {
+    fn: "Toggle static-infrastructure layer (dams)",
+    shows: "Mekong-region dam footprints, pumping stations, and pipeline segments from OpenStreetMap",
+    importance: "Context for water-flow control, regional power dependency, and historical flood-infrastructure signals along the Thai–Cambodia–Laos border",
+    source: "OpenStreetMap via gods-eye-view (ODbL 1.0)",
+    sourceUrl: "https://github.com/bilawalsidhu/gods-eye-view/blob/main/src/data/local_data/dams/",
+  },
 };
 
 /* ── Top Bar Buttons ─────────────────────────────────────── */

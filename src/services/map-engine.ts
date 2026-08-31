@@ -377,6 +377,81 @@ export const createFireLayer = (data: FireEvent[]) =>
     pickable: true,
   });
 
+/**
+ * Static-infrastructure layer (dams, datacenters, cables_osm, …).
+ * Renders any GeoJSON FeatureCollection whose `properties.kind` matches
+ * the provided filter, with kind-specific styling. The route at
+ * `/api/infrastructure?kind=...&bbox=...` is the only producer; we do
+ * not load a global set client-side.
+ */
+export interface InfrastructureFeature {
+  type: "Feature";
+  id?: number;
+  geometry: { type: string; coordinates: unknown };
+  properties: {
+    name?: string;
+    country?: string | null;
+    kind?: string;
+    osm_id?: number | null;
+    source?: string;
+    source_license?: string;
+    [key: string]: unknown;
+  };
+  // Required for compatibility with deck.gl's GeoJsonLayer data prop
+  // (which expects GeoJSON.Feature | GeoJSON.FeatureCollection | ...).
+  [key: string]: unknown;
+}
+
+export interface InfrastructureFeatureCollection {
+  type: "FeatureCollection";
+  features: InfrastructureFeature[];
+  total?: number;
+  query?: { kind: string; bbox: number[] };
+  generatedAt?: string;
+}
+
+export const createInfrastructureLayer = (
+  data: InfrastructureFeature[] | null,
+  kind: string = "dams",
+) => {
+  if (!data || data.length === 0) return null;
+
+  // Per-kind styling. Only "dams" is wired today; future kinds extend this
+  // map. Defaults stay conservative (a single-color fill, no stroke) so
+  // unrecognised kinds still render legibly.
+  const palette: Record<
+    string,
+    { fill: [number, number, number, number]; line: [number, number, number, number] }
+  > = {
+    dams: { fill: [120, 53, 15, 90], line: [196, 130, 60, 220] },
+    datacenters: { fill: [16, 185, 129, 110], line: [16, 185, 129, 220] },
+    cables_osm: { fill: [56, 189, 248, 0], line: [56, 189, 248, 220] },
+    natural_earth_regions: { fill: [120, 120, 120, 40], line: [80, 80, 80, 160] },
+  };
+  const colors = palette[kind] ?? { fill: [180, 180, 180, 80], line: [120, 120, 120, 200] };
+
+  return new GeoJsonLayer({
+    id: `static-infrastructure-${kind}`,
+    // deck.gl's data prop is typed against @deck.gl/typed's Feature; our
+    // InfrastructureFeature is structurally compatible (it has type,
+    // geometry, properties) so the cast stays type-safe at the shape level.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    data: data as any,
+    pickable: true,
+    stroked: true,
+    filled: true,
+    extruded: false,
+    lineWidthMinPixels: 1,
+    getFillColor: () => colors.fill,
+    getLineColor: () => colors.line,
+    getLineWidth: 1,
+    pointType: "circle",
+    pointRadiusMinPixels: 3,
+    pointRadiusMaxPixels: 8,
+    getPointRadius: () => 4,
+  });
+};
+
 export const createRefugeeLayer = (data: RefugeeMovement[]) =>
   new ArcLayer({
     id: "refugee-movements",

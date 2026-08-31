@@ -19,6 +19,7 @@ import {
   createGIBSLayer,
   createHeatmapLayer,
   createIncidentLayer,
+  createInfrastructureLayer,
   createKilometerGridLayer,
   createOperationalCorridorLayers,
   createOperationalNodeLayers,
@@ -27,6 +28,7 @@ import {
   createRefugeeLayer,
   createRegionalBorderLayer,
   createSignalPulseLayer,
+  type InfrastructureFeature,
   createTrafficIncidentLayers,
   createVesselLayer,
 } from "../../services/map-engine";
@@ -403,6 +405,8 @@ export default function BorderMap({
   const [showGrid, setShowGrid] = useState(false);
   const [showVessels, setShowVessels] = useState(false);
   const [showSignalPulse, setShowSignalPulse] = useState(false);
+  const [showDams, setShowDams] = useState(true);
+  const [dams, setDams] = useState<InfrastructureFeature[]>([]);
   const [areControlsOpen, setAreControlsOpen] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
   const [activeBaseId, setActiveBaseId] = useState("ESRI");
@@ -476,6 +480,38 @@ export default function BorderMap({
     const poll = setInterval(load, 60000);
     return () => clearInterval(poll);
   }, []);
+
+  // Static infrastructure (dams, datacenters, …) — fetched on demand
+  // because the API requires a bbox. Re-fetches when the viewport changes
+  // (debounced 600 ms so a pan doesn't fire every frame).
+  useEffect(() => {
+    if (!showDams) {
+      setDams([]);
+      return;
+    }
+    const pad = 1.5;
+    const minLon = viewState.longitude - pad;
+    const maxLon = viewState.longitude + pad;
+    const minLat = viewState.latitude - pad;
+    const maxLat = viewState.latitude + pad;
+    const bbox = `${minLon},${minLat},${maxLon},${maxLat}`;
+
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/api/infrastructure?kind=dams&bbox=${bbox}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : { features: [] }))
+        .then((d) => {
+          if (Array.isArray(d?.features)) setDams(d.features);
+        })
+        .catch((e) => {
+          if (e?.name !== "AbortError") console.warn("dams fetch failed", e);
+        });
+    }, 600);
+    return () => {
+      ctrl.abort();
+      clearTimeout(t);
+    };
+  }, [showDams, viewState.longitude, viewState.latitude]);
 
   const toggleOverlay = useCallback((id: string) => {
     setActiveOverlayIds(prev => {
@@ -597,9 +633,10 @@ export default function BorderMap({
     if (showFlights) result.push(createFlightPathsLayer(flights));
     if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
     if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
+    if (showDams) result.push(createInfrastructureLayer(dams, "dams"));
 
     return result.flat().filter(Boolean);
-  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals]);
+  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showDams, dams]);
 
   // UI/interaction layers — change on viewport (but these are lightweight)
   const uiLayers = useMemo(() => {
@@ -648,7 +685,7 @@ export default function BorderMap({
   // Combine all layer groups
   const layers = [...baseLayers, ...intelligenceLayers, ...uiLayers];
 
-  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse].filter(Boolean).length;
+  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse, showDams].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
@@ -895,6 +932,7 @@ export default function BorderMap({
             { active: showGrid, set: setShowGrid, label: "GRID", icon: Grid3x3 },
             { active: showVessels, set: setShowVessels, label: "SHIP", icon: Ship },
             { active: showSignalPulse, set: setShowSignalPulse, label: "SIG", icon: Radio },
+            { active: showDams, set: setShowDams, label: "DAM", icon: Building2 },
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
