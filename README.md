@@ -1,67 +1,91 @@
-# Phuket Dashboard
+# Geopolitics Dashboard
 
-> **Deployment (read first):** the live site is the `overhaul` branch, deployed to Cloudflare **Workers** via OpenNext — `npm run build:worker && npm run deploy` (config: `wrangler.jsonc` + `open-next.config.ts` on `overhaul`). Cloudflare Pages (`wrangler.toml`) and Vercel (`vercel.json`) are retired and their configs were removed — do not re-add them. Maps render on free tiles via MapLibre; there is no Mapbox dependency anywhere (account deleted 2026-07).
+Map-first **Thailand border intelligence** dashboard. The default UI is labeled **Thailand Geopolitical Watch** and focuses on the Myanmar, Cambodia, and Malaysia frontiers: satellite and raster overlays, OSINT/news, coded conflict events, fires, movements, markets, and a command brief.
 
-Map-first monitoring dashboard for Phuket and nearby provinces, focused on tourism demand, road safety, rainfall, monsoon pressure, air quality, mobility, and local economy. The frontend is a Next.js app; the data layer is PostgreSQL/PostGIS plus Python ingestion scripts. This repo was cloned from the Geopolitics Dashboard system and retargeted as a Phuket-focused starter.
+This GitHub repo is [`Nonarkara/geopolitics-dashboard`](https://github.com/Nonarkara/geopolitics-dashboard). The previous README was titled “Phuket Dashboard” and described a tourism/Andaman starter cloned from this system. That copy does not match this tree’s default product. See [Two surfaces](#two-surfaces) for the Phuket UI that still exists as an opt-in.
+
+The app can render without a populated database (API routes fall back to static or on-demand sources). Live conflict, fire, rainfall, and similar tables stay fresh only after PostgreSQL is configured and ingestion has run.
+
+## Two surfaces
+
+`src/app/page.tsx` chooses the root UI from `NEXT_PUBLIC_DASHBOARD_TYPE`:
+
+| Value | What you get | Entry |
+| --- | --- | --- |
+| unset / anything other than `PHUKET` | Border command dashboard (this repo’s default) | `src/app/BorderDashboard.tsx` |
+| `PHUKET` | Phuket / Andaman operating-center UI | `src/app/PhuketDashboard.tsx` |
+
+The Phuket surface is real code (`src/components/Phuket/`), not a leftover filename. It is **not** the default. This public repo does not need renaming: the default product matches the name `geopolitics-dashboard`. If you only want Phuket, set the flag; if you only want geopolitics, leave it unset and ignore the Phuket tree.
 
 ## Stack
 
-- Next.js 16 App Router
-- React 19 + TypeScript
-- Deck.gl + react-map-gl
-- PostgreSQL + PostGIS
-- Python ingestion for market, fire, rainfall, mobility, and reference datasets
+- Next.js 16 App Router, React 19, TypeScript
+- Deck.gl 9 + Mapbox GL (`mapbox-gl` / `react-map-gl`) plus free raster bases (ESRI, OSM, Carto, NASA GIBS, EOX Sentinel-2)
+- PostgreSQL / PostGIS (`pg`), optional Supabase HTTP client
+- Python ingestion scripts under `ingestion/`
+
+There is no MapLibre or Cloudflare Workers/OpenNext config in this tree. Production-shaped deploy files here are Fly.io (`Dockerfile`, `fly.toml`) and Render (`render.yaml`).
+
+## What the default dashboard covers
+
+From the code, not from marketing copy:
+
+- **Map:** Thailand-centered view clamped to the regional bounding box; Deck.gl layers for incidents, heatmaps, NASA FIRMS hotspots, flights, vessels, AQI/PM2.5, and NASA GIBS / other raster overlays (`src/lib/map-overlays.ts`, `src/components/Map/BorderMap.tsx`).
+- **Frontiers:** Myanmar, Cambodia, Malaysia command areas (`src/lib/border-regions.ts`).
+- **OSINT / news:** GDELT, Google News, BBC, CNA, and related routes under `src/app/api/border/` and `src/app/api/news/`.
+- **Conflict & humanitarian:** ACLED ingest (optional credentials), UNHCR population API, HDX-related market/profile warming.
+- **Environment:** NASA FIRMS, Open-Meteo rainfall and air quality.
+- **Economics:** FX, Binance spot ticker, World Bank WDI, IMF/DBnomics ingest.
+- **Operator chrome:** ASEAN/world clocks, signal ticker, live YouTube news embeds (Thai outlets in the current channel list), time-window playback (`src/lib/time-window.ts`), optional AI summaries.
+
+Optional AI uses **OpenAI** and/or local **Ollama** (`src/lib/ai-config.ts`). There is no Claude briefing client in this tree.
 
 ## Prerequisites
 
-- Node.js 20+
+- Node.js 20+ (see `package.json` `engines`)
 - npm
-- PostgreSQL with PostGIS installed
-- Python 3.9+ if you want to run ingestion
+- PostgreSQL with PostGIS for persisted feeds
+- Python 3.9+ only if you run ingestion
 
 ## Environment
-
-To set up your local environment, create a `.env` file from the example:
 
 ```bash
 cp .env.example .env
 ```
 
-### Required Configuration
+`.env.example` lists variable **names** only. Put your own values in `.env` (gitignored). Do not commit secrets.
 
-> [!IMPORTANT]
-> You must provide your own API keys in the `.env` file. These are **not included** in the repository for security.
-
-- `DATABASE_URL`: Your PostgreSQL + PostGIS connection string
-- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`: [Mapbox](https://www.mapbox.com/) public token for the map engine
-- `FIRMS_KEY`: (Optional but recommended) [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov/api/config/realtime/) key for live fire ingestion
-- `ACLED_USERNAME` and `ACLED_PASSWORD`: (Optional) current myACLED OAuth credentials for coded conflict-event ingestion
-- `ACLED_EMAIL` and `ACLED_KEY`: legacy ACLED variables kept only for compatibility checks; they are no longer the preferred API auth path
-- `OPENAI_API_KEY`: [OpenAI](https://platform.openai.com/) key for automated intelligence summaries
-- `REFERENCE_DASHBOARD_URL`: (Optional) URL to an external data feed
-- `NEXT_PUBLIC_ENABLE_DATA_EXPLORER`: (Optional) `true` only if you explicitly want the browser-facing database explorer/export tools visible in the UI
-- `DATA_EXPLORER_ENABLED`: (Optional) `true` only if you explicitly want the `/api/data/*` routes enabled on the server
-- `DATA_EXPLORER_TOKEN`: (Recommended when the explorer is enabled) bearer token required for `/api/data/*` access
-- `ALLOW_MOCK_INGESTION`: Keep this `false` in any real environment so failed ingest jobs do not write demo rows into your database
-- `INGEST_REQUEST_TIMEOUT_SECONDS`: Optional request timeout for Python ingestion jobs; defaults to `30`
+| Variable | Role |
+| --- | --- |
+| `DATABASE_URL` | PostgreSQL + PostGIS connection string |
+| `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` | Mapbox public token for Mapbox styles (`MAPBOX_ACCESS_TOKEN` is accepted as an alias). The map also has non-Mapbox raster bases. |
+| `NEXT_PUBLIC_DASHBOARD_TYPE` | Set to `PHUKET` to boot the Phuket UI; omit for geopolitics |
+| `FIRMS_KEY` | NASA FIRMS key; ingest skips if unset |
+| `ACLED_USERNAME` / `ACLED_PASSWORD` | myACLED OAuth for conflict ingest; job skips if unset |
+| `ACLED_EMAIL` / `ACLED_KEY` | Legacy ACLED names; OAuth password login is preferred |
+| `AISSTREAM_API_KEY` | Optional AIS vessel ingest |
+| `OPENAI_API_KEY` | Optional cloud AI summaries |
+| `OLLAMA_HOST` / `OLLAMA_MODEL` | Optional local model (defaults exist in code) |
+| `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY` | Optional Supabase HTTP path |
+| `REFERENCE_DASHBOARD_URL` | Optional external dashboard JSON feed |
+| `NEXT_PUBLIC_ENABLE_DATA_EXPLORER` / `DATA_EXPLORER_ENABLED` / `DATA_EXPLORER_TOKEN` | Browser DB explorer; keep off unless you intend to expose it |
+| `ALLOW_MOCK_INGESTION` | Keep `false` in real environments so failed jobs do not write demo rows |
 
 ## Setup
-
-Install frontend dependencies:
 
 ```bash
 npm install
 ```
 
-Initialize the database schema:
+Initialize the schema (creates `geopolitics_db` by default):
 
 ```bash
 ./scripts/setup-db.sh
 ```
 
-If `psql` is not installed locally, run `db/schema.sql` in your managed PostgreSQL/PostGIS console instead.
+If `psql` is not local, run `db/schema.sql` against your PostGIS instance, or `npm run db:schema` when `DATABASE_URL` is set.
 
-Install ingestion dependencies if needed:
+Ingestion venv (optional):
 
 ```bash
 python3 -m venv venv
@@ -71,105 +95,54 @@ pip install -r ingestion/requirements.txt
 
 ## Run
 
-Start the app:
-
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
-
-The UI can still render with fallback data if the database is not populated yet, and it can also pull incidents, package sources, and market cards from the external reference dashboard.
+Open [http://localhost:3000](http://localhost:3000). Default is the border dashboard.
 
 ## Ingestion
 
-Run whichever scripts you need:
-
 ```bash
-python ingestion/acled_ingest.py
-python ingestion/hdx_ingest.py
-python ingestion/firms_ingest.py
-python ingestion/rainfall_ingest.py
-```
-
-Or warm the full pipeline in one shot:
-
-```bash
+python3 ingestion/run_all.py --list
 python3 ingestion/run_all.py
+# or
+npm run ingest:all
 ```
 
-List the available one-shot jobs:
+Jobs currently wired in `ingestion/run_all.py`: `acled`, `markets`, `fires`, `rainfall`, `air-quality`, `refugees`, `gkg`, `vessels`, `imf-dbnomics`, `daily-summary`. Several skip cleanly when optional keys are missing.
 
-```bash
-npm run ingest:list
-```
-
-Current source posture for the one-shot bootstrap:
-
-- `ingestion/hdx_ingest.py` now warms reference markets, ASEAN GDP snapshots, and best-effort country profile caches from ExchangeRate API, Binance, and World Bank
-- `ingestion/rainfall_ingest.py` now uses Open-Meteo archive data instead of the blocked HDX rainfall endpoint
-- `ingestion/air_quality_ingest.py` warms the stored Open-Meteo air-quality cache so `/api/status` can track that table honestly
-- `ingestion/refugee_ingest.py` now uses the public UNHCR population API instead of the blocked HDX refugee endpoint
-- `ingestion/acled_ingest.py` expects current ACLED OAuth credentials; without `ACLED_PASSWORD`, it skips cleanly as an optional feed
-- `ingestion/firms_ingest.py` skips cleanly when `FIRMS_KEY` is absent, because thermal hotspots are optional
-
-## Quality Checks
+## Checks
 
 ```bash
 npm run lint
+npx tsc --noEmit
 npm run build
-npm audit --omit=dev --audit-level=high
 ```
 
-## Render Deployment
+Playwright specs live in `tests/` (`npm run test:ui`).
 
-This repo now includes a production-shaped `render.yaml` Blueprint:
+## Deploy
 
-- one Node web service
-- one managed Postgres database
-- five Python cron jobs for conflict, fires, rainfall, market, and refugee ingestion
+- **Fly.io:** `Dockerfile` (standalone Next.js) + `fly.toml` (`app = geopolitics-dashboard`, region `sin`). Typical hostname: `geopolitics-dashboard.fly.dev` — confirm in your Fly account; this README does not claim uptime.
+- **Render:** `render.yaml` Blueprint (Node web service, managed Postgres, Python cron ingest). Set Mapbox / FIRMS / ACLED / OpenAI in the dashboard; explorer flags default off.
 
-Default production posture in the Blueprint:
-
-- `ALLOW_MOCK_INGESTION=false`, so failed jobs fail loudly instead of polluting the database with demo data
-- ACLED is treated as an optional feed unless valid OAuth credentials are configured
-- `NEXT_PUBLIC_ENABLE_DATA_EXPLORER=false` and `DATA_EXPLORER_ENABLED=false`, so admin-ish DB routes stay off unless you explicitly enable them
-- `DATA_EXPLORER_TOKEN` is generated automatically even when the explorer remains off
-
-What you still need to set in Render:
-
-- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` for a real basemap
-- `OPENAI_API_KEY` if you want AI summaries
-- `FIRMS_KEY` for live NASA FIRMS ingestion
-- `ACLED_USERNAME` and `ACLED_PASSWORD` if you want ACLED-backed conflict ingestion
-
-Blueprint notes:
-
-- The web and cron services are pinned to `starter` plans and the database to `basic-256mb` so the app does not sleep like a demo. Change those if you want a cheaper test posture.
-- Market and World Bank endpoints can still fetch live on demand even before the database is warm, but conflict, fire, and rainfall surfaces need the cron jobs and database to stay truly fresh.
-- During bootstrap, country profile cache warming is best-effort; the app can still fetch those World Bank metrics on demand.
-- `/api/status` now reports dataset freshness so operators can see when the system is on live snapshots, on-demand fetches, or fallback posture.
-
-To deploy with the Blueprint flow, push the repo to GitHub, GitLab, or Bitbucket, then create the Render Blueprint from that repo.
-
-If you want the database warm immediately after setup instead of waiting for the first cron cycle, run:
+Warm a configured `DATABASE_URL` once:
 
 ```bash
 npm run bootstrap:production
 ```
 
-That applies `db/schema.sql` to `DATABASE_URL` and then runs the full ingestion sequence once.
+That applies `db/schema.sql` and runs the ingest sequence.
 
-## Data Flow
+## Data flow
 
-1. Python scripts fetch external data and write normalized rows to Postgres.
-2. Next.js API routes combine Postgres data, RSS/search feeds, and reference APIs into cached intelligence packages.
-3. React components fetch those routes and render map overlays, charts, package panels, and live signal cards.
+1. Python jobs write normalized rows to Postgres (when `DATABASE_URL` is set).
+2. Next.js `/api/*` routes combine Postgres, RSS/search, and on-demand APIs. Responses are enveloped as `{ success, data, error? }` on the routes that follow that contract.
+3. React panels fetch those routes for the map, ticker, briefs, and charts.
 
-## Database Notes
+`/api/status` reports dataset freshness so you can see live snapshots vs fallback.
 
-- Core longitudinal tables: `events`, `market_data`, `fire_events`, `rainfall_data`, `population_movements` as a legacy movement cache
-- Live snapshot tables: `air_quality_snapshots`, `macro_country_snapshots`
-- `/api/markets` now persists live FX/BTC reference indicators plus ASEAN GDP snapshots when `DATABASE_URL` is configured
-- `/api/air-quality` now persists live AQI/PM2.5 station observations and falls back to the latest stored snapshots before using static defaults
-# V5.1.0 — Thailand Geopolitical Watch
+## License
+
+MIT. See [LICENSE](LICENSE).
