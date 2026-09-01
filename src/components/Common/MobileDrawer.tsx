@@ -12,10 +12,12 @@ type MobileDrawerProps = {
 
 /**
  * Bottom-sheet drawer for mobile/tablet (§11.8). Slides up over the map so the
- * command sidebar stays reachable below the `xl` breakpoint, where the desktop
- * <aside> is hidden. Geometric, hairline-bordered, single dark surface — no
- * border-radius, gradient, or shadow (§11.6 / §14). Theme tokens with fallbacks
- * so it reads correctly on both the border and Phuket dashboards.
+ * command sidebar stays reachable below the `md` breakpoint, where the desktop
+ * <aside> is hidden. Above `md` (768px — iPad portrait and most foldable
+ * unfolded modes) the desktop layout shows directly. Geometric, hairline-
+ * bordered, single dark surface — no border-radius, gradient, or shadow
+ * (§11.6 / §14). Theme tokens with fallbacks so it reads correctly on both
+ * the border and Phuket dashboards.
  */
 export default function MobileDrawer({ isOpen, onClose, title, children }: MobileDrawerProps) {
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col justify-end xl:hidden"
+      className="fixed inset-0 z-[100] flex flex-col justify-end md:hidden"
       role="dialog"
       aria-modal="true"
       aria-label={title}

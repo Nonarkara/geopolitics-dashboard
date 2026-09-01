@@ -858,14 +858,14 @@ export default function BorderMap({
             <span className="text-[13px] font-black uppercase tracking-[0.2em]">Base Map</span>
             <span className="text-[12px] font-mono opacity-40 ml-auto">{activeBase.label}</span>
           </div>
-          <div className="grid grid-cols-4 gap-[1px] bg-black/10 p-[1px]">
+          <div className="grid grid-cols-3 md:grid-cols-4 gap-[1px] bg-black/10 p-[1px]">
             {BASE_MAPS.map(bm => {
               const tip = BASE_MAP_TOOLTIPS[bm.id];
               const btn = (
                 <button
                   key={bm.id}
                   onClick={() => setActiveBaseId(bm.id)}
-                  className={`py-2 px-1 flex flex-col items-center gap-0.5 transition-all w-full ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                  className={`min-h-[44px] py-2 px-1 flex flex-col items-center gap-0.5 transition-all w-full ${activeBaseId === bm.id ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                 >
                   <span className="text-[13px] font-black tracking-wider leading-none">{bm.label}</span>
                   <span className="text-[11px] font-medium opacity-40 uppercase leading-tight text-center break-words hyphens-auto w-full">{bm.name}</span>
@@ -896,7 +896,7 @@ export default function BorderMap({
                     const btn = (
                       <button
                         onClick={() => toggleOverlay(ov.id)}
-                        className={`py-1.5 px-2 flex items-center gap-1.5 transition-all w-full ${active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
+                        className={`min-h-[44px] py-2 px-2 flex items-center gap-1.5 transition-all w-full ${active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-50"}`}
                       >
                         {active && <Check size={11} strokeWidth={4} />}
                         <div className="min-w-0">
@@ -947,7 +947,7 @@ export default function BorderMap({
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
-              <button onClick={() => t.set(!t.active)} className={`flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
+              <button onClick={() => t.set(!t.active)} className={`min-h-[44px] flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
                 <t.icon size={12} />
                 <span className="text-[12px] font-black tracking-wider">{t.label}</span>
               </button>

@@ -279,6 +279,74 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* ── iPad / foldable-unfolded tier (768-1023 CSS px) ──────────
+ * Compressed desktop layout. Map dominant, sidebar at 240px,
+ * insight lab / news at 240px tall, status strip visible. The
+ * MobileDrawer pattern (which would push everything into a
+ * bottom sheet) is wrong here — iPad users want a real
+ * multi-pane experience, not a phone-grade sheet. */
+@media (min-width: 768px) and (max-width: 1023.98px) {
+  html, body {
+    /* 14px default keeps compact but readable on a 7-9" display */
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+/* ── iPad Pro 12.9" portrait and Galaxy Z Fold main (673-840 CSS px) ──
+ * A few devices report widths in this band (notably some Android
+ * foldables when the system font-size is bumped to "Largest"). Treat
+ * as the "compressed desktop" tier and use the same rules as the
+ * 768-1023 range. */
+@media (min-width: 673px) and (max-width: 767.98px) {
+  html, body {
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+/* ── Galaxy Z Fold "Flex Mode" / book posture ──────────────────
+ * When the device is half-folded (laptop posture), CSS cannot
+ * read the hinge position. The window reports full main-display
+ * width but visual content is split top/bottom. Pad the bottom
+ * 50% so the status strip and intel button clear the hinge on
+ * most devices. (Best-effort — device-posture / viewport-segment
+ * support is still emerging in Chromium.) */
+@media (max-height: 540px) and (orientation: landscape) {
+  .dashboard-root {
+    padding-bottom: 8px;
+  }
+}
+
+/* ── Safe area insets for iPad / iPhone with notches / camera ──
+ * The body has `overflow-hidden` so env(safe-area-inset-*) can
+ * never push content out of view. The 8px buffer keeps the
+ * iPad status-bar transparent area readable. */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+      env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+}
+
+/* ── Touch device tuning ──────────────────────────────────────
+ * Disable tap-highlight (Safari's grey box) and overscroll-
+ * bounce for the map surface so the user can pan without the
+ * page rubber-banding around it. Hover effects (which look
+ * wrong on touch) are disabled below. */
+@media (hover: none) and (pointer: coarse) {
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Active states take the place of hover for touch users */
+  button:active,
+  [role="button"]:active {
+    opacity: 0.7;
+  }
+}
+
 /* ── Connected grid shell ─────────────────────────────────── */
 .connected-grid {
   display: flex;

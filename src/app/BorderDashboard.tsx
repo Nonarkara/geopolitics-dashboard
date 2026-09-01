@@ -132,7 +132,7 @@ function BorderDashboardContent() {
 
         {/* ROW 2: PRIMARY SURFACE */}
         <div className="flex flex-1 min-h-0 connected-grid">
-          <aside className="hidden w-[320px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
+          <aside className="hidden w-[240px] shrink-0 md:flex lg:w-[320px] grid-cell flex-col overflow-hidden">
             <Sidebar brief={brief} />
           </aside>
 
@@ -147,19 +147,19 @@ function BorderDashboardContent() {
           type="button"
           onClick={() => setIsPanelsOpen(true)}
           aria-label="Open mobile intelligence panels"
-          className="fixed right-3 top-[76px] z-40 flex h-11 items-center gap-2 border border-[var(--accent)] bg-black px-3 text-[14px] font-black uppercase tracking-[0.18em] text-white xl:hidden"
+          className="fixed right-3 top-[76px] z-40 flex h-11 items-center gap-2 border border-[var(--accent)] bg-black px-3 text-[14px] font-black uppercase tracking-[0.18em] text-white md:hidden"
         >
           <span className="h-1.5 w-1.5 bg-[var(--accent)]" aria-hidden="true" /> Intel
         </button>
 
         {/* ROW 3: Insight Lab + news only. Markets/cameras stay in the Intel drawer. */}
-        <div className="!hidden h-[340px] shrink-0 connected-grid overflow-hidden bg-black xl:!flex">
+        <div className="!hidden h-[240px] shrink-0 connected-grid overflow-hidden bg-black md:!flex lg:h-[340px]">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
             <ErrorBoundary name="Border Insight Lab">
               <BorderInsightLab brief={brief} />
             </ErrorBoundary>
           </div>
-          <div className="w-[380px] shrink-0 grid-cell overflow-hidden">
+          <div className="w-[280px] shrink-0 grid-cell overflow-hidden lg:w-[380px]">
             <BorderNewsDesk />
           </div>
         </div>
@@ -173,10 +173,10 @@ function BorderDashboardContent() {
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
-        <div className="hidden xl:block">
+        <div className="hidden md:block">
           <TimeMachine />
         </div>
-        <div className="hidden xl:block">
+        <div className="hidden md:block">
           <BorderStatusStrip brief={brief} />
         </div>
       </div>

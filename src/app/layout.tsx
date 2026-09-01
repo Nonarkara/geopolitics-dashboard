@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Josefin_Sans, Source_Sans_3, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
@@ -72,6 +72,24 @@ export const metadata: Metadata = {
     description:
       "Executive-grade tri-border operations dashboard for live monitoring and playback.",
   },
+};
+
+// Responsive viewport config — supports iPad (768-1366 CSS px) and foldable
+// phones (Z Fold cover ~452 CSS px folded, main display ~1088+ CSS px unfolded).
+// `viewport-fit=cover` lets us draw under the iPad status bar / camera notch
+// when we want to. `interactive-widget=resizes-content` keeps the keyboard from
+// obscuring form inputs on foldable in laptop posture.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e14" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+  ],
 };
 
 export default function RootLayout({
