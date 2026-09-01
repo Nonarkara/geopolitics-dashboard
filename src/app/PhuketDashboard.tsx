@@ -52,9 +52,9 @@ export default function PhuketDashboard() {
       />
 
       <div className="flex min-h-0 flex-1 border-t border-[var(--line)] overflow-hidden">
-        {/* Left Command Column - Tactical Slim. Compressed on tablet (md-lg),
-            full width on desktop (lg+). */}
-        <aside className="hidden w-[200px] shrink-0 flex-col overflow-y-auto border-r border-[var(--line)] bg-[var(--bg-raised)] md:flex lg:w-[240px] xl:flex">
+        {/* Left Command Column - Tactical Slim. Compressed on tablet (min-[744px]+
+            up to md), full width on desktop (lg+). */}
+        <aside className="hidden w-[180px] shrink-0 flex-col overflow-y-auto border-r border-[var(--line)] bg-[var(--bg-raised)] min-[744px]:flex md:w-[200px] lg:w-[240px] xl:flex">
           <div className="flex-1 overflow-y-auto no-scrollbar">
             <Sidebar />
             <section className="border-t border-[var(--line)] p-3">
@@ -73,7 +73,7 @@ export default function PhuketDashboard() {
               type="button"
               onClick={() => setIsPanelsOpen(true)}
               aria-label="Open command panels"
-              className="absolute left-2 top-2 z-40 flex h-11 items-center gap-2 border border-[var(--line)] bg-[var(--bg-raised)] px-3 text-[14px] font-black uppercase tracking-[0.18em] text-[var(--ink)] md:hidden"
+              className="absolute left-2 top-2 z-40 flex h-11 items-center gap-2 border border-[var(--line)] bg-[var(--bg-raised)] px-3 text-[14px] font-black uppercase tracking-[0.18em] text-[var(--ink)] min-[744px]:hidden md:hidden"
             >
               <span aria-hidden="true">&#9776;</span> Panels
             </button>

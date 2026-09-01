@@ -33,7 +33,7 @@ export default function MobileDrawer({ isOpen, onClose, title, children }: Mobil
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex flex-col justify-end md:hidden"
+      className="fixed inset-0 z-[100] flex flex-col justify-end min-[744px]:hidden md:hidden"
       role="dialog"
       aria-modal="true"
       aria-label={title}
