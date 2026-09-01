@@ -8,6 +8,7 @@ import type {
   BorderAreaStatus,
   BorderCommandBrief,
   CommodityPrice,
+  EonetEvent,
   RegionalDisaster,
   RiverDischarge,
   ScoreBreakdown,
@@ -21,6 +22,18 @@ import { useNow } from "../../hooks/useNow";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
 import { formatBangkokDayLabel } from "../../lib/time-window";
+
+function eonetTopSummary(events: EonetEvent[]): string {
+  if (events.length === 0) return "events";
+  // Bucket by category, surface the top 1-2 categories in the sub-line.
+  const counts: Record<string, number> = {};
+  for (const e of events) {
+    counts[e.categoryTitle] = (counts[e.categoryTitle] ?? 0) + 1;
+  }
+  const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, 2).map(([k, v]) => `${v} ${k.toLowerCase()}`);
+  return top.join(" · ");
+}
 
 function postureColor(posture: string) {
   switch (posture) {
@@ -304,6 +317,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
   const trafficFetch = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
   const disastersFetch = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+  const eonetFetch = useFetch<EonetEvent[]>("/api/border/eonet", 1800_000);
   const firesFetch = useFetch<Array<{ latitude: number; longitude: number }>>("/api/fires", 900_000);
   const [acledStatus, setAcledStatus] = useState<"live" | "stale" | "offline">("offline");
 
@@ -312,6 +326,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
   const quakes = quakesFetch.data;
   const traffic = trafficFetch.data;
   const disasters = disastersFetch.data;
+  const eonetEvents = eonetFetch.data;
   const fireCount = firesFetch.data?.length ?? 0;
 
   useEffect(() => {
@@ -338,7 +353,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
     };
   }, []);
 
-  const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing || firesFetch.isRefreshing;
+  const anyRefreshing = commoditiesFetch.isRefreshing || riversFetch.isRefreshing || quakesFetch.isRefreshing || trafficFetch.isRefreshing || disastersFetch.isRefreshing || eonetFetch.isRefreshing || firesFetch.isRefreshing;
 
   // Find the stalest feed
   const feedAges: { label: string; age: number }[] = [
@@ -525,6 +540,14 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               sub={redAlerts > 0 ? `${redAlerts} red` : orangeAlerts > 0 ? `${orangeAlerts} orange` : "green"}
               color={redAlerts > 0 ? "var(--accent)" : orangeAlerts > 0 ? "#f59e0b" : undefined}
               sourceId="disasters" />
+          )}
+          {eonetEvents && eonetEvents.length > 0 && (
+            <Metric
+              label="EONET"
+              value={eonetEvents.length}
+              sub={eonetTopSummary(eonetEvents)}
+              sourceId="eonet"
+            />
           )}
         </div>
 

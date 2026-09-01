@@ -154,6 +154,27 @@ export const OVERLAY_TOOLTIPS: Record<string, TooltipContent> = {
     source: "NASA GIBS (MODIS Terra EVI)",
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
+  NDV: {
+    fn: "Toggle Landsat NDVI (30m) overlay",
+    shows: "Monthly composite NDVI from Landsat WELD showing vegetation vigor at 30m resolution",
+    importance: "Higher-resolution vegetation baseline than MODIS EVI — detects forest loss, camp clearance, and burn scars at the village scale",
+    source: "NASA GIBS (Landsat WELD)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
+  MTA: {
+    fn: "Toggle MODIS Active Fire (1km) raster overlay",
+    shows: "Daily MODIS Terra thermal anomalies at 1km resolution as a raster",
+    importance: "Complements the vector FIRMS hotspots with pixel-level fire signal — surfaces low-intensity fires that fall below the FIRMS confidence threshold",
+    source: "NASA GIBS (MODIS Terra Thermal Anomalies)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
+  VAF: {
+    fn: "Toggle VIIRS Active Fire (375m) raster overlay",
+    shows: "Daily VIIRS SNPP thermal anomalies at 375m resolution as a raster",
+    importance: "Higher-resolution active-fire raster than MODIS — sees small fires and village-level burn events FIRMS vectors miss",
+    source: "NASA GIBS (VIIRS SNPP Thermal Anomalies 375m)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
   NGT: {
     fn: "Toggle nighttime lights overlay",
     shows: "VIIRS Day/Night Band showing artificial light sources and nighttime activity",

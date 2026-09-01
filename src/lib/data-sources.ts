@@ -37,6 +37,13 @@ export const DATA_SOURCE_CATALOG: Record<string, DataSourceAttribution> = {
     url: "https://www.gdacs.org",
     refreshInterval: "10 min",
   },
+  eonet: {
+    id: "eonet",
+    label: "NASA EONET — Earth Observatory Natural Event Tracker (32 source agencies)",
+    shortLabel: "EONET",
+    url: "https://eonet.gsfc.nasa.gov",
+    refreshInterval: "30 min",
+  },
   commodities: {
     id: "commodities",
     label: "NABC Thai Agricultural Commodities",

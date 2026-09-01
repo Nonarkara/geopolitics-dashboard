@@ -100,15 +100,27 @@ def load_one(cur, kind, feature, source, license):
     if wkt is None:
         return "skipped"
 
+    # Two natural keys:
+    #   - OSM-sourced features: (kind, osm_id) — relies on the partial
+    #     unique index `static_infrastructure_kind_osm_uniq` (WHERE osm_id IS NOT NULL).
+    #   - non-OSM features (e.g. UNHCR refugee camps with no osm_id):
+    #     (kind, name) — relies on the partial unique index added in
+    #     migration 007 (WHERE osm_id IS NULL).
+    # The ON CONFLICT clause picks whichever index matches.
+    if osm_id is not None:
+        conflict_target_sql = "(kind, osm_id) WHERE osm_id IS NOT NULL"
+    else:
+        conflict_target_sql = "(kind, name) WHERE osm_id IS NULL"
+
     cur.execute(
-        """
+        f"""
         INSERT INTO static_infrastructure
             (kind, osm_id, name, country, properties, geom,
              source, source_license)
         VALUES
             (%s, %s, %s, %s, %s::jsonb, ST_GeomFromText(%s, 4326),
              %s, %s)
-        ON CONFLICT (kind, osm_id) WHERE osm_id IS NOT NULL DO UPDATE SET
+        ON CONFLICT {conflict_target_sql} DO UPDATE SET
             name = EXCLUDED.name,
             country = EXCLUDED.country,
             properties = EXCLUDED.properties,

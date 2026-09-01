@@ -811,6 +811,22 @@ export interface RegionalDisaster {
   source: string;
 }
 
+export interface EonetEvent {
+  id: string;
+  title: string;
+  category: string;
+  categoryTitle: string;
+  sources: string[];
+  sourceUrls: Record<string, string>;
+  lat: number;
+  lng: number;
+  date: string;
+  closed: string | null;
+  magnitudeValue: number | null;
+  magnitudeUnit: string | null;
+  link: string;
+}
+
 export type MapOverlayKind = "raster" | "vector";
 export type MapOverlayFamily =
   | "imagery"

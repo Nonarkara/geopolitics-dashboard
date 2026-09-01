@@ -337,6 +337,12 @@ const DATA_OVERLAYS: OverlayConfig[] = [
     gibsLayer: "VIIRS_SNPP_CorrectedReflectance_BandsM11-I2-I1", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.6 },
   { id: "SWI", label: "SWI", name: "Shortwave Heat", category: "THERMAL",
     gibsLayer: "MODIS_Terra_SurfaceReflectance_Bands721", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.55 },
+  // Raster active-fire products (1km MODIS + 375m VIIRS) — complement
+  // the vector FIRMS hotspots with pixel-level fire signal. Keyless.
+  { id: "MTA", label: "MTA", name: "MODIS Active Fire (1km)", category: "THERMAL",
+    gibsLayer: "MODIS_Terra_Thermal_Anomalies_All", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.55 },
+  { id: "VAF", label: "VAF", name: "VIIRS Active Fire (375m)", category: "THERMAL",
+    gibsLayer: "VIIRS_SNPP_Thermal_Anomalies_375m_All", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.5 },
   // Atmospheric
   { id: "AOD", label: "AOD", name: "Aerosol Density", category: "ATMOSPHERE",
     gibsLayer: "MODIS_Combined_Value_Added_AOD", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
@@ -349,6 +355,11 @@ const DATA_OVERLAYS: OverlayConfig[] = [
   // Vegetation
   { id: "EVI", label: "EVI", name: "Vegetation Index", category: "VEGETATION",
     gibsLayer: "MODIS_Terra_EVI_8Day", gibsFormat: "png", maxZoom: 9, defaultOpacity: 0.46, useDefaultDate: true },
+  // 30m Landsat NDVI — higher resolution vegetation baseline than MODIS EVI.
+  // Useful for "the forest was here last month, it's gone now" detection
+  // (deforestation, camp clearance, fire scar). Keyless via GIBS.
+  { id: "NDV", label: "NDV", name: "Landsat NDVI (30m)", category: "VEGETATION",
+    gibsLayer: "Landsat_WELD_NDVI_Global_Monthly", gibsFormat: "png", maxZoom: 9, defaultOpacity: 0.5 },
   // Nighttime & Infrastructure
   { id: "NGT", label: "NGT", name: "Night Lights", category: "INFRASTRUCTURE",
     gibsLayer: "VIIRS_SNPP_DayNightBand_AtSensor_M15", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.6, useDefaultDate: true },

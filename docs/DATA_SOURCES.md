@@ -65,6 +65,24 @@ CONFIGURED" / "Localbase on this machine"). The relevant rules:
   FIRMS remain zero in production because no key exists; this is
   honest degraded state, not a bug).
 
+### Keyless live sources (live on the Worker without any operator action)
+
+| Source | Route | What it gives the operator |
+|---|---|---|
+| **NASA EONET** (32 source agencies) | `/api/border/eonet` | Aggregated satellite-event feed with per-event source attribution chips. CEMS, NASA_DISP, USGS_EHP, ReliefWeb, GLIDE, IDC, HDDS, SIVolcano, JTWC, IRWIN, FloodList, NASA_HURR, MRR (LANCE Rapid Response), and ~20 more. SE Asia bbox filter, 30-min cache. |
+| **NASA FIRMS** (MODIS + VIIRS) | `/api/fires` | Active-fire hotspots for the border box. 15-min in-memory cache. Keyless CSV fallback when no `FIRMS_KEY`; keyed area API when the secret is set. |
+| **NASA GIBS** | tiled via MapLibre in `BorderMap.tsx` | 16 toggleable satellite-derived raster overlays: true color (VIIRS + MODIS Aqua/Terra), false color (Bands721, M11-I2-I1), AOD, LST, CO, IMERG precipitation, EVI, Landsat WELD NDVI (30m), MODIS active-fire raster (1km), VIIRS active-fire raster (375m), Himawari-9, Geo Ring natural + IR + airmass, JRC surface water + change, EMODNET bathymetry, Blue Marble, VIIRS DayNightBand (nightlights). |
+| **GDACS** (EU JRC + UN OCHA) | `/api/border/disasters` | Multi-hazard alerts (earthquakes, floods, cyclones, volcanoes, wildfires) for SE Asia, 10-min cache. |
+| **ReliefWeb** (UN OCHA) | `/api/border/reliefweb` | Humanitarian reports for THA/MMR/KHM/MYS. |
+| **OFAC SDN** (US Treasury) | `/api/border/sanctions` | Watchlist hits relevant to the theatre. |
+
+### Live sources requiring a secret (degrade gracefully without it)
+
+| Source | Env var | Behavior when unset |
+|---|---|---|
+| **ACLED** (Armed Conflict Location & Event Data) | `ACLED_KEY` + `ACLED_EMAIL` | Route returns `[]` + `X-Data-Source: unavailable`. Honest degraded state — the dashboard does not invent conflict events. |
+| **NASA FIRMS** (area API — keyed) | `FIRMS_KEY` | Falls back to the keyless SE Asia CSV; same data, slightly older. |
+
 ---
 
 ## In-app credit line
@@ -72,8 +90,11 @@ CONFIGURED" / "Localbase on this machine"). The relevant rules:
 Layer-level credits are surfaced through the `DAM` / `THRM` / `AIR` /
 `FLOW` / `ZONE` toggles' tooltip (`CommandTooltip`, bottom-positioned
 on hover). The tooltip lists `source` and `sourceUrl` for the active
-layer. No Google / Mapbox credit overlay exists in-app yet because
-the active basemap is ESRI (free, no key required); if a Mapbox /
-Google key is later wired in, the credit line should follow the
-`#cesium-credits` pattern from `gods-eye-view` (always-visible
-attribution bottom-left, including in clean-view / recording modes).
+layer. The EONET right-rail panel shows per-event source chips
+(e.g. `NASA_DISP`, `CEMS`, `ReliefWeb`) so the operator always sees
+which agency reported what. No Google / Mapbox credit overlay exists
+in-app yet because the active basemap is ESRI (free, no key required);
+if a Mapbox / Google key is later wired in, the credit line should
+follow the `#cesium-credits` pattern from `gods-eye-view` (always-
+visible attribution bottom-left, including in clean-view / recording
+modes).

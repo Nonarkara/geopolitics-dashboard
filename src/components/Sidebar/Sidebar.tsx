@@ -14,13 +14,14 @@ import {
   Globe,
   Minus,
   Radio,
+  Satellite,
   Shield,
   Siren,
   TrendingUp,
   Wheat,
   Zap,
 } from "lucide-react";
-import type { BorderCommandBrief, CommodityPrice, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
+import type { BorderCommandBrief, CommodityPrice, EonetEvent, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import BorderNewsFeed from "./BorderNewsFeed";
 import type { ReliefWebResponse } from "../../lib/reliefweb";
@@ -161,6 +162,7 @@ export default function Sidebar({ brief }: SidebarProps) {
   const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
   const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
   const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
+  const eonet = useFetch<EonetEvent[]>("/api/border/eonet", 1800_000);
   const relief = useEnvelope<ReliefWebResponse>("/api/border/reliefweb", 1800_000);
   const sanctions = useEnvelope<SanctionsResponse>("/api/border/sanctions", 3600_000);
 
@@ -563,6 +565,66 @@ export default function Sidebar({ brief }: SidebarProps) {
                   </div>
                 );
               })}
+            </div>
+          </section>
+        )}
+
+        {/* EONET — multi-agency satellite event tracker (32 source agencies) */}
+        {eonet && eonet.length > 0 && (
+          <section className="pt-3 border-t border-white/10">
+            <div className="flex items-center justify-between mb-3">
+              <div className="eyebrow text-white/90 flex items-center gap-2">
+                <Satellite size={12} className="text-[#22d3ee]" />
+                Satellite Event Tracker
+              </div>
+              <span className="live-badge scale-75">EONET</span>
+            </div>
+            <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-white/35 mb-2">
+              32 source agencies · CEMS · NASA_DISP · USGS_EHP · ReliefWeb
+            </div>
+            <div className="space-y-1">
+              {eonet.slice(0, 6).map((event) => (
+                <a
+                  key={event.id}
+                  href={event.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block border border-white/10 bg-white/[0.06] p-2 hover:bg-white/[0.09] transition-colors"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[12px] font-black uppercase tracking-wider px-1 py-0.5 bg-[#22d3ee]/15 text-[#22d3ee]">
+                      {event.categoryTitle}
+                    </span>
+                    {event.sources.slice(0, 3).map((src) => (
+                      <span
+                        key={src}
+                        className="text-[11px] font-mono uppercase tracking-wider px-1 py-0.5 bg-white/[0.08] opacity-75"
+                        title={event.sourceUrls[src] ?? src}
+                      >
+                        {src}
+                      </span>
+                    ))}
+                    {event.sources.length > 3 && (
+                      <span className="text-[11px] font-mono opacity-50">
+                        +{event.sources.length - 3}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[13px] font-bold leading-tight mt-1 line-clamp-2">
+                    {event.title}
+                  </div>
+                  <div className="text-[11px] font-mono uppercase tracking-[0.12em] text-white/40 mt-1">
+                    {event.lat.toFixed(2)}° {event.lng.toFixed(2)}° ·{" "}
+                    {new Date(event.date).toLocaleDateString("en-GB", {
+                      day: "2-digit",
+                      month: "short",
+                    })}
+                    {event.magnitudeValue && event.magnitudeUnit && (
+                      <> · {event.magnitudeValue.toLocaleString()} {event.magnitudeUnit}</>
+                    )}
+                  </div>
+                </a>
+              ))}
             </div>
           </section>
         )}
