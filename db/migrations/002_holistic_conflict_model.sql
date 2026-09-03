@@ -710,42 +710,93 @@ ALTER TABLE displacement_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE infrastructure_impacts ENABLE ROW LEVEL SECURITY;
 
 -- Public read
-CREATE POLICY "Public read: conflict_phases"
-  ON conflict_phases FOR SELECT USING (true);
-CREATE POLICY "Public read: actors"
-  ON actors FOR SELECT USING (true);
-CREATE POLICY "Public read: actor_relationships"
-  ON actor_relationships FOR SELECT USING (true);
-CREATE POLICY "Public read: actor_signals"
-  ON actor_signals FOR SELECT USING (true);
-CREATE POLICY "Public read: displacement_events"
-  ON displacement_events FOR SELECT USING (true);
-CREATE POLICY "Public read: infrastructure_impacts"
-  ON infrastructure_impacts FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "Public read: conflict_phases"
+    ON conflict_phases FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: actors"
+    ON actors FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: actor_relationships"
+    ON actor_relationships FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: actor_signals"
+    ON actor_signals FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: displacement_events"
+    ON displacement_events FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: infrastructure_impacts"
+    ON infrastructure_impacts FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Service-role write
-CREATE POLICY "Service write: conflict_phases"
-  ON conflict_phases FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service update: conflict_phases"
-  ON conflict_phases FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY "Service write: actors"
-  ON actors FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service update: actors"
-  ON actors FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY "Service write: actor_relationships"
-  ON actor_relationships FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service update: actor_relationships"
-  ON actor_relationships FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY "Service write: actor_signals"
-  ON actor_signals FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service write: displacement_events"
-  ON displacement_events FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service update: displacement_events"
-  ON displacement_events FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY "Service write: infrastructure_impacts"
-  ON infrastructure_impacts FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY "Service update: infrastructure_impacts"
-  ON infrastructure_impacts FOR UPDATE USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service write: conflict_phases"
+    ON conflict_phases FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: conflict_phases"
+    ON conflict_phases FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: actors"
+    ON actors FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: actors"
+    ON actors FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: actor_relationships"
+    ON actor_relationships FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: actor_relationships"
+    ON actor_relationships FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: actor_signals"
+    ON actor_signals FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: displacement_events"
+    ON displacement_events FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: displacement_events"
+    ON displacement_events FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: infrastructure_impacts"
+    ON infrastructure_impacts FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: infrastructure_impacts"
+    ON infrastructure_impacts FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════

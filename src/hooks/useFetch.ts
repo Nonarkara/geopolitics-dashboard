@@ -7,6 +7,7 @@ export interface UseFetchResult<T> {
   lastRefreshed: Date | null;
   isRefreshing: boolean;
   error: string | null;
+  isStale: boolean;
   fetchCount: number;
   errorCount: number;
   refresh: () => void;
@@ -50,6 +51,10 @@ export function useFetch<T>(url: string, intervalMs: number): UseFetchResult<T> 
     }
   }, [url]);
 
+  const refresh = useCallback(() => {
+    void load();
+  }, [load]);
+
   useEffect(() => {
     activeRef.current = true;
     void load();
@@ -60,9 +65,19 @@ export function useFetch<T>(url: string, intervalMs: number): UseFetchResult<T> 
     };
   }, [load, intervalMs]);
 
-  const refresh = useCallback(() => {
-    void load();
-  }, [load]);
+  // Pause polling when tab is hidden
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (!document.hidden) {
+        // Tab became visible — refresh immediately
+        refresh();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [refresh]);
 
-  return { data, lastRefreshed, isRefreshing, error, fetchCount, errorCount, refresh };
+  const isStale = error !== null && data !== null;
+
+  return { data, lastRefreshed, isRefreshing, error, isStale, fetchCount, errorCount, refresh };
 }

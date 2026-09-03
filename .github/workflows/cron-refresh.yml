@@ -1,0 +1,50 @@
+name: Cron Refresh (Cloudflare Worker)
+
+# Cloudflare Workers can't run Next.js route handlers on a schedule
+# (@opennextjs/cloudflare has no `scheduled` support), so GitHub Actions
+# calls the secured cron route groups instead. CRON_SECRET lives in
+# GitHub repo secrets. continue-on-error keeps pre-existing data issues
+# from spamming failure notifications; the runs still warm caches and
+# record feed-health once the database is connected.
+
+on:
+  schedule:
+    # Marquee data groups — every 30 minutes
+    - cron: "*/30 * * * *"
+    # Heavy / daily groups — once a day at 01:17 UTC (off-peak minute)
+    - cron: "17 1 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: none
+
+jobs:
+  refresh-frequent:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/30 * * * *'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [conflict-intel, environment-thermal]
+    steps:
+      - name: Call /api/cron/${{ matrix.group }}
+        run: |
+          curl -fsS --max-time 120 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://geopolitics-dashboard.drnon.workers.dev/api/cron/${{ matrix.group }}"
+
+  refresh-daily:
+    if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 1 * * *'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        group: [daily-ops, daily-summary, markets-macro, movements-maritime, maintenance-cleanup, data-ingestion, snapshot]
+    steps:
+      - name: Call /api/cron/${{ matrix.group }}
+        run: |
+          curl -fsS --max-time 300 \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://geopolitics-dashboard.drnon.workers.dev/api/cron/${{ matrix.group }}"

@@ -39,7 +39,6 @@ import {
 } from "../../../services/map-engine";
 import { luma } from "@luma.gl/core";
 import { webgl2Adapter } from "@luma.gl/webgl";
-import { getUsableMapboxToken } from "../../../lib/mapbox";
 import { buildMapOverlayCatalog } from "../../../lib/map-overlays";
 import PublicCameraCard from "../Intelligence/PublicCameraCard";
 import type {
@@ -60,10 +59,8 @@ import type {
   RegionBorderFeature,
 } from "../../../types/dashboard";
 
-const MapboxMap = dynamic(() => import("react-map-gl/mapbox"), { ssr: false });
-const MAPBOX_TOKEN = getUsableMapboxToken(
-  process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN,
-);
+// Mapbox is permanently gone (account deleted) — no MapboxMap underlay,
+// no token. The free Deck.gl raster base layers are the only base map.
 
 // Register WebGL adapter for deck.gl v9
 luma.registerAdapters([webgl2Adapter]);
@@ -77,27 +74,6 @@ const INITIAL_VIEW_STATE: MapViewState = {
   minZoom: 5,
   maxZoom: 18,
 };
-
-// §11.9 — Deck.gl does not enforce viewState.minZoom/maxZoom on its own, so the
-// floor must be re-applied on every view change or the world tiles/repeats when
-// zoomed out. City-scale floor is 5 (mirrors src/components/Map/BorderMap.tsx).
-const PHUKET_BOUNDS = {
-  west: 96.5, east: 100.5, south: 6.0, north: 9.5,
-} as const;
-const MIN_PHUKET_ZOOM = 5;
-const MAX_PHUKET_ZOOM = 18;
-
-function clampPhuketViewState(viewState: MapViewState): MapViewState {
-  const clamp = (value: number, minimum: number, maximum: number) =>
-    Math.min(maximum, Math.max(minimum, value));
-  return {
-    ...viewState,
-    longitude: clamp(viewState.longitude, PHUKET_BOUNDS.west, PHUKET_BOUNDS.east),
-    latitude: clamp(viewState.latitude, PHUKET_BOUNDS.south, PHUKET_BOUNDS.north),
-    zoom: clamp(viewState.zoom, MIN_PHUKET_ZOOM, MAX_PHUKET_ZOOM),
-    pitch: clamp(viewState.pitch ?? INITIAL_VIEW_STATE.pitch ?? 0, 0, 60),
-  };
-}
 
 const EMPTY_BORDERS: RegionBorderCollection = {
   type: "FeatureCollection",
@@ -343,13 +319,15 @@ export default function BorderMap({
   onProvinceSelect?: (province: ProvinceSelection) => void;
 }) {
   const mapSurfaceRef = useRef<HTMLDivElement>(null);
-  const [viewState, setViewState] = useState(clampPhuketViewState(INITIAL_VIEW_STATE));
+  const [viewState, setViewState] = useState(INITIAL_VIEW_STATE);
   const [mapSurfaceSize, setMapSurfaceSize] = useState({ width: 0, height: 0 });
   const [showSatelliteOverlay, setShowSatelliteOverlay] = useState(true);
   const [satelliteOpacity, setSatelliteOpacity] = useState(62);
   const [isDetailedMap, setIsDetailedMap] = useState(true);
+  // Mapbox is permanently gone (account deleted) — a free base (ESRI aerial /
+  // OSM streets) is always visible by default.
   const [showAerialBasemap, setShowAerialBasemap] = useState(true);
-  const [showStreets, setShowStreets] = useState(false);
+  const [showStreets, setShowStreets] = useState(true);
 
   const [incidents, setIncidents] = useState<IncidentFeature[]>([]);
   const [fires, setFires] = useState<FireEvent[]>([]);
@@ -395,12 +373,6 @@ export default function BorderMap({
   const signalCount = incidents.length;
   const hotspotCount = fires.length;
   const rainCount = rainfall.length;
-  // Mapbox account removed — always use the free Deck.gl aerial/street base
-  // layers plus the satellite overlay. No token, no account, no billing.
-  const hasMapboxBaseMap = false;
-  const mapStyle = isDetailedMap
-    ? "mapbox://styles/mapbox/satellite-streets-v12"
-    : "mapbox://styles/mapbox/light-v11";
   const fallbackBackgroundClass = isDetailedMap
     ? "bg-[radial-gradient(circle_at_top,_var(--line-bright),_var(--bg)_52%),linear-gradient(180deg,_var(--bg)_0%,_var(--bg-surface)_100%)]"
     : "bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.08),_rgba(10,15,26,0.98)_42%),linear-gradient(180deg,_rgba(4,8,15,1)_0%,_rgba(2,6,12,1)_100%)]";
@@ -818,19 +790,17 @@ export default function BorderMap({
       data-testid="phuket-map-surface"
       className="relative flex h-full w-full flex-col overflow-hidden"
     >
-      {!hasMapboxBaseMap && (
-        <div
-          className={`absolute inset-0 ${fallbackBackgroundClass}`}
-          aria-hidden="true"
-        />
-      )}
+      <div
+        className={`absolute inset-0 ${fallbackBackgroundClass}`}
+        aria-hidden="true"
+      />
 
       <DeckGL
         id="phuket-deck"
         viewState={viewState}
         onViewStateChange={({ viewState: nextViewState }) => {
           if (isMapViewState(nextViewState)) {
-            setViewState(clampPhuketViewState(nextViewState));
+            setViewState(nextViewState);
           }
         }}
         controller={true}
@@ -838,17 +808,7 @@ export default function BorderMap({
         onClick={handleMapClick}
         getTooltip={({ object }: PickingInfo<unknown>) => getTooltipText(object)}
       >
-        {hasMapboxBaseMap ? (
-          <MapboxMap
-            mapboxAccessToken={MAPBOX_TOKEN}
-            mapStyle={mapStyle}
-            reuseMaps
-            renderWorldCopies={false}
-            attributionControl={false}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
-        )}
+        <div className="absolute inset-0 bg-[#0c121e]/20 pointer-events-none" />
       </DeckGL>
 
       {enabledOverlays.publicCameras ? (
@@ -878,7 +838,7 @@ export default function BorderMap({
                   }}
                 >
                   <span className="flex items-center justify-center">
-                    <Camera size={14} />
+                    <Camera size={15} />
                   </span>
                 </button>
               );
@@ -900,9 +860,9 @@ export default function BorderMap({
         <div className="flex flex-wrap items-center justify-between gap-3 px-3 py-1.5 xl:px-4">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="text-[14px] font-bold tracking-tight text-[var(--ink)] uppercase">Operating Surface</div>
+              <div className="text-[16px] font-bold tracking-tight text-[var(--ink)] uppercase">Operating Surface</div>
               <div className="h-3 w-[1px] bg-[var(--line)]" />
-              <div className="flex gap-3 text-[9px] font-mono font-bold text-[var(--dim)] uppercase tracking-tight">
+              <div className="flex gap-3 text-[13px] font-mono font-bold text-[var(--dim)] uppercase tracking-tight">
                 <span>SIG {signalCount}</span>
                 <span>AQI {airQuality.length}</span>
                 <span>FLT {flights.length}</span>
@@ -934,7 +894,7 @@ export default function BorderMap({
                     setSatelliteOverlay(option.id);
                   }}
                   onClick={() => setSatelliteOverlay(option.id)}
-                  className={`px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                  className={`px-2 py-1 text-[13px] font-bold uppercase tracking-wider transition-colors ${
                     satelliteOverlay === option.id
                       ? "text-[var(--ink)] underline underline-offset-4"
                       : "text-[var(--dim)] hover:text-[var(--ink)]"
@@ -954,13 +914,13 @@ export default function BorderMap({
                   aria-label={`Toggle ${control.label}`}
                   data-testid={`map-mode-${control.id}`}
                   onClick={control.onClick}
-                  className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[9px] font-bold uppercase tracking-wider transition-colors ${
+                  className={`inline-flex h-7 items-center gap-1.5 border px-2 text-[13px] font-bold uppercase tracking-wider transition-colors ${
                     control.active
                       ? "border-[var(--cool)] bg-[rgba(15,111,136,0.06)] text-[var(--cool)]"
                       : "border-[var(--line)] text-[var(--dim)] hover:text-[var(--ink)]"
                   }`}
                 >
-                  <Icon size={11} />
+                  <Icon size={13} />
                   {control.shortLabel}
                 </button>
               );
@@ -979,14 +939,14 @@ export default function BorderMap({
                     ...preset.view,
                   }))
                 }
-                className="whitespace-nowrap rounded border border-[var(--line)] px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
+                className="whitespace-nowrap rounded border border-[var(--line)] px-2 py-0.5 text-[13px] font-bold uppercase tracking-wider text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--ink)]"
               >
                 {preset.label}
               </button>
             ))}
           </div>
         <div className={`flex items-center gap-2 min-w-[140px] ${showSatelliteOverlay ? "opacity-100" : "opacity-40"}`}>
-            <span className="text-[9px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
+            <span className="text-[13px] font-mono text-[var(--dim)] shrink-0">VIS {satelliteOpacity}%</span>
             <input
               type="range"
               min="20"
@@ -1003,14 +963,14 @@ export default function BorderMap({
         </div>
         {feedAlerts.length > 0 ? (
           <div className="flex flex-wrap items-center gap-2 border-t border-[var(--line)] px-3 py-1.5 xl:px-4">
-            <span className="text-[9px] font-mono font-bold uppercase tracking-[0.16em] text-[#b45309]">
+            <span className="text-[13px] font-mono font-bold uppercase tracking-[0.16em] text-[#b45309]">
               Feed Integrity
             </span>
             {feedAlerts.map((alert) => (
               <span
                 key={alert.id}
                 title={alert.details}
-                className="rounded-full border border-[#f59e0b]/40 bg-[#fff7ed] px-2 py-0.5 text-[9px] font-bold uppercase tracking-[0.14em] text-[#9a3412]"
+                className="rounded-full border border-[#f59e0b]/40 bg-[#fff7ed] px-2 py-0.5 text-[13px] font-bold uppercase tracking-[0.14em] text-[#9a3412]"
               >
                 {alert.label} {alert.state}
               </span>
@@ -1040,8 +1000,8 @@ export default function BorderMap({
                   title={`${control.label} · ${control.detail}`}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Icon size={10} className="shrink-0" />
-                    <span className="text-[9px] font-bold uppercase tracking-wider">
+                    <Icon size={12} className="shrink-0" />
+                    <span className="text-[13px] font-bold uppercase tracking-wider">
                       {control.shortLabel}
                     </span>
                   </div>

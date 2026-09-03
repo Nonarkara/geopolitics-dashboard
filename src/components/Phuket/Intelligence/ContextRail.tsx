@@ -101,7 +101,7 @@ export default function ContextRail() {
       <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] pb-2">
         <div>
           <div className="eyebrow">Context</div>
-          <div className="pt-1 text-[15px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+          <div className="pt-1 text-[17px] font-bold tracking-[-0.02em] text-[var(--ink)]">
             Source health and compact pulse
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function ContextRail() {
           className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--line)] text-[var(--dim)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
           aria-label="Refresh source health"
         >
-          <RefreshCw size={13} />
+          <RefreshCw size={14} />
         </button>
       </div>
 
@@ -122,14 +122,14 @@ export default function ContextRail() {
               key={item.id}
               className="rounded-xl border border-[var(--line)] bg-[rgba(6,10,18,0.42)] p-3"
             >
-              <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+              <div className="text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
                 {item.label}
               </div>
-              <div className="pt-2 text-[16px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+              <div className="pt-2 text-[18px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                 {item.value}
               </div>
               <div
-                className={`pt-1 text-[10px] font-mono uppercase tracking-[0.14em] ${tickerToneClass(
+                className={`pt-1 text-[13px] font-mono uppercase tracking-[0.14em] ${tickerToneClass(
                   item,
                 )}`}
               >
@@ -149,16 +149,16 @@ export default function ContextRail() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-[11px] font-semibold text-[var(--ink)]">
+                    <div className="text-[14px] font-semibold text-[var(--ink)]">
                       {source.label}
                     </div>
-                    <div className="pt-1 text-[9px] uppercase tracking-[0.14em] text-[var(--dim)]">
+                    <div className="pt-1 text-[13px] uppercase tracking-[0.14em] text-[var(--dim)]">
                       {source.target}
                     </div>
                   </div>
                   {source.health ? (
                     <span
-                      className={`rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.16em] ${sourceHealthClass(
+                      className={`rounded-full px-2 py-1 text-[12px] font-bold uppercase tracking-[0.16em] ${sourceHealthClass(
                         source.health,
                       )}`}
                     >
@@ -166,7 +166,7 @@ export default function ContextRail() {
                     </span>
                   ) : null}
                 </div>
-                <div className="truncate pt-2 text-[9px] font-mono text-[var(--dim)]">
+                <div className="truncate pt-2 text-[13px] font-mono text-[var(--dim)]">
                   {source.url}
                 </div>
               </div>

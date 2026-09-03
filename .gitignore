@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/test-results
+/playwright-report
 
 # next.js
 /.next/
@@ -24,6 +26,7 @@
 .DS_Store
 *.pem
 venv/
+.venv-ingestion/
 
 # debug
 npm-debug.log*
@@ -36,6 +39,10 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# cloudflare / opennext build artifacts
+.open-next/
+.wrangler/
 
 # typescript
 *.tsbuildinfo

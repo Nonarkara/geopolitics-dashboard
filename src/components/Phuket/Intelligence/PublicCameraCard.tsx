@@ -71,7 +71,7 @@ export default function PublicCameraCard({
           <div className="flex h-full w-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(15,111,136,0.2),_rgba(6,10,18,0.94)_58%)]">
             <div className="flex flex-col items-center gap-2 text-[var(--dim)]">
               <Camera size={compact ? 18 : 22} />
-              <span className="text-[10px] font-semibold uppercase tracking-[0.16em]">
+              <span className="text-[13px] font-semibold uppercase tracking-[0.16em]">
                 Snapshot unavailable
               </span>
             </div>
@@ -80,13 +80,13 @@ export default function PublicCameraCard({
 
         <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 px-2 py-2">
           <span
-            className={`rounded-full px-2 py-1 text-[8px] font-bold uppercase tracking-[0.18em] ${statusClass(
+            className={`rounded-full px-2 py-1 text-[12px] font-bold uppercase tracking-[0.18em] ${statusClass(
               resolvedStatus,
             )}`}
           >
             {resolvedStatus}
           </span>
-          <span className="rounded-full bg-[rgba(6,10,18,0.74)] px-2 py-1 text-[8px] font-mono uppercase tracking-[0.16em] text-white">
+          <span className="rounded-full bg-[rgba(6,10,18,0.74)] px-2 py-1 text-[12px] font-mono uppercase tracking-[0.16em] text-white">
             {camera.category}
           </span>
         </div>
@@ -95,10 +95,10 @@ export default function PublicCameraCard({
       <div className={compact ? "space-y-2 p-3" : "space-y-3 p-4"}>
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className="text-[12px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)]">
+            <div className="text-[14px] font-semibold uppercase tracking-[0.14em] text-[var(--ink)]">
               {camera.label}
             </div>
-            <div className="pt-1 text-[10px] text-[var(--dim)]">{camera.provider}</div>
+            <div className="pt-1 text-[13px] text-[var(--dim)]">{camera.provider}</div>
           </div>
           <a
             href={camera.sourcePageUrl}
@@ -108,13 +108,13 @@ export default function PublicCameraCard({
             aria-label={`Open source feed for ${camera.label}`}
             title="Open source feed"
           >
-            <ExternalLink size={14} />
+            <ExternalLink size={15} />
           </a>
         </div>
 
-        <div className="flex items-center justify-between gap-3 text-[10px] text-[var(--muted)]">
+        <div className="flex items-center justify-between gap-3 text-[13px] text-[var(--muted)]">
           <div className="inline-flex items-center gap-2">
-            <MapPin size={12} className="text-[var(--cool)]" />
+            <MapPin size={14} className="text-[var(--cool)]" />
             <span>
               {camera.lat.toFixed(3)}, {camera.lng.toFixed(3)}
             </span>

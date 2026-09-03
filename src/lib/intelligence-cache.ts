@@ -1,4 +1,9 @@
-import { isDatabaseConfigured, query } from "./db";
+import {
+  isDatabaseConfigured,
+  query,
+  type DatabaseExecutor,
+  withDatabaseTransaction,
+} from "./db";
 import type {
   IntelligenceItem,
   IntelligencePackage,
@@ -113,89 +118,96 @@ async function storeInDatabase(payload: IntelligencePackageResponse) {
   }
 
   try {
-    await Promise.all([
-      query("DELETE FROM intelligence_package_snapshots"),
-      query("DELETE FROM intelligence_items_cache"),
-      query("DELETE FROM intelligence_source_health"),
-    ]);
+    await withDatabaseTransaction(async (executor) => {
+      await replaceStoredPayload(executor, payload);
+    });
+  } catch {
+    // Database cache is optional; in-memory fallback is sufficient when unavailable.
+  }
+}
 
-    for (const pkg of payload.packages) {
-      await query(
+async function replaceStoredPayload(
+  executor: DatabaseExecutor,
+  payload: IntelligencePackageResponse,
+) {
+  await executor.query("DELETE FROM intelligence_package_snapshots");
+  await executor.query("DELETE FROM intelligence_items_cache");
+  await executor.query("DELETE FROM intelligence_source_health");
+
+  for (const pkg of payload.packages) {
+    await executor.query(
+      `
+        INSERT INTO intelligence_package_snapshots (package_id, snapshot, updated_at, status)
+        VALUES ($1, $2::jsonb, $3::timestamptz, $4)
+      `,
+      [pkg.id, JSON.stringify(pkg), pkg.updatedAt, pkg.status],
+    );
+
+    for (const item of pkg.items) {
+      await executor.query(
         `
-          INSERT INTO intelligence_package_snapshots (package_id, snapshot, updated_at, status)
-          VALUES ($1, $2::jsonb, $3::timestamptz, $4)
-        `,
-        [pkg.id, JSON.stringify(pkg), pkg.updatedAt, pkg.status],
-      );
-
-      for (const item of pkg.items) {
-        await query(
-          `
-            INSERT INTO intelligence_items_cache (
-              item_id,
-              package_id,
-              source_label,
-              source_url,
-              title,
-              summary,
-              url,
-              published_at,
-              severity,
-              score,
-              kind,
-              tags,
-              payload,
-              updated_at
-            )
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10, $11, $12::jsonb, $13::jsonb, $14::timestamptz)
-          `,
-          [
-            item.id,
-            item.packageId,
-            item.source,
-            item.sourceUrl,
-            item.title,
-            item.summary,
-            item.url,
-            item.publishedAt,
-            item.severity,
-            item.score,
-            item.kind,
-            JSON.stringify(item.tags),
-            JSON.stringify(item),
-            pkg.updatedAt,
-          ],
-        );
-      }
-    }
-
-    for (const source of payload.sources) {
-      await query(
-        `
-          INSERT INTO intelligence_source_health (
-            source_id,
+          INSERT INTO intelligence_items_cache (
+            item_id,
+            package_id,
             source_label,
+            source_url,
+            title,
+            summary,
             url,
-            status,
-            checked_at,
-            response_time_ms,
-            message
+            published_at,
+            severity,
+            score,
+            kind,
+            tags,
+            payload,
+            updated_at
           )
-          VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8::timestamptz, $9, $10, $11, $12::jsonb, $13::jsonb, $14::timestamptz)
         `,
         [
-          source.id,
-          source.label,
-          source.url,
-          source.status,
-          source.checkedAt,
-          source.responseTimeMs,
-          source.message,
+          item.id,
+          item.packageId,
+          item.source,
+          item.sourceUrl,
+          item.title,
+          item.summary,
+          item.url,
+          item.publishedAt,
+          item.severity,
+          item.score,
+          item.kind,
+          JSON.stringify(item.tags),
+          JSON.stringify(item),
+          pkg.updatedAt,
         ],
       );
     }
-  } catch {
-    // Database cache is optional; in-memory fallback is sufficient when unavailable.
+  }
+
+  for (const source of payload.sources) {
+    await executor.query(
+      `
+        INSERT INTO intelligence_source_health (
+          source_id,
+          source_label,
+          url,
+          status,
+          checked_at,
+          response_time_ms,
+          message
+        )
+        VALUES ($1, $2, $3, $4, $5::timestamptz, $6, $7)
+      `,
+      [
+        source.id,
+        source.label,
+        source.url,
+        source.status,
+        source.checkedAt,
+        source.responseTimeMs,
+        source.message,
+      ],
+    );
   }
 }
 

@@ -62,6 +62,87 @@ export interface RefugeeMovement {
   label: string;
 }
 
+export interface TrafficIncident {
+  id: string;
+  title: string;
+  description: string;
+  lat: number;
+  lng: number;
+  category: string;
+  severity: number;
+  start: string;
+  stop: string;
+}
+
+export interface OperationalMapViewState {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
+export type BorderOperationalNodeType =
+  | "checkpoint"
+  | "sez"
+  | "logistics-hub"
+  | "rail"
+  | "port"
+  | "security";
+
+export interface BorderOperationalTheater {
+  id: "myanmar-frontier" | "cambodia-frontier" | "malaysia-frontier" | "deep-south";
+  label: string;
+  counterpart: string;
+  summary: string;
+  focusView: OperationalMapViewState;
+  deepZoomRadiusKm: number;
+  generalZoom: number;
+  deepZoom: number;
+}
+
+export interface BorderOperationalNode {
+  id: string;
+  theaterId: BorderOperationalTheater["id"];
+  label: string;
+  shortLabel: string;
+  type: BorderOperationalNodeType;
+  coordinates: Coordinates;
+  summary: string;
+  usage: string;
+  focusView: OperationalMapViewState;
+  allowsDeepZoom: boolean;
+  emphasis: "primary" | "secondary";
+}
+
+export type BorderOperationalCorridorMode =
+  | "freight"
+  | "passenger"
+  | "mixed"
+  | "security";
+
+export interface BorderOperationalCorridor {
+  id: string;
+  theaterId: BorderOperationalTheater["id"];
+  label: string;
+  shortLabel: string;
+  coordinates: Coordinates[];
+  mode: BorderOperationalCorridorMode;
+  summary: string;
+  usage: string;
+  emphasis: "primary" | "secondary";
+}
+
+export interface BorderOperationalMapResponse {
+  generatedAt: string;
+  nationalView: OperationalMapViewState;
+  theaters: BorderOperationalTheater[];
+  nodes: BorderOperationalNode[];
+  corridors: BorderOperationalCorridor[];
+  liveFlows: RefugeeMovement[];
+  sources: string[];
+}
+
 export interface RainfallPoint {
   lat: number;
   lng: number;
@@ -217,7 +298,7 @@ export interface MarketRadarResponse {
   signals: EconomicIndicator[];
   aseanGdp: AseanGdpDatum[];
   sources: string[];
-  mode?: string;
+  mode?: DashboardPlaybackMode;
 }
 
 export interface DatabaseTableSummary {
@@ -262,6 +343,7 @@ export interface ConflictTrendsResponse {
   rainfall: FatalityTrendSeries;
 }
 
+export type DashboardPlaybackMode = "live" | "historical" | "historical-empty";
 export type SignalTone = "up" | "down" | "neutral";
 export type NewsSeverity = "alert" | "watch" | "stable";
 
@@ -280,7 +362,9 @@ export interface NewsItem {
 export interface NewsResponse {
   news: NewsItem[];
   generatedAt: string;
-  mode?: string;
+  mode?: DashboardPlaybackMode;
+  sources?: SourceHealth[];
+  errorCode?: string;
 }
 
 export interface TickerItem {
@@ -294,6 +378,7 @@ export interface TickerItem {
 export interface TickerResponse {
   items: TickerItem[];
   generatedAt: string;
+  mode?: DashboardPlaybackMode;
 }
 
 export interface BriefingPayload {
@@ -329,6 +414,13 @@ export type RuntimeDatasetState =
 
 export type DashboardDatasetCriticality = "core" | "optional";
 
+export type DashboardCronState =
+  | "healthy"
+  | "stale"
+  | "missing"
+  | "failing"
+  | "disabled";
+
 export interface DashboardDatasetStatus {
   id: string;
   label: string;
@@ -341,13 +433,25 @@ export interface DashboardDatasetStatus {
   details: string;
 }
 
+export interface DashboardCronStatus {
+  id: string;
+  label: string;
+  cadence: string;
+  state: DashboardCronState;
+  lastRunAt: string | null;
+  ageMinutes: number | null;
+  details: string;
+}
+
 export interface DashboardStatusPayload {
   status: string;
   version: string;
   signal_strength: number;
   checkedAt: string;
+  posture?: "live" | "hybrid" | "fallback";
   services: Record<string, string>;
   datasets: DashboardDatasetStatus[];
+  crons?: DashboardCronStatus[];
 }
 
 export type PublicCameraCategory =
@@ -584,6 +688,7 @@ export interface BorderCommandBrief {
   topConcerns: BorderCommandConcern[];
   actionQueue: BorderActionItem[];
   sources: string[];
+  mode?: DashboardPlaybackMode;
 }
 
 export interface BorderNarrativeSignal {
@@ -658,6 +763,68 @@ export interface VesselTrackingResponse {
   generatedAt: string;
   vessels: VesselPosition[];
   vesselCount: number;
+}
+
+/* ── Border Feed Types (shared across API routes + components) ── */
+
+export interface CommodityPrice {
+  id: string;
+  name: string;
+  nameEn: string;
+  price: number;
+  unit: string;
+  market: string;
+  date: string;
+}
+
+export interface RiverDischarge {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  currentDischarge: number;
+  forecastPeak: number;
+  forecastPeakDate: string;
+  trend: "rising" | "falling" | "stable";
+  riskLevel: "low" | "moderate" | "high" | "critical";
+}
+
+export interface SeismicEvent {
+  id: string;
+  magnitude: number;
+  place: string;
+  lat: number;
+  lng: number;
+  depth: number;
+  time: string;
+  url: string;
+}
+
+export interface RegionalDisaster {
+  id: string;
+  title: string;
+  type: string;
+  alertLevel: string;
+  lat: number;
+  lng: number;
+  date: string;
+  source: string;
+}
+
+export interface EonetEvent {
+  id: string;
+  title: string;
+  category: string;
+  categoryTitle: string;
+  sources: string[];
+  sourceUrls: Record<string, string>;
+  lat: number;
+  lng: number;
+  date: string;
+  closed: string | null;
+  magnitudeValue: number | null;
+  magnitudeUnit: string | null;
+  link: string;
 }
 
 export type MapOverlayKind = "raster" | "vector";

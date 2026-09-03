@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fallbackBriefing } from "../../lib/mock-data";
 import type { BriefingPayload } from "../../types/dashboard";
 
 function isBriefingPayload(value: unknown): value is BriefingPayload {
@@ -25,7 +24,7 @@ function formatTimestamp(value: string) {
 }
 
 export default function BriefingPanel() {
-  const [briefing, setBriefing] = useState<BriefingPayload>(fallbackBriefing);
+  const [briefing, setBriefing] = useState<BriefingPayload | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -37,32 +36,47 @@ export default function BriefingPanel() {
           setBriefing(payload);
         }
       } catch {
-        setBriefing(fallbackBriefing);
+        // Fail closed: the honest empty state below stands in for mock copy.
       }
     };
 
     load();
   }, []);
 
+  if (!briefing) {
+    return (
+      <section className="flex flex-col gap-3">
+        <div className="border-b border-[var(--line)] pb-2">
+          <h2 className="text-[16px] font-black tracking-tight uppercase leading-tight">
+            Operational Briefing
+          </h2>
+        </div>
+        <div className="border border-[var(--line-dim)] border-dashed p-3 text-center text-[13px] font-black uppercase tracking-widest text-[var(--dim)]">
+          Live briefing unavailable
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3 border-b border-[var(--line)] pb-2">
-        <h2 className="text-[14px] font-black tracking-tight uppercase leading-tight">
+        <h2 className="text-[16px] font-black tracking-tight uppercase leading-tight">
           {briefing?.title || "Operational Briefing"}
         </h2>
-        <div className="text-right text-[8px] font-mono tabular-nums text-[var(--dim)] shrink-0">
+        <div className="text-right text-[12px] font-mono tabular-nums text-[var(--dim)] shrink-0">
           {briefing?.updatedAt ? formatTimestamp(briefing.updatedAt) : "Syncing..."}
         </div>
       </div>
 
-      <p className="text-[11px] leading-relaxed text-[var(--muted)]">
+      <p className="text-[14px] leading-relaxed text-[var(--muted)]">
         {briefing?.summary}
       </p>
 
       {briefing?.outlook && (
         <div className="border border-[var(--line)] bg-[var(--bg)] p-3">
           <div className="eyebrow mb-1 opacity-60">Strategic Outlook</div>
-          <p className="text-[10px] leading-relaxed text-[var(--muted)]">
+          <p className="text-[13px] leading-relaxed text-[var(--muted)]">
             {briefing.outlook}
           </p>
         </div>
@@ -75,8 +89,8 @@ export default function BriefingPanel() {
             key={item}
             className="flex items-start gap-2 border border-[var(--line-dim)] bg-white p-2"
           >
-            <span className="text-[9px] font-black text-[var(--dim)] tabular-nums mt-0.5">0{index + 1}</span>
-            <div className="text-[10px] leading-tight font-medium">
+            <span className="text-[13px] font-black text-[var(--dim)] tabular-nums mt-0.5">0{index + 1}</span>
+            <div className="text-[13px] leading-tight font-medium">
               {item}
             </div>
           </div>

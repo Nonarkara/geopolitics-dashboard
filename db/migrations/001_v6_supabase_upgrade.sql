@@ -574,100 +574,238 @@ ALTER TABLE feed_health ENABLE ROW LEVEL SECURITY;
 ALTER TABLE data_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- Public read access (anon key can read all data — this is a public dashboard)
-CREATE POLICY IF NOT EXISTS "Public read: signal_archive"
-  ON signal_archive FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: signal_daily_summary"
-  ON signal_daily_summary FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: events"
-  ON events FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: fire_events"
-  ON fire_events FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: market_data"
-  ON market_data FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: rainfall_data"
-  ON rainfall_data FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: air_quality_snapshots"
-  ON air_quality_snapshots FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: population_movements"
-  ON population_movements FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: macro_country_snapshots"
-  ON macro_country_snapshots FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: country_economic_indicators"
-  ON country_economic_indicators FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: intelligence_items_cache"
-  ON intelligence_items_cache FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: intelligence_package_snapshots"
-  ON intelligence_package_snapshots FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: intelligence_source_health"
-  ON intelligence_source_health FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: visitor_movements"
-  ON visitor_movements FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: news_items"
-  ON news_items FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: feed_health"
-  ON feed_health FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "Public read: data_snapshots"
-  ON data_snapshots FOR SELECT USING (true);
+DO $$ BEGIN
+  CREATE POLICY "Public read: signal_archive"
+    ON signal_archive FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: signal_daily_summary"
+    ON signal_daily_summary FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: events"
+    ON events FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: fire_events"
+    ON fire_events FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: market_data"
+    ON market_data FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: rainfall_data"
+    ON rainfall_data FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: air_quality_snapshots"
+    ON air_quality_snapshots FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: population_movements"
+    ON population_movements FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: macro_country_snapshots"
+    ON macro_country_snapshots FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: country_economic_indicators"
+    ON country_economic_indicators FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: intelligence_items_cache"
+    ON intelligence_items_cache FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: intelligence_package_snapshots"
+    ON intelligence_package_snapshots FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: intelligence_source_health"
+    ON intelligence_source_health FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: visitor_movements"
+    ON visitor_movements FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: news_items"
+    ON news_items FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: feed_health"
+    ON feed_health FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Public read: data_snapshots"
+    ON data_snapshots FOR SELECT USING (true);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Write access restricted to service_role only (ingestion uses service key)
-CREATE POLICY IF NOT EXISTS "Service write: signal_archive"
-  ON signal_archive FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: signal_archive"
-  ON signal_archive FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: events"
-  ON events FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: events"
-  ON events FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: fire_events"
-  ON fire_events FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: market_data"
-  ON market_data FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: market_data"
-  ON market_data FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: news_items"
-  ON news_items FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: news_items"
-  ON news_items FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: signal_daily_summary"
-  ON signal_daily_summary FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: signal_daily_summary"
-  ON signal_daily_summary FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: feed_health"
-  ON feed_health FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: air_quality_snapshots"
-  ON air_quality_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: rainfall_data"
-  ON rainfall_data FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: visitor_movements"
-  ON visitor_movements FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: visitor_movements"
-  ON visitor_movements FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: intelligence_items_cache"
-  ON intelligence_items_cache FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: intelligence_items_cache"
-  ON intelligence_items_cache FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: intelligence_package_snapshots"
-  ON intelligence_package_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: intelligence_package_snapshots"
-  ON intelligence_package_snapshots FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: intelligence_source_health"
-  ON intelligence_source_health FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: intelligence_source_health"
-  ON intelligence_source_health FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: population_movements"
-  ON population_movements FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: population_movements"
-  ON population_movements FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: macro_country_snapshots"
-  ON macro_country_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: macro_country_snapshots"
-  ON macro_country_snapshots FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: country_economic_indicators"
-  ON country_economic_indicators FOR INSERT WITH CHECK (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service update: country_economic_indicators"
-  ON country_economic_indicators FOR UPDATE USING (auth.role() = 'service_role');
-CREATE POLICY IF NOT EXISTS "Service write: data_snapshots"
-  ON data_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+DO $$ BEGIN
+  CREATE POLICY "Service write: signal_archive"
+    ON signal_archive FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: signal_archive"
+    ON signal_archive FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: events"
+    ON events FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: events"
+    ON events FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: fire_events"
+    ON fire_events FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: market_data"
+    ON market_data FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: market_data"
+    ON market_data FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: news_items"
+    ON news_items FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: news_items"
+    ON news_items FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: signal_daily_summary"
+    ON signal_daily_summary FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: signal_daily_summary"
+    ON signal_daily_summary FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: feed_health"
+    ON feed_health FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: air_quality_snapshots"
+    ON air_quality_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: rainfall_data"
+    ON rainfall_data FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: visitor_movements"
+    ON visitor_movements FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: visitor_movements"
+    ON visitor_movements FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: intelligence_items_cache"
+    ON intelligence_items_cache FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: intelligence_items_cache"
+    ON intelligence_items_cache FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: intelligence_package_snapshots"
+    ON intelligence_package_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: intelligence_package_snapshots"
+    ON intelligence_package_snapshots FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: intelligence_source_health"
+    ON intelligence_source_health FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: intelligence_source_health"
+    ON intelligence_source_health FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: population_movements"
+    ON population_movements FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: population_movements"
+    ON population_movements FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: macro_country_snapshots"
+    ON macro_country_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: macro_country_snapshots"
+    ON macro_country_snapshots FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: country_economic_indicators"
+    ON country_economic_indicators FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service update: country_economic_indicators"
+    ON country_economic_indicators FOR UPDATE USING (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+DO $$ BEGIN
+  CREATE POLICY "Service write: data_snapshots"
+    ON data_snapshots FOR INSERT WITH CHECK (auth.role() = 'service_role');
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════

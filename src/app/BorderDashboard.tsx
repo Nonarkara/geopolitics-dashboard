@@ -1,23 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
 import BorderNewsDesk from "../components/Intelligence/BorderNewsDesk";
+import BorderInsightLab from "../components/Intelligence/BorderInsightLab";
+import BorderMarketPulse from "../components/Intelligence/BorderMarketPulse";
+import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import TopBar from "../components/Intelligence/TopBar";
 import Sidebar from "../components/Sidebar/Sidebar";
 import BorderMap from "../components/Map/BorderMap";
 import SignalTicker from "../components/Intelligence/SignalTicker";
 import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
-import CriticalCameraRail from "../components/Intelligence/CriticalCameraRail";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
 import MobileDrawer from "../components/Common/MobileDrawer";
-import { TimeWindowProvider } from "../contexts/TimeWindowContext";
+import { TimeWindowProvider, useTimeWindow } from "../contexts/TimeWindowContext";
 import TimeMachine from "../components/Intelligence/TimeMachine";
-import type { BorderCommandBrief, ProvinceSelection } from "../types/dashboard";
+import type {
+  BorderCommandBrief,
+  DashboardStatusPayload,
+  ProvinceSelection,
+} from "../types/dashboard";
 import { isDataExplorerEnabled } from "../lib/feature-flags";
 
 function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
@@ -31,21 +36,37 @@ function isBorderCommandBrief(value: unknown): value is BorderCommandBrief {
   );
 }
 
-export default function BorderDashboard() {
+function isDashboardStatus(value: unknown): value is DashboardStatusPayload {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "status" in value &&
+    typeof value.status === "string" &&
+    "datasets" in value &&
+    Array.isArray(value.datasets)
+  );
+}
+
+type MobilePanel = "brief" | "news" | "markets" | "cctv" | "insights" | "history";
+
+function BorderDashboardContent() {
+  const { buildUrl } = useTimeWindow();
   const dataExplorerEnabled = isDataExplorerEnabled();
   const [selectedProvince, setSelectedProvince] = useState<ProvinceSelection | null>(null);
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
   const [isPanelsOpen, setIsPanelsOpen] = useState(false);
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("brief");
   const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
+  const [systemStatus, setSystemStatus] = useState<DashboardStatusPayload | null>(null);
 
   useEffect(() => {
     let active = true;
 
     const loadBrief = async () => {
       try {
-        const response = await fetch("/api/border-command/brief", {
+        const response = await fetch(buildUrl("/api/border-command/brief"), {
           cache: "no-store",
         });
         const payload: unknown = await response.json();
@@ -67,17 +88,40 @@ export default function BorderDashboard() {
       active = false;
       clearInterval(interval);
     };
+  }, [buildUrl]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadStatus = async () => {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        const payload: unknown = await response.json();
+        if (active && response.ok && isDashboardStatus(payload)) {
+          setSystemStatus(payload);
+        }
+      } catch {
+        // The header keeps its last verified runtime posture.
+      }
+    };
+
+    void loadStatus();
+    const interval = setInterval(() => void loadStatus(), 5 * 60_000);
+    return () => {
+      active = false;
+      clearInterval(interval);
+    };
   }, []);
 
   return (
     <main className="relative flex h-[100dvh] w-screen flex-col overflow-hidden bg-black theme-border">
-      <TimeWindowProvider>
       <div className="flex flex-col h-full connected-grid">
 
         {/* ROW 1: HEADER */}
         <header className="grid-cell shrink-0 z-50">
           <TopBar
             brief={brief}
+            status={systemStatus}
             onOpenManual={() => setIsManualOpen(true)}
             onOpenArchitecture={() => setIsArchitectureOpen(true)}
             onOpenDataExplorer={
@@ -88,13 +132,10 @@ export default function BorderDashboard() {
 
         {/* ROW 2: PRIMARY SURFACE */}
         <div className="flex flex-1 min-h-0 connected-grid">
-
-          {/* LEFT SIDEBAR */}
-          <aside className="hidden w-[340px] shrink-0 xl:flex grid-cell flex-col overflow-hidden">
+          <aside className="hidden w-[220px] shrink-0 min-[744px]:flex md:w-[240px] lg:w-[320px] grid-cell flex-col overflow-hidden">
             <Sidebar brief={brief} />
           </aside>
 
-          {/* CENTER: MAP */}
           <div className="flex-1 min-w-0 grid-cell bg-[#111]">
             <ErrorBoundary name="Tactical Map Engine">
               <BorderMap onProvinceSelect={setSelectedProvince} />
@@ -102,63 +143,101 @@ export default function BorderDashboard() {
           </div>
         </div>
 
-        {/* MOBILE: sidebar is hidden below xl — surface it via a bottom sheet (§11.8) */}
         <button
           type="button"
           onClick={() => setIsPanelsOpen(true)}
-          aria-label="Open command panels"
-          className="fixed left-2 top-[64px] z-40 flex h-11 items-center gap-2 border border-white/25 bg-black/85 px-3 text-[11px] font-black uppercase tracking-[0.18em] text-white xl:hidden"
+          aria-label="Open mobile intelligence panels"
+          className="fixed right-3 top-[76px] z-40 flex h-11 items-center gap-2 border border-[var(--accent)] bg-black px-3 text-[14px] font-black uppercase tracking-[0.18em] text-white min-[744px]:hidden"
         >
-          <span aria-hidden="true">&#9776;</span> Panels
+          <span className="h-1.5 w-1.5 bg-[var(--accent)]" aria-hidden="true" /> Intel
         </button>
 
-        {/* ROW 3: ANALYTICS STRIP */}
-        <div className="h-[280px] shrink-0 connected-grid bg-black overflow-hidden">
-
-          {/* MARKET PULSE */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
-            <BorderMarketPulse />
-          </div>
-
-          {/* CRITICAL CAMERA RAIL */}
+        {/* ROW 3: Insight Lab + news only. Markets/cameras stay in the Intel drawer. */}
+        <div className="!hidden h-[220px] shrink-0 connected-grid overflow-hidden bg-black min-[744px]:!flex md:!flex md:h-[240px] lg:h-[340px]">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
-            <CriticalCameraRail />
+            <ErrorBoundary name="Border Insight Lab">
+              <BorderInsightLab brief={brief} />
+            </ErrorBoundary>
           </div>
-
-          {/* LIVE BORDER NEWS */}
-          <div className="w-[340px] shrink-0 grid-cell overflow-hidden">
+          <div className="w-[240px] shrink-0 grid-cell overflow-hidden md:w-[280px] lg:w-[380px]">
             <BorderNewsDesk />
           </div>
         </div>
 
-        {/* ROW 4: TICKER BAR */}
+        {/* ROW 4: TICKER */}
         <div className="h-7 bg-black text-white flex items-center px-4 overflow-hidden shrink-0">
           <div className="flex items-center gap-3 mr-6 shrink-0">
-            <div className="animate-ping w-1.5 h-1.5 bg-[var(--accent)] rounded-full" />
-            <div className="text-[11px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
+            <div className="h-1.5 w-1.5 animate-ping bg-[var(--accent)]" />
+            <div className="text-[14px] font-black uppercase tracking-[0.2em]">SIGNAL</div>
           </div>
           <SignalTicker endpoint="/api/border/ticker" />
         </div>
 
-        {/* ROW 5: TIME MACHINE */}
-        <TimeMachine />
-
-        {/* ROW 6: BORDER STATUS STRIP */}
-        <BorderStatusStrip brief={brief} />
+        <div className="hidden min-[744px]:block md:block">
+          <TimeMachine />
+        </div>
+        <div className="hidden min-[744px]:block md:block">
+          <BorderStatusStrip brief={brief} />
+        </div>
       </div>
 
-      {/* MOBILE COMMAND PANELS (same Sidebar content as the desktop aside).
-          Must stay INSIDE TimeWindowProvider — Sidebar calls useTimeWindow(). */}
       <MobileDrawer
         isOpen={isPanelsOpen}
         onClose={() => setIsPanelsOpen(false)}
         title="Command Panels"
       >
-        <Sidebar brief={brief} />
+        <nav className="grid h-11 grid-cols-6 border-b border-[var(--line)]" aria-label="Mobile intelligence sections">
+          {(["brief", "news", "markets", "cctv", "insights", "history"] as const).map((panel) => (
+            <button
+              key={panel}
+              type="button"
+              onClick={() => setMobilePanel(panel)}
+              aria-pressed={mobilePanel === panel}
+              className={`border-r border-[var(--line)] px-2 text-[13px] font-black uppercase tracking-[0.12em] last:border-r-0 ${
+                mobilePanel === panel
+                  ? "bg-[var(--accent)] text-black"
+                  : "bg-black text-white/55"
+              }`}
+            >
+              {panel}
+            </button>
+          ))}
+        </nav>
+        {mobilePanel === "brief" ? (
+          <div className="h-[70dvh]">
+            <Sidebar brief={brief} />
+          </div>
+        ) : null}
+        {mobilePanel === "news" ? (
+          <div className="h-[70dvh]">
+            <BorderNewsDesk />
+          </div>
+        ) : null}
+        {mobilePanel === "markets" ? (
+          <div className="h-[70dvh]">
+            <BorderMarketPulse />
+          </div>
+        ) : null}
+        {mobilePanel === "cctv" ? (
+          <div className="h-[70dvh]">
+            <CriticalCameraRail />
+          </div>
+        ) : null}
+        {mobilePanel === "insights" ? (
+          <div className="h-[70dvh]">
+            <BorderInsightLab brief={brief} />
+          </div>
+        ) : null}
+        {mobilePanel === "history" ? (
+          <div className="min-h-[240px] bg-black px-2 py-4">
+            <div className="mb-4 px-2 text-[14px] leading-relaxed text-white/55">
+              Select a Bangkok command day to replay the archived picture. Live mode remains the default.
+            </div>
+            <TimeMachine />
+          </div>
+        ) : null}
       </MobileDrawer>
-      </TimeWindowProvider>
 
-      {/* MODALS */}
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
       <DashboardManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
       <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(false)} />
@@ -169,5 +248,13 @@ export default function BorderDashboard() {
         />
       ) : null}
     </main>
+  );
+}
+
+export default function BorderDashboard() {
+  return (
+    <TimeWindowProvider>
+      <BorderDashboardContent />
+    </TimeWindowProvider>
   );
 }

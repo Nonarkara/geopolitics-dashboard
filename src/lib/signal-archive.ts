@@ -7,8 +7,9 @@
  */
 
 import { query, isDatabaseConfigured } from "./db";
-import { BORDER_AREAS, type BorderAreaId } from "./border-regions";
-import { getServiceSupabase, getSupabase } from "./supabase-server";
+import { parseIntegerParam } from "./http";
+import { BORDER_AREAS } from "./border-regions";
+import { PlaybackApiError } from "./playback-api";
 
 /* ── Types ──────────────────────────────────────────────── */
 
@@ -235,16 +236,38 @@ export interface SignalQueryResult {
   total: number;
 }
 
-export async function querySignals(params: SignalQueryParams): Promise<SignalQueryResult> {
-  if (!isDatabaseConfigured) return { signals: [], total: 0 };
+interface SearchSignalRow extends ArchiveSignal {
+  rank: number;
+  total_count: string | number | null;
+}
 
-  const limit = Math.min(params.limit ?? 50, 200);
-  const offset = params.offset ?? 0;
+export const signalArchiveDeps = {
+  query,
+  isDatabaseConfigured: () => isDatabaseConfigured,
+};
+
+export async function querySignals(params: SignalQueryParams): Promise<SignalQueryResult> {
+  if (!signalArchiveDeps.isDatabaseConfigured()) {
+    // Return empty result instead of throwing — allows the dashboard to
+    // function without a database on Cloudflare Workers.
+    return { signals: [], total: 0 };
+  }
+
+  const limit = parseIntegerParam(params.limit, {
+    defaultValue: 50,
+    min: 1,
+    max: 200,
+  });
+  const offset = parseIntegerParam(params.offset, {
+    defaultValue: 0,
+    min: 0,
+    max: 10_000,
+  });
 
   // Use full-text search function if search query is provided
   if (params.search) {
     try {
-      const result = await query<ArchiveSignal & { rank: number; total_count: string }>(
+      const result = await signalArchiveDeps.query<SearchSignalRow>(
         `SELECT * FROM fn_search_signals($1, $2, $3, $4, $5, $6, $7)`,
         [
           params.search,
@@ -257,9 +280,16 @@ export async function querySignals(params: SignalQueryParams): Promise<SignalQue
         ],
       );
 
+      const signals = result.rows.map((row) => {
+        const signal = { ...row } as Record<string, unknown>;
+        delete signal.rank;
+        delete signal.total_count;
+        return signal as unknown as ArchiveSignal;
+      });
+
       return {
-        signals: result.rows,
-        total: parseInt(result.rows[0]?.total_count as unknown as string ?? "0", 10),
+        signals,
+        total: Number.parseInt(String(result.rows[0]?.total_count ?? "0"), 10),
       };
     } catch {
       // Fall through to standard query if fn_search_signals not available
@@ -296,18 +326,24 @@ export async function querySignals(params: SignalQueryParams): Promise<SignalQue
   }
 
   const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
+  const limitParamIndex = values.length + 1;
+  const offsetParamIndex = values.length + 2;
+  const dataValues = [...values, limit, offset];
 
   try {
     const [countResult, dataResult] = await Promise.all([
-      query<{ count: string }>(`SELECT COUNT(*)::text AS count FROM signal_archive ${where}`, values),
-      query<ArchiveSignal>(
+      signalArchiveDeps.query<{ count: string }>(
+        `SELECT COUNT(*)::text AS count FROM signal_archive ${where}`,
+        values,
+      ),
+      signalArchiveDeps.query<ArchiveSignal>(
         `SELECT id, external_id, signal_type, source_provider, source_url,
                 title, summary, url, published_at, ingested_at, region,
                 country_focus, severity, score, fatalities, keywords, tags
          FROM signal_archive ${where}
          ORDER BY published_at DESC
-         LIMIT ${limit} OFFSET ${offset}`,
-        values,
+         LIMIT $${limitParamIndex} OFFSET $${offsetParamIndex}`,
+        dataValues,
       ),
     ]);
 
@@ -315,8 +351,13 @@ export async function querySignals(params: SignalQueryParams): Promise<SignalQue
       signals: dataResult.rows,
       total: parseInt(countResult.rows[0]?.count ?? "0", 10),
     };
-  } catch {
-    return { signals: [], total: 0 };
+  } catch (error) {
+    throw new PlaybackApiError(
+      "ARCHIVE_UNAVAILABLE",
+      error instanceof Error
+        ? `Signal archive query failed: ${error.message}`
+        : "Signal archive query failed.",
+    );
   }
 }
 

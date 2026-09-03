@@ -1,4 +1,3 @@
-import { fallbackNews, fallbackTicker } from "./mock-data";
 import { archiveSignalBatch, type ArchiveSignal } from "./signal-archive";
 import {
   BORDER_AREAS,
@@ -8,6 +7,7 @@ import {
   resolveBorderAreaLabel,
 } from "./border-regions";
 import { loadThailandIncidents } from "./thailand-monitor";
+import { fallbackIncidents } from "./mock-data";
 import type {
   BorderHumanitarianSnapshot,
   BorderNarrativeSignal,
@@ -35,61 +35,6 @@ const UNHCR_POPULATION_URL =
   "https://api.unhcr.org/population/v1/population/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=2024&yearTo=2026&limit=10";
 const UNHCR_DEMOGRAPHICS_URL =
   "https://api.unhcr.org/population/v1/demographics/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=2024&yearTo=2026&limit=10";
-
-const FALLBACK_BORDER_INCIDENTS: IncidentFeature[] = [
-  {
-    id: "BORDER-001",
-    geometry: { coordinates: [98.5746, 16.7163] },
-    properties: {
-      title: "Cross-border shelling risk",
-      type: "Conflict spillover",
-      fatalities: 2,
-      notes:
-        "Artillery spillover concerns around Mae Sot and Myawaddy disrupted freight staging and forced a tighter security posture on the western gate.",
-      location: "Mae Sot / Myawaddy",
-      eventDate: "2026-03-15T03:40:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-002",
-    geometry: { coordinates: [98.6501, 16.9124] },
-    properties: {
-      title: "Shelter pressure rising",
-      type: "Displacement pressure",
-      fatalities: 0,
-      notes:
-        "Temporary shelters and screening teams in Tak province reported heavier intake pressure as movement from Karen State continued.",
-      location: "Tak province",
-      eventDate: "2026-03-15T02:10:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-003",
-    geometry: { coordinates: [102.5636, 13.6587] },
-    properties: {
-      title: "Checkpoint queue surge",
-      type: "Crossing pressure",
-      fatalities: 0,
-      notes:
-        "Passenger and customs queues lengthened on the Aranyaprathet / Poipet frontier, raising turnback and visibility concerns.",
-      location: "Aranyaprathet / Poipet",
-      eventDate: "2026-03-15T01:55:00.000Z",
-    },
-  },
-  {
-    id: "BORDER-004",
-    geometry: { coordinates: [100.4186, 6.7483] },
-    properties: {
-      title: "Freight corridor congestion",
-      type: "Logistics pressure",
-      fatalities: 0,
-      notes:
-        "Coach and freight backlogs built on the Sadao / Bukit Kayu Hitam approaches, slowing southern corridor throughput.",
-      location: "Sadao / Bukit Kayu Hitam",
-      eventDate: "2026-03-14T23:35:00.000Z",
-    },
-  },
-];
 
 const FALLBACK_HUMANITARIAN: BorderHumanitarianSnapshot[] = [
   {
@@ -593,16 +538,21 @@ async function fetchUnhcrSnapshot() {
 }
 
 function acledSourceStatus(): SourceHealth {
+  const username =
+    process.env.ACLED_USERNAME?.trim() ?? process.env.ACLED_EMAIL?.trim();
+  const password = process.env.ACLED_PASSWORD?.trim();
+  const keyed = Boolean(username && password);
+
   return {
     id: "acled",
     label: "ACLED",
-    url: "https://acleddata.com/acled-api-documentation",
-    status: process.env.ACLED_API_URL ? "stale" : "offline",
+    url: "https://acleddata.com/api-documentation",
+    status: keyed ? "stale" : "offline",
     checkedAt: new Date().toISOString(),
     responseTimeMs: null,
-    message: process.env.ACLED_API_URL
-      ? "ACLED endpoint configured, but no border adapter is enabled yet for this deployment."
-      : "Optional provider. Configure ACLED credentials to add coded conflict events to the border stack.",
+    message: keyed
+      ? "Credentials present — conflict events via ingest / events table"
+      : "ACLED offline — set ACLED_USERNAME + ACLED_PASSWORD",
   };
 }
 
@@ -656,14 +606,61 @@ function buildIncidentNewsItem(incident: IncidentFeature): NewsItem {
 export async function loadBorderIncidents(): Promise<IncidentFeature[]> {
   try {
     const incidents = await loadThailandIncidents();
+
+    // Packaged rows are useful in static demos, but must never drive a live
+    // command score. They are re-dated on every process start and would look
+    // indistinguishable from current ACLED observations in production.
+    if (incidents === fallbackIncidents) {
+      return [];
+    }
+
     const borderIncidents = incidents.filter((incident) =>
       BORDER_AREAS.some((area) => incidentMatchesBorderArea(area, incident)),
     );
 
-    return borderIncidents.length > 0 ? borderIncidents : FALLBACK_BORDER_INCIDENTS;
+    return borderIncidents;
   } catch {
-    return FALLBACK_BORDER_INCIDENTS;
+    return [];
   }
+}
+
+const FALLBACK_SIGNAL_IDS = new Set(
+  FALLBACK_BORDER_SIGNALS.map((signal) => signal.id),
+);
+
+function hasRealSourceUrl(url: string | null | undefined) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function isFallbackSourceLabel(label: string) {
+  return /fallback/i.test(label);
+}
+
+/**
+ * Keep live OSINT with real source URLs even when GDELT is stale.
+ * Drop only curated fallback narratives — never wipe Google News because GDELT lagged.
+ */
+export function filterTruthfulBorderOsint(osint: BorderOsintResponse): BorderOsintResponse {
+  return {
+    ...osint,
+    signals: osint.signals.filter(
+      (signal) =>
+        !FALLBACK_SIGNAL_IDS.has(signal.id) &&
+        !isFallbackSourceLabel(signal.source) &&
+        hasRealSourceUrl(signal.sourceUrl),
+    ),
+    humanitarian: osint.humanitarian.filter(
+      (snapshot) =>
+        !isFallbackSourceLabel(snapshot.source) &&
+        hasRealSourceUrl(snapshot.sourceUrl),
+    ),
+  };
 }
 
 export async function loadBorderOsint(): Promise<BorderOsintResponse> {
@@ -678,18 +675,37 @@ export async function loadBorderOsint(): Promise<BorderOsintResponse> {
   }
 
   borderOsintPending = (async () => {
+    const googleStartedAt = Date.now();
     const [gdelt, unhcr, googleNews] = await Promise.all([
       fetchGdeltSignals(),
       fetchUnhcrSnapshot(),
       fetchGoogleNewsBorderHeadlines(),
     ]);
     // Merge Google News headlines with GDELT signals — Google News first (fresher)
-    const mergedSignals = dedupeByTitle([...googleNews, ...gdelt.signals]).slice(0, 12);
+    const liveGdeltSignals = gdelt.signals.filter(
+      (signal) => !FALLBACK_SIGNAL_IDS.has(signal.id),
+    );
+    const mergedSignals = dedupeByTitle([
+      ...googleNews,
+      ...liveGdeltSignals,
+    ]).slice(0, 12);
+    const googleSource = buildSource(
+      "google-news-rss",
+      "Google News RSS",
+      "https://news.google.com/rss",
+      googleNews.length > 0 ? "live" : "offline",
+      googleNews.length > 0
+        ? `${googleNews.length} frontier headlines`
+        : "No Google News headlines matched",
+      googleStartedAt,
+    );
     const payload: BorderOsintResponse = {
       generatedAt: new Date().toISOString(),
-      signals: mergedSignals.length > 0 ? mergedSignals : gdelt.signals,
-      humanitarian: unhcr.humanitarian,
-      sources: [gdelt.source, unhcr.source, acledSourceStatus()],
+      signals: mergedSignals,
+      humanitarian: unhcr.humanitarian.filter(
+        (snapshot) => !isFallbackSourceLabel(snapshot.source),
+      ),
+      sources: [googleSource, gdelt.source, unhcr.source, acledSourceStatus()],
     };
 
     borderOsintCache[0] = {
@@ -742,10 +758,6 @@ export function buildBorderNews(
     ...fieldItems,
     ...marketItems,
   ]).slice(0, 6);
-
-  if (news.length === 0) {
-    return fallbackNews;
-  }
 
   return {
     generatedAt: osint.generatedAt,
@@ -808,10 +820,6 @@ export function buildBorderTicker(
     });
   }
 
-  if (items.length === 0) {
-    return fallbackTicker;
-  }
-
   return {
     generatedAt: osint.generatedAt,
     items: items.slice(0, 6),
@@ -841,6 +849,12 @@ export function buildBorderMovements(osint: BorderOsintResponse): RefugeeMovemen
       target: [100.4747, 7.0084],
       count: 18_200,
       label: "18,200 daily freight and coach movements through Sadao / Hat Yai",
+    },
+    {
+      source: [101.9623, 6.0298],
+      target: [101.2506, 6.8672],
+      count: 3_200,
+      label: "3,200 daily security movements across Pattani-Yala-Narathiwat corridor",
     },
   ];
 }

@@ -2,6 +2,7 @@
   "name": "geopolitics-dashboard",
   "version": "6.0.0",
   "private": true,
+  "license": "MIT",
   "engines": {
     "node": "20.x"
   },
@@ -10,6 +11,11 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "build:static": "mv src/app/api /tmp/geo-api-backup && mv src/app/briefing /tmp/geo-briefing-backup 2>/dev/null; NEXT_OUTPUT=export NEXT_PUBLIC_STATIC_EXPORT=true next build --webpack; mv /tmp/geo-api-backup src/app/api; mv /tmp/geo-briefing-backup src/app/briefing 2>/dev/null; true",
+    "build:worker": "opennextjs-cloudflare build && node scripts/scrub-worker-env.mjs",
+    "preview:worker": "opennextjs-cloudflare preview",
+    "deploy": "npm run build:worker && wrangler deploy",
+    "test:backend": "tsx --test tests/*.test.mts",
     "test:ui": "playwright test",
     "ingest:all": "python3 ingestion/run_all.py",
     "ingest:list": "python3 ingestion/run_all.py --list",
@@ -24,7 +30,6 @@
     "@deck.gl/core": "^9.3.6",
     "@deck.gl/geo-layers": "^9.3.6",
     "@deck.gl/layers": "^9.3.6",
-    "@deck.gl/mapbox": "^9.3.6",
     "@deck.gl/react": "^9.3.6",
     "@luma.gl/core": "^9.3.6",
     "@luma.gl/engine": "^9.3.6",
@@ -37,7 +42,7 @@
     "deck.gl": "^9.3.6",
     "framer-motion": "^12.35.2",
     "lucide-react": "^0.577.0",
-    "mapbox-gl": "^3.25.0",
+    "maplibre-gl": "^5.24.0",
     "next": "16.2.1",
     "pg": "^8.20.0",
     "postcss": "^8.5.8",
@@ -50,14 +55,16 @@
     "tailwindcss": "^4"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.19.1",
     "@playwright/test": "^1.58.2",
-    "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
-    "typescript": "^5"
+    "tsx": "^4.21.0",
+    "typescript": "^5",
+    "wrangler": "^4.120.1"
   },
   "overrides": {
     "fast-xml-parser": "5.5.9",

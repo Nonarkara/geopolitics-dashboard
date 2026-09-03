@@ -29,19 +29,19 @@ export default function ConvergenceAlerts() {
         >
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black uppercase tracking-widest opacity-40">
+              <span className="text-[13px] font-black uppercase tracking-widest opacity-40">
                 AREA {spot.id}
               </span>
               <span className={`stat-pill ${spot.risk === "Priority" ? "danger" : "info"}`}>
                 {spot.risk}
               </span>
             </div>
-            <span className="text-[11px] font-black tabular-nums">
+            <span className="text-[14px] font-black tabular-nums">
               {spot.level}%
             </span>
           </div>
 
-          <h4 className="text-[12px] font-black uppercase tracking-tight mb-2">
+          <h4 className="text-[14px] font-black uppercase tracking-tight mb-2">
             {spot.location}
           </h4>
 
@@ -49,7 +49,7 @@ export default function ConvergenceAlerts() {
             {spot.factors.map((factor) => (
               <span
                 key={factor}
-                className="text-[9px] font-black uppercase tracking-widest opacity-60 px-1.5 py-0.5 bg-[var(--bg)] border border-[var(--line-dim)]"
+                className="text-[13px] font-black uppercase tracking-widest opacity-60 px-1.5 py-0.5 bg-[var(--bg)] border border-[var(--line-dim)]"
               >
                 {factor}
               </span>

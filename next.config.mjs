@@ -1,13 +1,21 @@
 import path from "node:path";
 
+const isStaticExport = process.env.NEXT_OUTPUT === "export";
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const nextConfig = {
-  output: "standalone",
+  ...(isStaticExport
+    ? {
+        output: "export",
+        ...(basePath ? { basePath } : {}),
+        images: { unoptimized: true },
+      }
+    : {}),
   transpilePackages: [
     "@deck.gl/core",
     "@deck.gl/layers",
     "@deck.gl/aggregation-layers",
     "@deck.gl/geo-layers",
-    "@deck.gl/mapbox",
     "@deck.gl/react",
     "@luma.gl/core",
     "@luma.gl/engine",
@@ -17,12 +25,10 @@ const nextConfig = {
   ],
   turbopack: {},
   env: {
-    NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-      process.env.MAPBOX_ACCESS_TOKEN ??
-      "",
     NEXT_PUBLIC_ENABLE_DATA_EXPLORER:
       process.env.NEXT_PUBLIC_ENABLE_DATA_EXPLORER ?? "",
+    NEXT_PUBLIC_STATIC_EXPORT:
+      process.env.NEXT_PUBLIC_STATIC_EXPORT ?? "",
   },
   async headers() {
     return [

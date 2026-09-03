@@ -33,10 +33,10 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
       <div className="mb-5 flex items-start justify-between">
         <div className="space-y-1">
           <div className="eyebrow">Selected place</div>
-          <h2 className="text-[22px] font-black tracking-tight uppercase">
+          <h2 className="text-[24px] font-black tracking-tight uppercase">
             {province.name}
           </h2>
-          <p className="text-[9px] font-black uppercase tracking-widest opacity-30">
+          <p className="text-[13px] font-black uppercase tracking-widest opacity-30">
             {province.type ?? `Sector code: ${province.iso ?? "Regional"}`}
           </p>
         </div>
@@ -44,37 +44,37 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
           onClick={onClose}
           className="border border-[var(--line)] bg-white p-2 transition-colors hover:bg-black hover:text-white"
         >
-          <X size={12} />
+          <X size={14} />
         </button>
       </div>
 
-      <p className="text-[12px] leading-5 text-[var(--muted)]">{summaryLine}</p>
+      <p className="text-[14px] leading-5 text-[var(--muted)]">{summaryLine}</p>
 
       <div className="mt-4 grid grid-cols-2 gap-2">
         <div className="border border-[var(--line)] p-3 bg-[var(--bg)]">
-          <label className="block text-[7px] font-black uppercase tracking-widest opacity-40">
+          <label className="block text-[12px] font-black uppercase tracking-widest opacity-40">
             Stability index
           </label>
-          <div className="flex items-baseline gap-1 pt-1.5 text-[24px] font-black tracking-tight">
+          <div className="flex items-baseline gap-1 pt-1.5 text-[26px] font-black tracking-tight">
             {stabilityIndex}
-            <span className="text-[9px] opacity-30">/10</span>
+            <span className="text-[13px] opacity-30">/10</span>
           </div>
         </div>
         <div className={`border p-3 ${fatalities > 0 ? "border-[var(--accent)] bg-[rgba(255,59,48,0.03)]" : "border-[var(--line)] bg-[var(--bg)]"}`}>
-          <label className="block text-[7px] font-black uppercase tracking-widest opacity-40">
+          <label className="block text-[12px] font-black uppercase tracking-widest opacity-40">
             Fatalities
           </label>
-          <div className={`flex items-center gap-1 pt-1.5 text-[24px] font-black tracking-tight ${
+          <div className={`flex items-center gap-1 pt-1.5 text-[26px] font-black tracking-tight ${
             fatalities > 0 ? "text-[var(--accent)]" : ""
           }`}>
             {fatalities}
-            <TrendingUp size={10} />
+            <TrendingUp size={12} />
           </div>
         </div>
       </div>
 
       <div className="mt-4 border border-[var(--line)] p-3">
-        <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest opacity-40">
+        <div className="flex items-center justify-between text-[12px] font-black uppercase tracking-widest opacity-40">
           <span>Immediate read</span>
           <span className={`stat-pill ${fatalities > 0 ? "danger" : "info"}`}>
             {attentionLevel}
@@ -82,7 +82,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
         </div>
         <div className="mt-3 space-y-3">
           <div>
-            <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest opacity-40">
+            <div className="flex items-center justify-between text-[12px] font-black uppercase tracking-widest opacity-40">
               <span>Conflict density</span>
               <span>{fatalities > 0 ? "Elevated" : "Monitored"}</span>
             </div>
@@ -91,7 +91,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
             </div>
           </div>
           <div>
-            <div className="flex items-center justify-between text-[8px] font-black uppercase tracking-widest opacity-40">
+            <div className="flex items-center justify-between text-[12px] font-black uppercase tracking-widest opacity-40">
               <span>Economic integration</span>
               <span>{economicTone}</span>
             </div>
@@ -108,7 +108,7 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
           {guidance.map((item) => (
             <div
               key={item}
-              className="border border-[var(--line-dim)] p-2.5 text-[10px] leading-4 text-[var(--muted)] bg-[var(--bg)]"
+              className="border border-[var(--line-dim)] p-2.5 text-[13px] leading-4 text-[var(--muted)] bg-[var(--bg)]"
             >
               {item}
             </div>
@@ -116,8 +116,8 @@ export default function ProvinceDashboard({ province, onClose }: ProvinceDashboa
         </div>
 
         <div className="mt-3 flex items-center gap-2 border border-[var(--line)] px-3 py-2 bg-[var(--bg)]">
-          <Globe size={10} className="opacity-30" />
-          <span className="text-[8px] font-black uppercase tracking-widest opacity-40">
+          <Globe size={12} className="opacity-30" />
+          <span className="text-[12px] font-black uppercase tracking-widest opacity-40">
             {province.eventDate
               ? `Event date: ${province.eventDate}`
               : `Sector: ${province.iso ?? province.name}`}

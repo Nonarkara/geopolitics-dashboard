@@ -10,9 +10,12 @@ export default function Home() {
   const isPhuket = dashboardType === "PHUKET";
 
   useEffect(() => {
-    // Apply theme based on dashboard type
+    // Apply theme based on dashboard type. Use classList.add so the
+    // Next.js font-variable classes (`__variable_*`) that ship on the
+    // SSR <html> are preserved — `className =` would clobber them
+    // and silently drop the custom Josefin Sans / Source Sans 3 stack.
     const themeClass = isPhuket ? "theme-phuket" : "theme-border";
-    document.documentElement.className = themeClass;
+    document.documentElement.classList.add(themeClass);
   }, [isPhuket]);
 
   if (isPhuket) {

@@ -1,14 +1,20 @@
-import { useState, useEffect } from "react";
+"use client";
 
-/**
- * Returns a live Date that re-renders at the given interval.
- * Default 1 s; pass a longer interval (e.g. 60_000) for low-frequency callers.
- */
-export function useNow(intervalMs = 1_000): Date {
-  const [now, setNow] = useState(() => new Date());
+import { useEffect, useState } from "react";
+
+export function useNow(intervalMs = 60_000) {
+  const [now, setNow] = useState<number | null>(null);
+
   useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), intervalMs);
-    return () => clearInterval(id);
+    const sync = () => {
+      setNow(Date.now());
+    };
+
+    sync();
+    const intervalId = setInterval(sync, intervalMs);
+
+    return () => clearInterval(intervalId);
   }, [intervalMs]);
+
   return now;
 }
