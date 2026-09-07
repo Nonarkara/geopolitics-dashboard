@@ -2,6 +2,7 @@
   "name": "geopolitics-dashboard",
   "version": "6.0.0",
   "private": true,
+  "license": "MIT",
   "engines": {
     "node": "20.x"
   },
