@@ -17,11 +17,29 @@ import type {
 } from "../../types/dashboard";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import Sparkline from "../Common/Sparkline";
-import { useFetch, type UseFetchResult } from "../../hooks/useFetch";
+import { useFetch, type DeclaredDataSource, type UseFetchResult } from "../../hooks/useFetch";
 import { useNow } from "../../hooks/useNow";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
-import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
+import { DATA_SOURCE_CATALOG, formatCadence } from "../../lib/data-sources";
 import { formatBangkokDayLabel } from "../../lib/time-window";
+
+/**
+ * Client poll cadence, read from the source catalog so the interval given to
+ * `useFetch` and the window used by the feed-health dot cannot drift apart.
+ */
+function declaredPollMs(sourceId: string, fallbackMs: number): number {
+  return DATA_SOURCE_CATALOG[sourceId]?.clientPollMs ?? fallbackMs;
+}
+
+const POLL = {
+  traffic: declaredPollMs("traffic", 120_000),
+  earthquakes: declaredPollMs("earthquakes", 300_000),
+  flood: declaredPollMs("flood", 1800_000),
+  disasters: declaredPollMs("disasters", 600_000),
+  eonet: declaredPollMs("eonet", 1800_000),
+  commodities: declaredPollMs("commodities", 3600_000),
+  fires: declaredPollMs("fires", 900_000),
+} as const;
 
 function eonetTopSummary(events: EonetEvent[]): string {
   if (events.length === 0) return "events";
@@ -180,26 +198,44 @@ function ScoreBar({ area, expanded, onToggle, history }: {
   );
 }
 
-function Metric({ label, value, sub, color, sourceId }: {
+function Metric({ label, value, sub, color, sourceId, dataSource }: {
   label: string;
   value: string | number;
   sub?: string;
   color?: string;
   sourceId?: string;
+  /** What the route said about its own payload. `unavailable` must never print as a number. */
+  dataSource?: DeclaredDataSource;
 }) {
   const source = sourceId ? DATA_SOURCE_CATALOG[sourceId] : undefined;
+  // A route that declared `unavailable` has no live reading. Printing its empty
+  // payload as `0` would claim "zero events observed" when the truth is
+  // "nothing observed at all" — two different facts, one of them invented.
+  const unavailable = dataSource === "unavailable";
   return (
     <div className="text-center px-1.5">
       <div className="text-[12px] font-black uppercase tracking-wider opacity-40 leading-none mb-0.5">{label}</div>
-      <div className="text-[15px] font-black tabular-nums leading-none" style={color ? { color } : undefined}>{value}</div>
-      {sub && <div className="text-[12px] opacity-30 leading-none mt-0.5">{sub}</div>}
+      <div
+        className="text-[15px] font-black tabular-nums leading-none"
+        style={unavailable ? { color: "var(--dim)" } : color ? { color } : undefined}
+        title={unavailable ? `${label}: route reported no live data (X-Data-Source: unavailable)` : undefined}
+      >
+        {unavailable ? "--" : value}
+      </div>
+      {(unavailable ? "no live data" : sub) && (
+        <div className="text-[12px] opacity-30 leading-none mt-0.5">{unavailable ? "no live data" : sub}</div>
+      )}
       {source && (
         <a
           href={source.url}
           target="_blank"
           rel="noopener noreferrer"
           className="text-[12px] uppercase tracking-wider opacity-25 hover:opacity-60 underline transition-opacity leading-none mt-0.5 block"
-          title={`${source.label} — refreshes every ${source.refreshInterval}`}
+          title={
+            source.clientPollMs
+              ? `${source.label} — source updates every ${source.upstreamCadence}, dashboard polls every ${formatCadence(source.clientPollMs)}`
+              : `${source.label} — source updates every ${source.upstreamCadence}`
+          }
         >
           {source.shortLabel}
         </a>
@@ -243,6 +279,7 @@ function FeedDot({ fetchResult, label, expectedIntervalMs, nowMs }: {
 
   const hasData = fetchResult.data !== null;
   const hasError = fetchResult.error !== null;
+  const declaredUnavailable = fetchResult.dataSource === "unavailable";
   const age = fetchResult.lastRefreshed
     ? nowMs - fetchResult.lastRefreshed.getTime()
     : Infinity;
@@ -250,7 +287,9 @@ function FeedDot({ fetchResult, label, expectedIntervalMs, nowMs }: {
 
   let dotColor = "bg-[var(--safe,#22c55e)]"; // fresh
   if (hasError || !hasData) dotColor = "bg-red-500";
-  else if (isStale) dotColor = "bg-amber-500";
+  // A 200 carrying an empty payload plus `X-Data-Source: unavailable` is a
+  // successful request with nothing in it — amber, never green.
+  else if (declaredUnavailable || isStale) dotColor = "bg-amber-500";
 
   return (
     <div
@@ -266,6 +305,14 @@ function FeedDot({ fetchResult, label, expectedIntervalMs, nowMs }: {
           <div className="text-[12px] opacity-50">
             Age: {timeAgo(fetchResult.lastRefreshed, nowMs)} | Fetches: {fetchResult.fetchCount} | Errors: {fetchResult.errorCount}
           </div>
+          {fetchResult.dataAge && (
+            <div className="text-[12px] opacity-40 mt-0.5">
+              Server built payload: {timeAgo(new Date(fetchResult.dataAge), nowMs)} ago
+            </div>
+          )}
+          {declaredUnavailable && (
+            <div className="text-[12px] text-amber-400 mt-0.5">Route reported no live data</div>
+          )}
           {fetchResult.error && (
             <div className="text-[12px] text-red-400 mt-0.5">Last error: {fetchResult.error}</div>
           )}
@@ -312,13 +359,13 @@ function ScoreBreakdownTooltip({ breakdown, show }: { breakdown: ScoreBreakdown;
 export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief | null }) {
   const { buildUrl, isHistorical, timeWindow, bangkokDay } = useTimeWindow();
   const nowMs = useNow(5_000) ?? Date.now();
-  const commoditiesFetch = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
-  const riversFetch = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
-  const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
-  const trafficFetch = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
-  const disastersFetch = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
-  const eonetFetch = useFetch<EonetEvent[]>("/api/border/eonet", 1800_000);
-  const firesFetch = useFetch<Array<{ latitude: number; longitude: number }>>("/api/fires", 900_000);
+  const commoditiesFetch = useFetch<CommodityPrice[]>("/api/border/commodities", POLL.commodities);
+  const riversFetch = useFetch<RiverDischarge[]>("/api/border/flood-risk", POLL.flood);
+  const quakesFetch = useFetch<SeismicEvent[]>("/api/border/earthquakes", POLL.earthquakes);
+  const trafficFetch = useFetch<TrafficIncident[]>("/api/border/traffic", POLL.traffic);
+  const disastersFetch = useFetch<RegionalDisaster[]>("/api/border/disasters", POLL.disasters);
+  const eonetFetch = useFetch<EonetEvent[]>("/api/border/eonet", POLL.eonet);
+  const firesFetch = useFetch<Array<{ latitude: number; longitude: number }>>("/api/fires", POLL.fires);
   const [acledStatus, setAcledStatus] = useState<"live" | "stale" | "offline">("offline");
 
   const commodities = commoditiesFetch.data;
@@ -501,7 +548,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         <div className="flex items-center gap-0 shrink-0">
           <Metric label="Incidents" value={totalIncidents} sub="matched" sourceId="acled" />
           <Metric label="Fatalities" value={totalFatalities} sub="reported" sourceId="acled" />
-          <Metric label="FIRMS" value={fireCount} sub="hotspots" sourceId="fires" />
+          <Metric label="FIRMS" value={fireCount} sub="hotspots" sourceId="fires" dataSource={firesFetch.dataSource} />
           <Metric
             label="ACLED"
             value={acledStatus === "offline" ? "OFF" : acledStatus.toUpperCase()}
@@ -547,6 +594,7 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
               value={eonetEvents.length}
               sub={eonetTopSummary(eonetEvents)}
               sourceId="eonet"
+              dataSource={eonetFetch.dataSource}
             />
           )}
         </div>
@@ -568,11 +616,11 @@ export default function BorderStatusStrip({ brief }: { brief: BorderCommandBrief
         <div className="shrink-0 flex items-center gap-3">
           {/* 3-state feed health dots */}
           <div className="flex flex-col gap-[3px]">
-            <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={120_000} nowMs={nowMs} />
-            <FeedDot fetchResult={quakesFetch as UseFetchResult<unknown>} label="QKE" expectedIntervalMs={300_000} nowMs={nowMs} />
-            <FeedDot fetchResult={riversFetch as UseFetchResult<unknown>} label="FLD" expectedIntervalMs={1800_000} nowMs={nowMs} />
-            <FeedDot fetchResult={disastersFetch as UseFetchResult<unknown>} label="DIS" expectedIntervalMs={600_000} nowMs={nowMs} />
-            <FeedDot fetchResult={commoditiesFetch as UseFetchResult<unknown>} label="AGR" expectedIntervalMs={3600_000} nowMs={nowMs} />
+            <FeedDot fetchResult={trafficFetch as UseFetchResult<unknown>} label="TFC" expectedIntervalMs={POLL.traffic} nowMs={nowMs} />
+            <FeedDot fetchResult={quakesFetch as UseFetchResult<unknown>} label="QKE" expectedIntervalMs={POLL.earthquakes} nowMs={nowMs} />
+            <FeedDot fetchResult={riversFetch as UseFetchResult<unknown>} label="FLD" expectedIntervalMs={POLL.flood} nowMs={nowMs} />
+            <FeedDot fetchResult={disastersFetch as UseFetchResult<unknown>} label="DIS" expectedIntervalMs={POLL.disasters} nowMs={nowMs} />
+            <FeedDot fetchResult={commoditiesFetch as UseFetchResult<unknown>} label="AGR" expectedIntervalMs={POLL.commodities} nowMs={nowMs} />
           </div>
 
           {/* Sync status */}

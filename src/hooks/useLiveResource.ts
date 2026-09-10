@@ -4,39 +4,45 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CachedState<T> {
   data: T | null;
-  lastUpdated: string | null;
+  /**
+   * When THIS CLIENT fetched the payload — not when the upstream source observed
+   * it. The API routes do not report upstream observation time, so the hook must
+   * not pretend to know it. Server-declared dataset freshness lives in
+   * `/api/status` (`src/lib/runtime-status.ts`), which is a different quantity.
+   */
+  fetchedAt: string | null;
 }
 
 function readCachedState<T>(cacheKey?: string): CachedState<T> {
   if (!cacheKey || typeof window === "undefined") {
-    return { data: null, lastUpdated: null };
+    return { data: null, fetchedAt: null };
   }
 
   try {
     const raw = window.localStorage.getItem(`geo-watch:${cacheKey}`);
-    if (!raw) return { data: null, lastUpdated: null };
+    if (!raw) return { data: null, fetchedAt: null };
 
     const parsed = JSON.parse(raw) as CachedState<T>;
     return {
       data: parsed.data ?? null,
-      lastUpdated: parsed.lastUpdated ?? null,
+      fetchedAt: parsed.fetchedAt ?? null,
     };
   } catch {
-    return { data: null, lastUpdated: null };
+    return { data: null, fetchedAt: null };
   }
 }
 
 function writeCachedState<T>(
   cacheKey: string | undefined,
   data: T,
-  lastUpdated: string,
+  fetchedAt: string,
 ) {
   if (!cacheKey || typeof window === "undefined") return;
 
   try {
     window.localStorage.setItem(
       `geo-watch:${cacheKey}`,
-      JSON.stringify({ data, lastUpdated }),
+      JSON.stringify({ data, fetchedAt }),
     );
   } catch {
     // Ignore storage write errors.
@@ -62,7 +68,8 @@ interface UseLiveResourceOptions<T> {
 
 interface UseLiveResourceResult<T> {
   data: T | null;
-  lastUpdated: string | null;
+  /** When this client last fetched successfully. Not upstream observation time. */
+  fetchedAt: string | null;
   isLoading: boolean;
   isRefreshing: boolean;
   isStale: boolean;
@@ -90,9 +97,7 @@ export function useLiveResource<T>(
   isUsableRef.current = isUsable;
 
   const [data, setData] = useState<T | null>(cached.data);
-  const [lastUpdated, setLastUpdated] = useState<string | null>(
-    cached.lastUpdated,
-  );
+  const [fetchedAt, setFetchedAt] = useState<string | null>(cached.fetchedAt);
   const [isLoading, setIsLoading] = useState(enabled && !cached.data);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isStale, setIsStale] = useState(Boolean(cached.data));
@@ -124,24 +129,22 @@ export function useLiveResource<T>(
           }
 
           const result = await fetcher();
-          const responseMeta =
-            result && typeof result === "object" && "__meta" in result
-              ? (result as Record<string, unknown>).__meta as
-                  | { updatedAt?: string; status?: string }
-                  | undefined
-              : undefined;
 
           if (!isUsableRef.current(result)) {
             throw new Error("No usable live data returned");
           }
 
+          // A successful fetch is fresh by definition of what this hook can see.
+          // It cannot tell whether the SOURCE behind the route is stale — routes
+          // report that on the `X-Data-Source` header, which `fetcher()` has
+          // already discarded by the time it returns parsed JSON.
           const stampedAt = new Date().toISOString();
           setData(result);
-          setLastUpdated(responseMeta?.updatedAt || stampedAt);
-          setIsStale(responseMeta?.status === "stale");
+          setFetchedAt(stampedAt);
+          setIsStale(false);
           setError(null);
           setRetryCount(0);
-          writeCachedState(cacheKey, result, responseMeta?.updatedAt || stampedAt);
+          writeCachedState(cacheKey, result, stampedAt);
 
           setIsLoading(false);
           setIsRefreshing(false);
@@ -158,8 +161,8 @@ export function useLiveResource<T>(
       setRetryCount((prev) => prev + 1);
 
       const hasData = Boolean(dataRef.current || cached.data);
-      if (hasData && lastUpdated) {
-        const age = Date.now() - new Date(lastUpdated).getTime();
+      if (hasData && fetchedAt) {
+        const age = Date.now() - new Date(fetchedAt).getTime();
         setIsStale(age > maxStaleMs);
       } else {
         setIsStale(hasData);
@@ -168,7 +171,7 @@ export function useLiveResource<T>(
       setIsLoading(false);
       setIsRefreshing(false);
     },
-    [cacheKey, cached.data, enabled, fetcher, lastUpdated, maxRetries, maxStaleMs],
+    [cacheKey, cached.data, enabled, fetcher, fetchedAt, maxRetries, maxStaleMs],
   );
 
   useEffect(() => {
@@ -190,7 +193,7 @@ export function useLiveResource<T>(
 
   return {
     data,
-    lastUpdated,
+    fetchedAt,
     isLoading,
     isRefreshing,
     isStale,

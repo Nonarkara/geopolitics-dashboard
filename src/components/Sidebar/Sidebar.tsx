@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import type { BorderCommandBrief, CommodityPrice, EonetEvent, RegionalDisaster, RiverDischarge, SeismicEvent, TrafficIncident } from "../../types/dashboard";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import { DATA_SOURCE_CATALOG } from "../../lib/data-sources";
 import BorderNewsFeed from "./BorderNewsFeed";
 import type { ReliefWebResponse } from "../../lib/reliefweb";
 import type { SanctionsResponse } from "../../lib/opensanctions";
@@ -111,6 +112,16 @@ interface SidebarProps {
   brief: BorderCommandBrief | null;
 }
 
+/** Poll cadence declared once in the source catalog — see `clientPollMs`. */
+const POLL = {
+  traffic: DATA_SOURCE_CATALOG.traffic?.clientPollMs ?? 120_000,
+  earthquakes: DATA_SOURCE_CATALOG.earthquakes?.clientPollMs ?? 300_000,
+  flood: DATA_SOURCE_CATALOG.flood?.clientPollMs ?? 1800_000,
+  disasters: DATA_SOURCE_CATALOG.disasters?.clientPollMs ?? 600_000,
+  eonet: DATA_SOURCE_CATALOG.eonet?.clientPollMs ?? 1800_000,
+  commodities: DATA_SOURCE_CATALOG.commodities?.clientPollMs ?? 3600_000,
+} as const;
+
 function useFetch<T>(url: string, interval: number): T | null {
   const [data, setData] = useState<T | null>(null);
   useEffect(() => {
@@ -157,12 +168,12 @@ function useEnvelope<T>(url: string, interval: number): T | null {
 
 export default function Sidebar({ brief }: SidebarProps) {
   const { buildUrl, isHistorical, timeWindow, bangkokDay } = useTimeWindow();
-  const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", 3600_000);
-  const rivers = useFetch<RiverDischarge[]>("/api/border/flood-risk", 1800_000);
-  const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", 300_000);
-  const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", 120_000);
-  const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", 600_000);
-  const eonet = useFetch<EonetEvent[]>("/api/border/eonet", 1800_000);
+  const commodities = useFetch<CommodityPrice[]>("/api/border/commodities", POLL.commodities);
+  const rivers = useFetch<RiverDischarge[]>("/api/border/flood-risk", POLL.flood);
+  const quakes = useFetch<SeismicEvent[]>("/api/border/earthquakes", POLL.earthquakes);
+  const traffic = useFetch<TrafficIncident[]>("/api/border/traffic", POLL.traffic);
+  const disasters = useFetch<RegionalDisaster[]>("/api/border/disasters", POLL.disasters);
+  const eonet = useFetch<EonetEvent[]>("/api/border/eonet", POLL.eonet);
   const relief = useEnvelope<ReliefWebResponse>("/api/border/reliefweb", 1800_000);
   const sanctions = useEnvelope<SanctionsResponse>("/api/border/sanctions", 3600_000);
 

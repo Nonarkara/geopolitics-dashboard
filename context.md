@@ -81,6 +81,19 @@ data is legitimate ONLY in the static GitHub Pages demo
 `tests/playback-backend.test.mts`.
 
 `/api/air-quality` fails closed (`[]` + `X-Data-Source: unavailable`).
+`/api/border/sentiment` fails closed the same way (2026-09-10). Its
+`generateFallbackTimeline` is `Math.sin`/`Math.random` output and now renders
+only under `NEXT_PUBLIC_STATIC_EXPORT=true`; in production it previously drew a
+fabricated tone curve that was pixel-identical to real GDELT tone.
+
+The client now reads the honesty headers instead of dropping them:
+`useFetch` exposes `dataSource` (`X-Data-Source`) and `dataAge` (`X-Data-Age`),
+and a `Metric` whose route declared `unavailable` renders `--` + "no live data"
+rather than a confident `0`. Client poll cadence is declared once per feed as
+`clientPollMs` in `DATA_SOURCE_CATALOG` — `upstreamCadence` is the provider's
+own publishing rhythm and is a different fact (FIRMS: 6 hr upstream, 15 min
+poll). Payload age (`FreshnessDot`) and dataset age (`/api/status`,
+`runtime-status.ts`) remain deliberately separate quantities.
 `/api/border/insights` waits for Open-Meteo/World Bank, then caches 15 minutes
 in-process and `s-maxage=900` at the edge. Do not wrap those upstreams in a
 short `AbortSignal.timeout` or `settleWithin` budget — cold GloFAS from

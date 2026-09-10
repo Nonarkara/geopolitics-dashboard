@@ -7,7 +7,14 @@ export const dynamic = "force-static";
  * GET /api/border/sentiment?theater=myanmar-frontier
  *
  * Returns a 14-day GDELT tone timeline for a specific theater zone.
- * In static export mode, returns fallback synthetic data.
+ *
+ * Fails closed: when GDELT is unreachable the route returns an empty timeline
+ * and `X-Data-Source: unavailable`, matching every sibling route under
+ * `/api/*`. The synthetic timeline below is `Math.sin`/`Math.random` output —
+ * it is legitimate ONLY in the static GitHub Pages demo
+ * (`NEXT_PUBLIC_STATIC_EXPORT=true`), per the data honesty invariant in
+ * `context.md`. Serving it in production drew a fabricated sentiment curve
+ * that was pixel-identical to a real one.
  */
 
 const GDELT_TONE_API = "https://api.gdeltproject.org/api/v2/doc/doc";
@@ -32,18 +39,19 @@ export async function GET(request: NextRequest) {
   const theaterId = (request.nextUrl.searchParams.get("theater") ?? "myanmar-frontier") as BorderAreaId;
 
   if (!BORDER_AREAS.find((a) => a.id === theaterId)) {
-    return NextResponse.json({
-      timeline: generateFallbackTimeline("myanmar-frontier"),
-      source: "fallback",
-    });
+    return unavailable();
   }
 
-  // In static export, skip the GDELT fetch
+  // In static export, skip the GDELT fetch — the demo is the one place a
+  // synthetic timeline may render.
   if (process.env.NEXT_PUBLIC_STATIC_EXPORT === "true") {
-    return NextResponse.json({
-      timeline: generateFallbackTimeline(theaterId),
-      source: "fallback",
-    });
+    return NextResponse.json(
+      {
+        timeline: generateFallbackTimeline(theaterId),
+        source: "static-demo",
+      },
+      { headers: { "X-Data-Source": "static-demo" } },
+    );
   }
 
   try {
@@ -59,25 +67,31 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({
-        timeline: generateFallbackTimeline(theaterId),
-        source: "fallback",
-      });
+      return unavailable();
     }
 
     const data = await response.json();
     const timeline = parseGdeltTimeline(data);
 
-    return NextResponse.json({
-      timeline,
-      source: "gdelt",
-    });
+    if (timeline.length === 0) {
+      return unavailable();
+    }
+
+    return NextResponse.json(
+      { timeline, source: "gdelt" },
+      { headers: { "X-Data-Source": "live", "X-Data-Tier": "gdelt" } },
+    );
   } catch {
-    return NextResponse.json({
-      timeline: generateFallbackTimeline(theaterId),
-      source: "fallback",
-    });
+    return unavailable();
   }
+}
+
+/** No live GDELT tone. Return nothing rather than inventing a curve. */
+function unavailable() {
+  return NextResponse.json(
+    { timeline: [], source: "unavailable" },
+    { headers: { "X-Data-Source": "unavailable", "X-Data-Tier": "gdelt" } },
+  );
 }
 
 function parseGdeltTimeline(
