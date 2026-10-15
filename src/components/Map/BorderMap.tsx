@@ -23,11 +23,13 @@ import {
   createKilometerGridLayer,
   createOperationalCorridorLayers,
   createOperationalNodeLayers,
+  createOrbitalLayer,
   createProvinceLabelsLayer,
   createRasterTileLayer,
   createRefugeeLayer,
   createRegionalBorderLayer,
   createSignalPulseLayer,
+  createStrategicMaritimeLayer,
   type InfrastructureFeature,
   createTrafficIncidentLayers,
   createVesselLayer,
@@ -44,6 +46,7 @@ import type {
   ProvinceSelection,
   FlightData,
   RefugeeMovement,
+  RegionalOpenIntelResponse,
   VesselPosition,
 } from "../../types/dashboard";
 import { haversineKm } from "../../lib/border-regions";
@@ -259,8 +262,21 @@ function buildFeedAlerts(
     }));
 }
 
-// NASA GIBS only serves imagery up to the current real-world date.
-const NASA_GIBS_SAFE_DATE = "2024-03-01";
+function utcDateWithLag(days: number) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function recentHimawariTimestamp() {
+  const date = new Date(Date.now() - 90 * 60_000);
+  date.setUTCMinutes(Math.floor(date.getUTCMinutes() / 10) * 10, 0, 0);
+  return date.toISOString().replace(".000Z", "Z");
+}
+
+// Daily GIBS science products can trail acquisition by a processing cycle.
+const NASA_GIBS_SAFE_DATE = utcDateWithLag(2);
+const HIMAWARI_SAFE_TIME = recentHimawariTimestamp();
 
 // ─── Base Map Catalog (from DrNon Global Satellite Toolkit) ─────────
 // Fallback architecture: ESRI aerial always renders underneath.
@@ -274,6 +290,7 @@ interface BaseMapConfig {
   gibsFormat?: "jpg" | "png";
   maxZoom: number;
   useDefaultDate?: boolean;
+  dateOverride?: string;
 }
 
 const BASE_MAPS: BaseMapConfig[] = [
@@ -308,11 +325,11 @@ const BASE_MAPS: BaseMapConfig[] = [
   { id: "BLU", label: "BLU", name: "Blue Marble Relief", maxZoom: 8,
     gibsLayer: "BlueMarble_ShadedRelief", gibsFormat: "jpg", useDefaultDate: true },
   // NASA GIBS — Himawari-9 geostationary
-  { id: "HIM", label: "HIM", name: "Himawari-9 Visible", maxZoom: 8,
-    gibsLayer: "Himawari_AHI_Band3_Red_Visible_1km", gibsFormat: "png", useDefaultDate: true },
-  // NASA GIBS — Geo Ring Natural Color composite
-  { id: "GRN", label: "GRN", name: "Geo Ring Natural", maxZoom: 7,
-    gibsLayer: "Geostationary_Ring_Natural_Color_RGB", gibsFormat: "jpg", useDefaultDate: true },
+  { id: "HIM", label: "HIM", name: "Himawari-9 Visible", maxZoom: 7,
+    gibsLayer: "Himawari_AHI_Band3_Red_Visible_1km", gibsFormat: "png", dateOverride: HIMAWARI_SAFE_TIME },
+  // Himawari clean infrared keeps working overnight when visible imagery does not.
+  { id: "HIR", label: "HIR", name: "Himawari Clean IR", maxZoom: 6,
+    gibsLayer: "Himawari_AHI_Band13_Clean_Infrared", gibsFormat: "png", dateOverride: HIMAWARI_SAFE_TIME },
 ];
 
 // ─── Data Overlay Catalog (stackable, from DrNon Toolkit) ───────────
@@ -327,6 +344,7 @@ interface OverlayConfig {
   maxZoom: number;
   defaultOpacity: number;
   useDefaultDate?: boolean;
+  dateOverride?: string;
 }
 
 const DATA_OVERLAYS: OverlayConfig[] = [
@@ -337,37 +355,32 @@ const DATA_OVERLAYS: OverlayConfig[] = [
     gibsLayer: "VIIRS_SNPP_CorrectedReflectance_BandsM11-I2-I1", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.6 },
   { id: "SWI", label: "SWI", name: "Shortwave Heat", category: "THERMAL",
     gibsLayer: "MODIS_Terra_SurfaceReflectance_Bands721", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.55 },
-  // Raster active-fire products (1km MODIS + 375m VIIRS) — complement
-  // the vector FIRMS hotspots with pixel-level fire signal. Keyless.
-  { id: "MTA", label: "MTA", name: "MODIS Active Fire (1km)", category: "THERMAL",
-    gibsLayer: "MODIS_Terra_Thermal_Anomalies_All", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.55 },
-  { id: "VAF", label: "VAF", name: "VIIRS Active Fire (375m)", category: "THERMAL",
-    gibsLayer: "VIIRS_SNPP_Thermal_Anomalies_375m_All", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.5 },
+  { id: "SMK", label: "SMK", name: "Smoke / Fire Contrast", category: "THERMAL",
+    gibsLayer: "MODIS_Terra_CorrectedReflectance_Bands367", gibsFormat: "jpg", maxZoom: 9, defaultOpacity: 0.58 },
+  { id: "LTV", label: "LTV", name: "VIIRS Land Temperature", category: "THERMAL",
+    gibsLayer: "VIIRS_SNPP_Land_Surface_Temp_Day", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.5 },
   // Atmospheric
   { id: "AOD", label: "AOD", name: "Aerosol Density", category: "ATMOSPHERE",
     gibsLayer: "MODIS_Combined_Value_Added_AOD", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
   { id: "LST", label: "LST", name: "Surface Temp", category: "ATMOSPHERE",
-    gibsLayer: "MODIS_Terra_LST_Day", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.5 },
+    gibsLayer: "MODIS_Terra_Land_Surface_Temp_Day", gibsFormat: "png", maxZoom: 7, defaultOpacity: 0.5 },
   { id: "CO", label: "CO", name: "Carbon Monoxide", category: "ATMOSPHERE",
-    gibsLayer: "MOPITT_Carbon_Monoxide_Total_Column_Day", gibsFormat: "png", maxZoom: 5, defaultOpacity: 0.45 },
+    gibsLayer: "AIRS_L2_Carbon_Monoxide_500hPa_Volume_Mixing_Ratio_Day", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.45 },
   { id: "RNF", label: "RNF", name: "Precipitation", category: "ATMOSPHERE",
     gibsLayer: "IMERG_Precipitation_Rate", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.5 },
   // Vegetation
   { id: "EVI", label: "EVI", name: "Vegetation Index", category: "VEGETATION",
     gibsLayer: "MODIS_Terra_EVI_8Day", gibsFormat: "png", maxZoom: 9, defaultOpacity: 0.46, useDefaultDate: true },
-  // 30m Landsat NDVI — higher resolution vegetation baseline than MODIS EVI.
-  // Useful for "the forest was here last month, it's gone now" detection
-  // (deforestation, camp clearance, fire scar). Keyless via GIBS.
-  { id: "NDV", label: "NDV", name: "Landsat NDVI (30m)", category: "VEGETATION",
-    gibsLayer: "Landsat_WELD_NDVI_Global_Monthly", gibsFormat: "png", maxZoom: 9, defaultOpacity: 0.5 },
+  { id: "NDV", label: "NDV", name: "VIIRS NDVI (8-day)", category: "VEGETATION",
+    gibsLayer: "VIIRS_SNPP_NDVI_8Day", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.5 },
   // Nighttime & Infrastructure
   { id: "NGT", label: "NGT", name: "Night Lights", category: "INFRASTRUCTURE",
-    gibsLayer: "VIIRS_SNPP_DayNightBand_AtSensor_M15", gibsFormat: "png", maxZoom: 8, defaultOpacity: 0.6, useDefaultDate: true },
+    gibsLayer: "VIIRS_SNPP_DayNightBand_AtSensor_M15", gibsFormat: "jpg", maxZoom: 8, defaultOpacity: 0.6 },
   // Geostationary Analysis
   { id: "GRI", label: "GRI", name: "Geo Ring IR", category: "GEOSTATIONARY",
-    gibsLayer: "Geostationary_Ring_IR108", gibsFormat: "jpg", maxZoom: 7, defaultOpacity: 0.55, useDefaultDate: true },
+    gibsLayer: "Himawari_AHI_Band13_Clean_Infrared", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.55, dateOverride: HIMAWARI_SAFE_TIME },
   { id: "GRA", label: "GRA", name: "Geo Ring Airmass", category: "GEOSTATIONARY",
-    gibsLayer: "Geostationary_Ring_Airmass_RGB", gibsFormat: "jpg", maxZoom: 7, defaultOpacity: 0.55, useDefaultDate: true },
+    gibsLayer: "Himawari_AHI_Air_Mass", gibsFormat: "png", maxZoom: 6, defaultOpacity: 0.55, dateOverride: HIMAWARI_SAFE_TIME },
   // Hydro & Terrain
   { id: "SWO", label: "SWO", name: "Surface Water", category: "HYDRO",
     tileUrl: "https://storage.googleapis.com/global-surface-water/tiles2021/occurrence/{z}/{x}/{y}.png", maxZoom: 13, defaultOpacity: 0.6 },
@@ -377,7 +390,7 @@ const DATA_OVERLAYS: OverlayConfig[] = [
     tileUrl: "https://tiles.emodnet-bathymetry.eu/v12/mean_atlas_land_latest/web_mercator/{z}/{x}/{y}.png", maxZoom: 12, defaultOpacity: 0.5 },
 ];
 
-function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: string; gibsFormat?: "jpg" | "png"; maxZoom: number; useDefaultDate?: boolean }, opacity: number) {
+function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: string; gibsFormat?: "jpg" | "png"; maxZoom: number; useDefaultDate?: boolean; dateOverride?: string }, opacity: number) {
   if (config.tileUrl) {
     return createRasterTileLayer({ id: `tile-${config.id}`, data: config.tileUrl, maxZoom: config.maxZoom, opacity });
   }
@@ -385,7 +398,7 @@ function buildTileLayer(config: { id: string; tileUrl?: string; gibsLayer?: stri
     return createGIBSLayer({
       id: `gibs-${config.id}`,
       layer: config.gibsLayer,
-      date: config.useDefaultDate ? "default" : NASA_GIBS_SAFE_DATE,
+      date: config.dateOverride ?? (config.useDefaultDate ? "default" : NASA_GIBS_SAFE_DATE),
       opacity,
       maxZoom: config.maxZoom,
       format: config.gibsFormat || "jpg",
@@ -417,6 +430,8 @@ export default function BorderMap({
   const [showVessels, setShowVessels] = useState(false);
   const [showSignalPulse, setShowSignalPulse] = useState(false);
   const [showDams, setShowDams] = useState(true);
+  const [showOrbitals, setShowOrbitals] = useState(false);
+  const [showRegionalMaritime, setShowRegionalMaritime] = useState(false);
   const [dams, setDams] = useState<InfrastructureFeature[]>([]);
   const [areControlsOpen, setAreControlsOpen] = useState(false);
   const [baseMapOpacity, setBaseMapOpacity] = useState(85);
@@ -439,12 +454,14 @@ export default function BorderMap({
   const [trafficIncidents, setTrafficIncidents] = useState<TrafficIncident[]>([]);
   const [operationsMap, setOperationsMap] = useState<BorderOperationalMapResponse | null>(null);
   const [recentSignals, setRecentSignals] = useState<{ id: string; lat: number; lng: number; signal_type: string; severity: string; published_at: string; title: string }[]>([]);
+  const [regionalOpenIntel, setRegionalOpenIntel] =
+    useState<RegionalOpenIntelResponse | null>(null);
   const [feedAlerts, setFeedAlerts] = useState<FeedAlert[]>([]);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [inc, fir, flt, ref, borders, zn, runtimeStatus, ves, traffic, operations, sig] = await Promise.all([
+        const [inc, fir, flt, ref, borders, zn, runtimeStatus, ves, traffic, operations, sig, openIntel] = await Promise.all([
           fetchJson<IncidentFeature[]>("/api/border/incidents", []),
           fetchJson<FireEvent[]>("/api/fires", []),
           fetchJson<FlightData[]>("/api/flights", []),
@@ -459,6 +476,7 @@ export default function BorderMap({
             `/api/research/signals?from=${new Date(Date.now() - 86400000).toISOString()}&limit=100`,
             { signals: [] },
           ),
+          fetchJson<RegionalOpenIntelResponse | null>("/api/open-intel/regional", null),
         ]);
 
         setIncidents(Array.isArray(inc) ? inc : []);
@@ -477,6 +495,7 @@ export default function BorderMap({
           isBorderOperationalMapResponse(operations) ? operations : null,
         );
         setRecentSignals((sig?.signals || []).filter((s: { lat?: number; lng?: number }) => s.lat && s.lng));
+        setRegionalOpenIntel(openIntel);
         setFeedAlerts(
           buildFeedAlerts(
             isDashboardStatusPayload(runtimeStatus) ? runtimeStatus : null,
@@ -645,9 +664,15 @@ export default function BorderMap({
     if (showVessels && vessels.length > 0) result.push(createVesselLayer(vessels));
     if (showSignalPulse && recentSignals.length > 0) result.push(createSignalPulseLayer(recentSignals));
     if (showDams) result.push(createInfrastructureLayer(dams, "dams"));
+    if (showOrbitals && regionalOpenIntel?.orbitals.length) {
+      result.push(createOrbitalLayer(regionalOpenIntel.orbitals));
+    }
+    if (showRegionalMaritime && regionalOpenIntel?.maritimePoints.length) {
+      result.push(createStrategicMaritimeLayer(regionalOpenIntel.maritimePoints));
+    }
 
     return result.flat().filter(Boolean);
-  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showDams, dams]);
+  }, [showRegionalFrame, regionBorders, showZones, zones, showHeatmap, incidents, onProvinceSelect, showFires, fires, showRefugees, refugees, showFlights, flights, showVessels, vessels, showSignalPulse, recentSignals, showDams, dams, showOrbitals, showRegionalMaritime, regionalOpenIntel]);
 
   // UI/interaction layers — change on viewport (but these are lightweight)
   const uiLayers = useMemo(() => {
@@ -696,7 +721,7 @@ export default function BorderMap({
   // Combine all layer groups
   const layers = [...baseLayers, ...intelligenceLayers, ...uiLayers];
 
-  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse, showDams].filter(Boolean).length;
+  const activeLayersCount = [showRegionalFrame, showOperationalSpines, showOperationalNodes, showRoadAlerts, showHeatmap, showFires, showFlights, showRefugees, showZones, showLabels, showGrid, showVessels, showSignalPulse, showDams, showOrbitals, showRegionalMaritime].filter(Boolean).length;
   const activeOverlayCount = activeOverlayIds.size;
 
   const handleClearAll = () => {
@@ -713,6 +738,8 @@ export default function BorderMap({
     setShowGrid(false);
     setShowVessels(false);
     setShowSignalPulse(false);
+    setShowOrbitals(false);
+    setShowRegionalMaritime(false);
     setActiveOverlayIds(new Set());
     setActiveBaseId("ESRI");
     focusNationalFrame();
@@ -919,9 +946,14 @@ export default function BorderMap({
             { active: showOperationalSpines, set: setShowOperationalSpines, label: "SPINE", icon: Route },
             { active: showOperationalNodes, set: setShowOperationalNodes, label: "NODE", icon: Building2 },
             { active: showRoadAlerts, set: setShowRoadAlerts, label: "ROAD", icon: Truck },
+            { active: showOrbitals, set: setShowOrbitals, label: "ORBT", icon: Radio },
+            { active: showRegionalMaritime, set: setShowRegionalMaritime, label: "PORT", icon: Ship },
           ].map((toggle) => (
             <button
+              type="button"
               key={toggle.label}
+              aria-pressed={toggle.active}
+              aria-label={`Toggle ${toggle.label} map layer`}
               onClick={() => toggle.set(!toggle.active)}
               className={`flex-1 flex items-center justify-center gap-1 transition-all ${toggle.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
             >
@@ -947,7 +979,7 @@ export default function BorderMap({
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
-              <button onClick={() => t.set(!t.active)} className={`min-h-[44px] flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
+              <button type="button" aria-pressed={t.active} aria-label={`Toggle ${t.label} map layer`} onClick={() => t.set(!t.active)} className={`min-h-[44px] flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
                 <t.icon size={12} />
                 <span className="text-[12px] font-black tracking-wider">{t.label}</span>
               </button>
@@ -973,7 +1005,7 @@ export default function BorderMap({
             >
               SAT · NGT
               <span className="opacity-50">
-                {new Date().toISOString().slice(0, 10)}
+                {NASA_GIBS_SAFE_DATE}
               </span>
             </button>
             <span className="text-[12px] font-mono uppercase tracking-[0.12em] text-white/40">
@@ -1024,6 +1056,7 @@ export default function BorderMap({
               { label: "FLOW", val: refugees?.length || 0 },
               { label: "VESSEL", val: vessels?.length || 0 },
               { label: "PULSE", val: recentSignals?.length || 0 },
+              { label: "ORBIT", val: regionalOpenIntel?.orbitals.length || 0 },
             ].map(m => (
               <div key={m.label} className="flex flex-col">
                 <span className="text-[13px] font-black opacity-40 uppercase mb-0.5">{m.label}</span>

@@ -19,11 +19,13 @@ import type {
   FlightData,
   IncidentFeature,
   MapOverlay,
+  OrbitalObject,
   ProvinceSelection,
   RainfallPoint,
   RefugeeMovement,
   RegionBorderCollection,
   TrafficIncident,
+  StrategicMaritimePoint,
   VesselPosition,
 } from "../types/dashboard";
 
@@ -1100,6 +1102,91 @@ export function createVesselLayer(vessels: VesselPosition[]) {
       outlineWidth: 2,
       sizeUnits: "pixels" as const,
       billboard: false,
+      pickable: false,
+    }),
+  ];
+}
+
+const ORBITAL_CATEGORY_COLORS: Record<string, [number, number, number, number]> = {
+  navigation: [96, 165, 250, 205],
+  weather: [34, 211, 238, 205],
+  earth: [74, 222, 128, 205],
+  military: [245, 158, 11, 220],
+  communications: [196, 181, 253, 205],
+};
+
+export function createOrbitalLayer(orbitals: OrbitalObject[]) {
+  if (!Array.isArray(orbitals) || orbitals.length === 0) return null;
+
+  return [
+    new ScatterplotLayer({
+      id: "regional-orbital-positions",
+      data: orbitals,
+      getPosition: (object: OrbitalObject) => [object.lng, object.lat],
+      getRadius: 12000,
+      getFillColor: (object: OrbitalObject) =>
+        ORBITAL_CATEGORY_COLORS[object.category] ?? [226, 232, 240, 175],
+      radiusMinPixels: 2,
+      radiusMaxPixels: 6,
+      stroked: true,
+      lineWidthMinPixels: 1,
+      getLineColor: [5, 8, 14, 220],
+      pickable: true,
+    }),
+    new TextLayer({
+      id: "regional-orbital-labels",
+      data: orbitals.slice(0, 35),
+      getPosition: (object: OrbitalObject) => [object.lng, object.lat],
+      getText: (object: OrbitalObject) => object.name,
+      getSize: 9,
+      getColor: [226, 232, 240, 165],
+      getTextAnchor: "start" as const,
+      getAlignmentBaseline: "center" as const,
+      getPixelOffset: [6, 0],
+      fontFamily: "JetBrains Mono, SF Mono, monospace",
+      fontSettings: { sdf: true },
+      outlineColor: [5, 8, 14, 230],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
+      pickable: false,
+    }),
+  ];
+}
+
+export function createStrategicMaritimeLayer(points: StrategicMaritimePoint[]) {
+  if (!Array.isArray(points) || points.length === 0) return null;
+
+  return [
+    new ScatterplotLayer({
+      id: "strategic-maritime-points",
+      data: points,
+      getPosition: (point: StrategicMaritimePoint) => [point.lng, point.lat],
+      getRadius: (point: StrategicMaritimePoint) =>
+        point.kind === "chokepoint" ? 16000 : 9000,
+      getFillColor: (point: StrategicMaritimePoint) =>
+        point.kind === "chokepoint" ? [245, 158, 11, 220] : [34, 211, 238, 190],
+      radiusMinPixels: 4,
+      radiusMaxPixels: 10,
+      stroked: true,
+      lineWidthMinPixels: 1,
+      getLineColor: [255, 255, 255, 170],
+      pickable: true,
+    }),
+    new TextLayer({
+      id: "strategic-maritime-labels",
+      data: points,
+      getPosition: (point: StrategicMaritimePoint) => [point.lng, point.lat],
+      getText: (point: StrategicMaritimePoint) => point.name,
+      getSize: 10,
+      getColor: [226, 232, 240, 190],
+      getTextAnchor: "start" as const,
+      getAlignmentBaseline: "center" as const,
+      getPixelOffset: [8, 0],
+      fontFamily: "JetBrains Mono, SF Mono, monospace",
+      fontSettings: { sdf: true },
+      outlineColor: [5, 8, 14, 230],
+      outlineWidth: 2,
+      sizeUnits: "pixels" as const,
       pickable: false,
     }),
   ];

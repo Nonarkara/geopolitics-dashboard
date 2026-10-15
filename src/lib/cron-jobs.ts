@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isDatabaseConfigured, query } from "./db";
 import { getErrorMessage } from "./errors";
 import { getTimeoutSignal } from "./http";
+import { constantTimeTokenMatch, readBearerToken } from "./request-auth";
 import type { DashboardCronState, DashboardCronStatus } from "../types/dashboard";
 
 export type CronJobId =
@@ -378,14 +379,15 @@ function isLocalCronBypassAllowed(request: NextRequest) {
   return host.includes("localhost") || host.includes("127.0.0.1");
 }
 
-export function isAuthorizedCronRequest(request: NextRequest) {
+export async function isAuthorizedCronRequest(request: NextRequest) {
   const secret = process.env.CRON_SECRET?.trim();
 
   if (!secret) {
     return isLocalCronBypassAllowed(request);
   }
 
-  return request.headers.get("authorization")?.trim() === `Bearer ${secret}`;
+  const token = readBearerToken(request);
+  return token ? constantTimeTokenMatch(secret, token) : false;
 }
 
 export function unauthorizedCronResponse() {
@@ -406,6 +408,7 @@ export function unauthorizedCronResponse() {
 
 async function invokeInternalRoute(origin: string, task: CronTaskDefinition) {
   const started = Date.now();
+  const cronSecret = process.env.CRON_SECRET?.trim();
 
   try {
     const response = await cronJobDeps.fetch(`${origin}${task.path}`, {
@@ -413,6 +416,7 @@ async function invokeInternalRoute(origin: string, task: CronTaskDefinition) {
       headers: {
         accept: "application/json",
         "x-dashboard-cron": task.id,
+        ...(cronSecret ? { authorization: `Bearer ${cronSecret}` } : {}),
       },
       signal: getTimeoutSignal(20_000),
     });
@@ -599,7 +603,7 @@ export async function runCronJobRequest(
   request: NextRequest,
   jobId: Exclude<CronJobId, "maintenance-cleanup">,
 ) {
-  if (!isAuthorizedCronRequest(request)) {
+  if (!await isAuthorizedCronRequest(request)) {
     return unauthorizedCronResponse();
   }
 
@@ -613,7 +617,7 @@ export async function runCronJobRequest(
 }
 
 export async function runMaintenanceCronRequest(request: NextRequest) {
-  if (!isAuthorizedCronRequest(request)) {
+  if (!await isAuthorizedCronRequest(request)) {
     return unauthorizedCronResponse();
   }
 

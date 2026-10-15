@@ -22,13 +22,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - run: npm ci
 
       # Remove API routes and server-only pages that use force-dynamic
-      # The dashboard degrades gracefully to mock/fallback data without them
+      # The dashboard degrades to explicitly unavailable states without them.
       - name: Prepare for static export
         run: |
           rm -rf src/app/api

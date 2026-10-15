@@ -3,14 +3,18 @@
  * into append-only Supabase tables for long-term trend analysis.
  *
  * Triggered by:
- *   1. Cloudflare Worker cron (every 15 minutes — see wrangler.jsonc)
- *   2. Manual GET with header `x-cron-secret: <CRON_SECRET>` for ad-hoc capture
+ *   1. GitHub Actions scheduler (see .github/workflows/cron-refresh.yml)
+ *   2. Manual GET with `Authorization: Bearer <CRON_SECRET>`
  *
  * Writes 7 snapshot tables. Each run creates exactly one v8_ingest_runs row.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase } from "../../../../lib/supabase-server";
+import {
+  isAuthorizedCronRequest,
+  unauthorizedCronResponse,
+} from "../../../../lib/cron-jobs";
 
 const ASEAN_CURRENCIES = [
   "THB", "MYR", "SGD", "IDR", "VND",
@@ -31,19 +35,14 @@ async function fetchJson<T>(url: string, fallback: T): Promise<T> {
 }
 
 export async function GET(req: NextRequest) {
+  if (!await isAuthorizedCronRequest(req)) {
+    return unauthorizedCronResponse();
+  }
+
   const startedAt = Date.now();
   const rowsWritten: Record<string, number> = {};
   const errors: string[] = [];
-  const trigger = req.headers.get("cf-worker") ? "cron" : "manual";
-
-  // Optional secret check for manual calls (Cloudflare cron bypasses via absent secret)
-  const expectedSecret = process.env.CRON_SECRET;
-  if (expectedSecret && trigger === "manual") {
-    const provided = req.headers.get("x-cron-secret");
-    if (provided !== expectedSecret) {
-      return NextResponse.json({ error: "forbidden" }, { status: 403 });
-    }
-  }
+  const trigger = req.headers.get("x-dashboard-cron") ? "cron" : "manual";
 
   const supa = getServiceSupabase();
   if (!supa) {

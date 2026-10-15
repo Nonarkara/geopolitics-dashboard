@@ -1,65 +1,64 @@
 /**
- * Generic Supabase data read endpoint
- * Query params:
- *   table: table name (required)
- *   select: columns to select (default: *)
- *   order: column to order by (default: captured_at)
- *   limit: row count (default: 100)
- *   where: simple filter (not yet implemented)
+ * Narrow public read endpoint for the two V8 datasets used by the dashboard.
+ *
+ * This is deliberately not a generic Supabase proxy: table, column, ordering,
+ * and row-count choices are constrained before a query reaches Supabase.
  */
 
-import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { NextRequest, NextResponse } from "next/server";
+import { resolvePublicDataQuery } from "../../../lib/public-data-query";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const table = searchParams.get("table");
-  const select = searchParams.get("select") || "*";
-  const order = searchParams.get("order") || "captured_at";
-  const limit = parseInt(searchParams.get("limit") || "100", 10);
-  const ascending = searchParams.get("ascending") !== "false";
+export async function GET(request: NextRequest) {
+  const resolved = resolvePublicDataQuery(request.nextUrl.searchParams);
+  if (!resolved) {
+    return NextResponse.json(
+      { error: "Unsupported public dataset query." },
+      { status: 400, headers: { "cache-control": "no-store" } },
+    );
+  }
 
-  if (!table) {
-    return NextResponse.json({ error: "table parameter required" }, { status: 400 });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim();
+  if (!supabaseUrl || !supabaseKey) {
+    return NextResponse.json(
+      { error: "Public data service is unavailable." },
+      { status: 503, headers: { "cache-control": "no-store" } },
+    );
   }
 
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data, error } = await supabase
+      .from(resolved.table)
+      .select(resolved.columns.join(","))
+      .order(resolved.orderBy, { ascending: resolved.ascending })
+      .limit(resolved.limit);
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (error) {
+      console.error("Public data query failed:", error.message);
       return NextResponse.json(
-        { error: "Supabase not configured" },
-        { status: 500 }
+        { error: "Unable to load public data." },
+        { status: 502, headers: { "cache-control": "no-store" } },
       );
     }
 
-    const supa = createClient(supabaseUrl, supabaseKey);
-
-    let query = supa.from(table).select(select);
-
-    if (order) {
-      query = query.order(order, { ascending });
-    }
-
-    if (limit > 0) {
-      query = query.limit(limit);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
-    return NextResponse.json(data || []);
-  } catch (e) {
+    return NextResponse.json(data ?? [], {
+      headers: { "cache-control": "public, max-age=60, s-maxage=300" },
+    });
+  } catch (error: unknown) {
+    console.error(
+      "Public data route failed:",
+      error instanceof Error ? error.message : "unknown error",
+    );
     return NextResponse.json(
-      { error: (e as Error).message },
-      { status: 500 }
+      { error: "Unable to load public data." },
+      { status: 502, headers: { "cache-control": "no-store" } },
     );
   }
 }

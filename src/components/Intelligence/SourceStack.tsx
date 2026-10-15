@@ -30,7 +30,7 @@ function isCopernicusPreviewResponse(
 
 export default function SourceStack() {
   const [sources, setSources] = useState<ApiSourceResponse>(emptySources);
-  const [, setPreview] = useState<CopernicusPreviewResponse | null>(null);
+  const [preview, setPreview] = useState<CopernicusPreviewResponse | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -72,21 +72,12 @@ export default function SourceStack() {
         ))}
       </div>
 
-      {/* Multi-national source indicators */}
-      <div className="grid grid-cols-4 gap-1">
-        {[
-          { flag: "US", name: "NASA" },
-          { flag: "JP", name: "JAXA" },
-          { flag: "EU", name: "ESA" },
-          { flag: "IN", name: "ISRO" },
-          { flag: "RU", name: "ROSCO" },
-          { flag: "CN", name: "CNSA" },
-          { flag: "UK", name: "UKSA" },
-          { flag: "KR", name: "KARI" },
-        ].map((src) => (
-          <div key={src.flag} className="flex flex-col items-center py-1 border border-[var(--line-dim)] bg-[var(--bg)]">
-            <span className="text-[12px] font-black opacity-50">{src.flag}</span>
-            <span className="text-[11px] font-black opacity-25 uppercase">{src.name}</span>
+      {/* Only imagery sources actually exposed by this deployment. */}
+      <div className="grid grid-cols-2 gap-1">
+        {(preview?.imagerySources ?? []).slice(0, 4).map((source) => (
+          <div key={source.id} className="flex min-w-0 flex-col py-1 px-1.5 border border-[var(--line-dim)] bg-[var(--bg)]">
+            <span className="truncate text-[12px] font-black opacity-50">{source.id}</span>
+            <span className="truncate text-[11px] font-black opacity-25 uppercase">{source.label}</span>
           </div>
         ))}
       </div>

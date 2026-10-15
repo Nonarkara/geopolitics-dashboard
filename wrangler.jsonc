@@ -22,7 +22,6 @@
   ],
   "vars": {
     "APP_RUNTIME": "cloudflare-workers",
-    "NEXT_PUBLIC_SUPABASE_URL": "https://qbatksnulitgrhigzbta.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFiYXRrc251bGl0Z3JoaWd6YnRhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ0NjQ1NzEsImV4cCI6MjA5MDA0MDU3MX0.U9VJQoOtSvnvvB325zTwhO8KV0GPXX9qEl8CmMhrUug"
+    "NEXT_PUBLIC_SUPABASE_URL": "https://qbatksnulitgrhigzbta.supabase.co"
   }
 }

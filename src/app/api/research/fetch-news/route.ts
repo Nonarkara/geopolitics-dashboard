@@ -1,6 +1,10 @@
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getServiceSupabase, supabaseEnabled } from "../../../../lib/supabase";
+import {
+  isAuthorizedCronRequest,
+  unauthorizedCronResponse,
+} from "../../../../lib/cron-jobs";
 
 /** Uses service-role client for writes (RLS bypass) */
 const getSupabase = getServiceSupabase;
@@ -34,6 +38,23 @@ interface RssChannel {
 
 /** Minimal RSS parser — no dependencies needed */
 async function parseRssFeed(url: string): Promise<RssChannel> {
+  const parsedUrl = new URL(url);
+  const hostname = parsedUrl.hostname.toLowerCase();
+  const privateIpv4 = /^(?:0\.|10\.|127\.|169\.254\.|192\.168\.|172\.(?:1[6-9]|2\d|3[01])\.|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.|198\.(?:18|19)\.)/;
+
+  if (
+    parsedUrl.protocol !== "https:" ||
+    parsedUrl.username ||
+    parsedUrl.password ||
+    hostname === "localhost" ||
+    hostname.endsWith(".localhost") ||
+    hostname.endsWith(".local") ||
+    hostname === "::1" ||
+    privateIpv4.test(hostname)
+  ) {
+    throw new Error("RSS source URL is not an allowed public HTTPS endpoint");
+  }
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
 
@@ -100,7 +121,11 @@ function contentHash(text: string): string {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  if (!await isAuthorizedCronRequest(request)) {
+    return unauthorizedCronResponse();
+  }
+
   if (!supabaseEnabled) {
     return NextResponse.json({ error: "Supabase not configured" }, { status: 503 });
   }

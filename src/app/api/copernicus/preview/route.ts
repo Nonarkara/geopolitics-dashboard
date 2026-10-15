@@ -3,9 +3,10 @@ import { NextResponse } from "next/server";
 import { buildMapOverlayCatalog } from "../../../../lib/map-overlays";
 
 function getSafeDate() {
-  // NASA GIBS only serves imagery up to the current real-world date.
-  // Use a known-good historical date to prevent blank tiles.
-  return "2024-03-01";
+  // Daily science products can trail acquisition by a processing cycle.
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - 2);
+  return date.toISOString().slice(0, 10);
 }
 
 export async function GET() {
@@ -13,7 +14,7 @@ export async function GET() {
     const focusDate = getSafeDate();
     const catalog = buildMapOverlayCatalog(focusDate);
     const imagerySources = catalog.overlays
-      .filter((overlay) => overlay.role === "base-option")
+      .filter((overlay) => overlay.kind === "raster")
       .map((overlay) => ({
         id: overlay.id,
         label: overlay.label,

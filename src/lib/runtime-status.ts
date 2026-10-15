@@ -412,7 +412,7 @@ function getDataExplorerState() {
     return "disabled";
   }
 
-  return process.env.DATA_EXPLORER_TOKEN?.trim() ? "secured" : "unprotected";
+  return process.env.DATA_EXPLORER_TOKEN?.trim() ? "secured" : "misconfigured";
 }
 
 export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayload> {

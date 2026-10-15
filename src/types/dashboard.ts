@@ -765,6 +765,38 @@ export interface VesselTrackingResponse {
   vesselCount: number;
 }
 
+export interface OrbitalObject {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  altitudeKm: number;
+  category: string;
+  mission: string | null;
+}
+
+export interface StrategicMaritimePoint {
+  id: string;
+  name: string;
+  kind: "port" | "chokepoint";
+  country: string | null;
+  lat: number;
+  lng: number;
+  status: string | null;
+  detail: string | null;
+}
+
+export interface RegionalOpenIntelResponse {
+  generatedAt: string;
+  source: "OSIRIS public API";
+  sourceUrl: string;
+  sourceTimestamp: string | null;
+  status: "live" | "partial" | "unavailable";
+  orbitals: OrbitalObject[];
+  maritimePoints: StrategicMaritimePoint[];
+  warnings: string[];
+}
+
 /* ── Border Feed Types (shared across API routes + components) ── */
 
 export interface CommodityPrice {

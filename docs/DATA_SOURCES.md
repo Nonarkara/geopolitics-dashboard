@@ -71,7 +71,9 @@ CONFIGURED" / "Localbase on this machine"). The relevant rules:
 |---|---|---|
 | **NASA EONET** (32 source agencies) | `/api/border/eonet` | Aggregated satellite-event feed with per-event source attribution chips. CEMS, NASA_DISP, USGS_EHP, ReliefWeb, GLIDE, IDC, HDDS, SIVolcano, JTWC, IRWIN, FloodList, NASA_HURR, MRR (LANCE Rapid Response), and ~20 more. SE Asia bbox filter, 30-min cache. |
 | **NASA FIRMS** (MODIS + VIIRS) | `/api/fires` | Active-fire hotspots for the border box. 15-min in-memory cache. Keyless CSV fallback when no `FIRMS_KEY`; keyed area API when the secret is set. |
-| **NASA GIBS** | tiled via MapLibre in `BorderMap.tsx` | 16 toggleable satellite-derived raster overlays: true color (VIIRS + MODIS Aqua/Terra), false color (Bands721, M11-I2-I1), AOD, LST, CO, IMERG precipitation, EVI, Landsat WELD NDVI (30m), MODIS active-fire raster (1km), VIIRS active-fire raster (375m), Himawari-9, Geo Ring natural + IR + airmass, JRC surface water + change, EMODNET bathymetry, Blue Marble, VIIRS DayNightBand (nightlights). |
+| **NASA GIBS** | tiled via MapLibre in `BorderMap.tsx` | Date-aware VIIRS and MODIS true/false colour, aerosol, land-surface temperature, carbon monoxide, precipitation, vegetation, night-light, and Himawari-9 overlays. Every configured layer ID, format, time dimension, and matrix level is checked against the live GIBS capabilities document; vector-only active-fire products are not misrepresented as raster tiles. |
+| **OSIRIS public API** | `/api/open-intel/regional` | Bounded, server-normalized TLE-derived orbital subpoints plus ports and maritime chokepoints for the regional frame. Five-minute cache, 12-second upstream timeout, partial-state reporting, and no client-side bulk download. |
+| **Copernicus / Sentinel-2 cloudless** | `/api/copernicus/preview` and map catalogue | Research-desk catalogue and static cloudless visual baseline. It is explicitly labelled as a baseline rather than current surveillance. |
 | **GDACS** (EU JRC + UN OCHA) | `/api/border/disasters` | Multi-hazard alerts (earthquakes, floods, cyclones, volcanoes, wildfires) for SE Asia, 10-min cache. |
 | **ReliefWeb** (UN OCHA) | `/api/border/reliefweb` | Humanitarian reports for THA/MMR/KHM/MYS. |
 | **OFAC SDN** (US Treasury) | `/api/border/sanctions` | Watchlist hits relevant to the theatre. |
@@ -88,7 +90,7 @@ CONFIGURED" / "Localbase on this machine"). The relevant rules:
 ## In-app credit line
 
 Layer-level credits are surfaced through the `DAM` / `THRM` / `AIR` /
-`FLOW` / `ZONE` toggles' tooltip (`CommandTooltip`, bottom-positioned
+`FLOW` / `ZONE` / `ORBT` / `PORT` toggles' tooltip (`CommandTooltip`, bottom-positioned
 on hover). The tooltip lists `source` and `sourceUrl` for the active
 layer. The EONET right-rail panel shows per-event source chips
 (e.g. `NASA_DISP`, `CEMS`, `ReliefWeb`) so the operator always sees

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Database, Printer, Shield } from "lucide-react";
+import { BookOpen, Database, Microscope, Printer, Shield } from "lucide-react";
 import AnimatedNumber from "../Common/AnimatedNumber";
 import CommandTooltip from "../Common/CommandTooltip";
 import DashboardVersionBadge from "../Common/DashboardVersionBadge";
@@ -86,6 +86,7 @@ interface TopBarProps {
   status: DashboardStatusPayload | null;
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
+  onOpenResearch: () => void;
   onOpenDataExplorer?: () => void;
 }
 
@@ -94,6 +95,7 @@ export default function TopBar({
   status,
   onOpenManual,
   onOpenArchitecture,
+  onOpenResearch,
   onOpenDataExplorer,
 }: TopBarProps) {
   const { isHistorical, timeWindow, bangkokDay } = useTimeWindow();
@@ -247,6 +249,14 @@ export default function TopBar({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={onOpenResearch}
+            className="flex h-7 items-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
+            title="Search evidence, audit source coverage, and inspect satellite context"
+          >
+            <Microscope size={12} strokeWidth={3} />
+            Research
+          </button>
           <CommandTooltip content={TOPBAR_TOOLTIPS.apis} position="bottom">
             <button
               onClick={onOpenArchitecture}

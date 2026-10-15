@@ -13,6 +13,7 @@ import BorderStatusStrip from "../components/Intelligence/BorderStatusStrip";
 import ProvinceDashboard from "../components/Analytics/ProvinceDashboard";
 import DashboardArchitectureModal from "../components/Intelligence/DashboardArchitectureModal";
 import DatabaseExplorerModal from "../components/Intelligence/DatabaseExplorerModal";
+import ResearchWorkbenchModal from "../components/Intelligence/ResearchWorkbenchModal";
 import DashboardManualModal from "../components/Intelligence/DashboardManualModal";
 import ErrorBoundary from "../components/Common/ErrorBoundary";
 import MobileDrawer from "../components/Common/MobileDrawer";
@@ -56,6 +57,7 @@ function BorderDashboardContent() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [isResearchOpen, setIsResearchOpen] = useState(false);
   const [isPanelsOpen, setIsPanelsOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("brief");
   const [brief, setBrief] = useState<BorderCommandBrief | null>(null);
@@ -124,6 +126,7 @@ function BorderDashboardContent() {
             status={systemStatus}
             onOpenManual={() => setIsManualOpen(true)}
             onOpenArchitecture={() => setIsArchitectureOpen(true)}
+            onOpenResearch={() => setIsResearchOpen(true)}
             onOpenDataExplorer={
               dataExplorerEnabled ? () => setIsDataExplorerOpen(true) : undefined
             }
@@ -234,6 +237,16 @@ function BorderDashboardContent() {
               Select a Bangkok command day to replay the archived picture. Live mode remains the default.
             </div>
             <TimeMachine />
+            <button
+              type="button"
+              onClick={() => {
+                setIsPanelsOpen(false);
+                setIsResearchOpen(true);
+              }}
+              className="mt-4 h-11 w-full border border-[var(--accent)] text-[13px] font-black uppercase tracking-[0.16em] text-[var(--accent)]"
+            >
+              Open research workbench
+            </button>
           </div>
         ) : null}
       </MobileDrawer>
@@ -241,6 +254,7 @@ function BorderDashboardContent() {
       <ProvinceDashboard province={selectedProvince} onClose={() => setSelectedProvince(null)} />
       <DashboardManualModal isOpen={isManualOpen} onClose={() => setIsManualOpen(false)} />
       <DashboardArchitectureModal isOpen={isArchitectureOpen} onClose={() => setIsArchitectureOpen(false)} />
+      <ResearchWorkbenchModal isOpen={isResearchOpen} onClose={() => setIsResearchOpen(false)} />
       {dataExplorerEnabled ? (
         <DatabaseExplorerModal
           isOpen={isDataExplorerOpen}

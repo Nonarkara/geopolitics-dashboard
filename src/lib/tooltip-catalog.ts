@@ -155,24 +155,24 @@ export const OVERLAY_TOOLTIPS: Record<string, TooltipContent> = {
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
   NDV: {
-    fn: "Toggle Landsat NDVI (30m) overlay",
-    shows: "Monthly composite NDVI from Landsat WELD showing vegetation vigor at 30m resolution",
-    importance: "Higher-resolution vegetation baseline than MODIS EVI — detects forest loss, camp clearance, and burn scars at the village scale",
-    source: "NASA GIBS (Landsat WELD)",
+    fn: "Toggle VIIRS NDVI overlay",
+    shows: "Eight-day composite vegetation condition from VIIRS SNPP",
+    importance: "Adds an independent vegetation-change view for forest stress, crop disruption, and burn recovery",
+    source: "NASA GIBS (VIIRS SNPP)",
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
-  MTA: {
-    fn: "Toggle MODIS Active Fire (1km) raster overlay",
-    shows: "Daily MODIS Terra thermal anomalies at 1km resolution as a raster",
-    importance: "Complements the vector FIRMS hotspots with pixel-level fire signal — surfaces low-intensity fires that fall below the FIRMS confidence threshold",
-    source: "NASA GIBS (MODIS Terra Thermal Anomalies)",
+  SMK: {
+    fn: "Toggle MODIS smoke and fire-contrast imagery",
+    shows: "Daily MODIS Terra bands 3-6-7 false color for smoke, burn scars, and hot surfaces",
+    importance: "Gives thermal markers visual context without pretending the raster is a second independent fire detection feed",
+    source: "NASA GIBS (MODIS Terra)",
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
-  VAF: {
-    fn: "Toggle VIIRS Active Fire (375m) raster overlay",
-    shows: "Daily VIIRS SNPP thermal anomalies at 375m resolution as a raster",
-    importance: "Higher-resolution active-fire raster than MODIS — sees small fires and village-level burn events FIRMS vectors miss",
-    source: "NASA GIBS (VIIRS SNPP Thermal Anomalies 375m)",
+  LTV: {
+    fn: "Toggle VIIRS daytime land-surface temperature",
+    shows: "Daily VIIRS SNPP daytime land-surface temperature",
+    importance: "Separates broad heat stress from discrete FIRMS hotspots and helps interpret drought and fire conditions",
+    source: "NASA GIBS (VIIRS SNPP)",
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
   NGT: {
@@ -277,6 +277,20 @@ export const INTEL_TOGGLE_TOOLTIPS: Record<string, TooltipContent> = {
     importance: "Context for water-flow control, regional power dependency, and historical flood-infrastructure signals along the Thai–Cambodia–Laos border",
     source: "OpenStreetMap via gods-eye-view (ODbL 1.0)",
     sourceUrl: "https://github.com/bilawalsidhu/gods-eye-view/blob/main/src/data/local_data/dams/",
+  },
+  ORBT: {
+    fn: "Toggle orbital objects over Southeast Asia",
+    shows: "TLE-derived current subpoints for public satellites inside the regional frame",
+    importance: "Adds space-domain context for weather, navigation, Earth observation, and communications coverage",
+    source: "OSIRIS public API / public TLE feeds",
+    sourceUrl: "https://osirisai.live/docs",
+  },
+  PORT: {
+    fn: "Toggle regional ports and maritime chokepoints",
+    shows: "Strategic port and chokepoint reference points across Southeast Asia",
+    importance: "Connects border events to shipping corridors, logistics exposure, and maritime access",
+    source: "OSIRIS public API",
+    sourceUrl: "https://osirisai.live/docs",
   },
 };
 
