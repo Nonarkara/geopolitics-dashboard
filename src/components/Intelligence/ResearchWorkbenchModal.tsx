@@ -36,6 +36,7 @@ interface ResearchSignal {
 interface SignalResponse {
   signals: ResearchSignal[];
   total: number;
+  mode: "archive" | "live-fallback";
 }
 
 type ResearchTab = "evidence" | "coverage" | "satellite";
@@ -70,12 +71,102 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 function asSignalResponse(value: unknown): SignalResponse {
   if (!isRecord(value) || !Array.isArray(value.signals)) {
-    return { signals: [], total: 0 };
+    return { signals: [], total: 0, mode: "archive" };
   }
   return {
     signals: value.signals as ResearchSignal[],
     total: typeof value.total === "number" ? value.total : 0,
+    mode: "archive",
   };
+}
+
+function asString(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function inferRegion(text: string) {
+  const normalized = text.toLowerCase();
+  if (/myanmar|burma|mae sot|tak\b/.test(normalized)) return "myanmar-frontier";
+  if (/cambodia|poipet|aranyaprathet|sa kaeo/.test(normalized)) return "cambodia-frontier";
+  if (/malaysia|kelantan|narathiwat|pattani|yala/.test(normalized)) return "malaysia-frontier";
+  return "general";
+}
+
+function liveEvidenceFromPayloads(payloads: unknown[]): ResearchSignal[] {
+  const evidence: ResearchSignal[] = [];
+
+  for (const payload of payloads) {
+    if (Array.isArray(payload)) {
+      for (const item of payload) {
+        if (!isRecord(item)) continue;
+        const place = asString(item.place);
+        const time = asString(item.time);
+        const url = asString(item.url);
+        if (!place || !time || !url) continue;
+        const magnitude = typeof item.magnitude === "number" ? item.magnitude : null;
+        evidence.push({
+          external_id: asString(item.id),
+          signal_type: "seismic",
+          source_provider: "USGS Earthquake Hazards Program",
+          source_url: url,
+          url,
+          title: magnitude === null ? place : `M${magnitude.toFixed(1)} · ${place}`,
+          summary: typeof item.depth === "number" ? `Reported depth ${item.depth.toFixed(1)} km.` : undefined,
+          published_at: time,
+          region: inferRegion(place),
+          severity: magnitude !== null && magnitude >= 5 ? "watch" : "stable",
+        });
+      }
+      continue;
+    }
+
+    if (!isRecord(payload)) continue;
+    if (Array.isArray(payload.news)) {
+      for (const item of payload.news) {
+        if (!isRecord(item)) continue;
+        const title = asString(item.title);
+        const publishedAt = asString(item.publishedAt);
+        const url = asString(item.sourceUrl);
+        if (!title || !publishedAt || !url) continue;
+        evidence.push({
+          external_id: asString(item.id),
+          signal_type: "news",
+          source_provider: asString(item.source) ?? asString(item.provider) ?? "Border OSINT",
+          source_url: url,
+          url,
+          title,
+          summary: asString(item.summary),
+          published_at: publishedAt,
+          region: inferRegion(`${title} ${asString(item.summary) ?? ""}`),
+          severity: asString(item.severity),
+          keywords: asString(item.tag) ? [asString(item.tag)!] : undefined,
+        });
+      }
+    }
+
+    const data = isRecord(payload.data) ? payload.data : null;
+    if (data && Array.isArray(data.reports)) {
+      for (const item of data.reports) {
+        if (!isRecord(item)) continue;
+        const title = asString(item.title);
+        const publishedAt = asString(item.date);
+        const url = asString(item.url);
+        if (!title || !publishedAt || !url) continue;
+        evidence.push({
+          external_id: asString(item.id),
+          signal_type: "humanitarian",
+          source_provider: asString(item.source) ?? "ReliefWeb",
+          source_url: url,
+          url,
+          title,
+          published_at: publishedAt,
+          region: inferRegion(title),
+        });
+      }
+    }
+  }
+
+  return evidence;
 }
 
 function asSources(value: unknown): ApiSourceResponse {
@@ -102,17 +193,44 @@ async function fetchJson(path: string, unavailableMessage: string): Promise<unkn
   return response.json();
 }
 
-async function fetchSignals(query: string, region: string, signalType: string) {
+async function fetchSignals(
+  query: string,
+  region: string,
+  signalType: string,
+): Promise<SignalResponse> {
   const params = new URLSearchParams({ limit: "50" });
   if (query.trim()) params.set("search", query.trim());
   if (region) params.set("region", region);
   if (signalType) params.set("type", signalType);
-  return asSignalResponse(
-    await fetchJson(
+  try {
+    return asSignalResponse(await fetchJson(
       `/api/research/signals?${params.toString()}`,
       "The evidence archive is unavailable.",
-    ),
-  );
+    ));
+  } catch {
+    const paths = ["/api/border/news", "/api/border/reliefweb", "/api/border/earthquakes"];
+    const settled = await Promise.allSettled(
+      paths.map((path) => fetchJson(path, `${path} is unavailable.`)),
+    );
+    let signals = liveEvidenceFromPayloads(
+      settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
+    );
+    const search = query.trim().toLowerCase();
+    if (search) {
+      signals = signals.filter((signal) =>
+        `${signal.title} ${signal.summary ?? ""} ${signal.source_provider}`.toLowerCase().includes(search),
+      );
+    }
+    if (region) signals = signals.filter((signal) => signal.region === region);
+    if (signalType) signals = signals.filter((signal) => signal.signal_type === signalType);
+    signals = signals
+      .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
+      .slice(0, 50);
+    if (signals.length === 0 && settled.every((result) => result.status === "rejected")) {
+      throw new Error("Archive and live evidence feeds are unavailable.");
+    }
+    return { signals, total: signals.length, mode: "live-fallback" };
+  }
 }
 
 export default function ResearchWorkbenchModal({
@@ -126,7 +244,7 @@ export default function ResearchWorkbenchModal({
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("");
   const [signalType, setSignalType] = useState("");
-  const [signals, setSignals] = useState<SignalResponse>({ signals: [], total: 0 });
+  const [signals, setSignals] = useState<SignalResponse>({ signals: [], total: 0, mode: "archive" });
   const [sources, setSources] = useState<ApiSourceResponse>(EMPTY_SOURCES);
   const [imagery, setImagery] = useState<CopernicusPreviewResponse | null>(null);
   const [openIntel, setOpenIntel] = useState<RegionalOpenIntelResponse | null>(null);
@@ -253,7 +371,7 @@ export default function ResearchWorkbenchModal({
 
         <div className="grid grid-cols-2 border-b border-white/10 bg-black sm:grid-cols-4">
           {[
-            ["Archive matches", signals.total.toLocaleString()],
+            ["Evidence matches", signals.total.toLocaleString()],
             ["Source endpoints", sources.sources.length.toLocaleString()],
             ["Satellite layers", String(imagery?.imagerySources.length ?? 0)],
             ["Regional orbitals", String(openIntel?.orbitals.length ?? 0)],
@@ -267,7 +385,7 @@ export default function ResearchWorkbenchModal({
 
         <nav className="grid h-11 grid-cols-3 border-b border-white/10" aria-label="Research views">
           {([
-            ["evidence", "Evidence archive", Database],
+            ["evidence", "Evidence desk", Database],
             ["coverage", "Source coverage", BookOpen],
             ["satellite", "Satellite desk", Satellite],
           ] as const).map(([id, label, Icon]) => (
@@ -324,12 +442,17 @@ export default function ResearchWorkbenchModal({
                   {TYPE_OPTIONS.map((value) => <option key={value || "all"} value={value}>{value || "All types"}</option>)}
                 </select>
                 <p className="mt-5 text-[13px] leading-5 text-white/40">
-                  Results are bounded to 50 rows. Every item retains provider, publication time, region, and source link so the archive can be audited.
+                  Results are bounded to 50 rows. Every item retains provider, publication time, region, and source link so the evidence can be audited.
                 </p>
+                {signals.mode === "live-fallback" ? (
+                  <div className="mt-5 border border-[var(--accent)]/50 bg-[#24170a] p-3 text-[12px] leading-5 text-[var(--accent)]">
+                    Archive store unavailable. Showing current, source-linked evidence from ReliefWeb, USGS, and the live border desk; this is not historical coverage.
+                  </div>
+                ) : null}
               </form>
               <div className="divide-y divide-white/10">
                 {signals.signals.length === 0 ? (
-                  <div className="p-8 text-[14px] text-white/45">No archived evidence matched this query.</div>
+                  <div className="p-8 text-[14px] text-white/45">No evidence matched this query.</div>
                 ) : signals.signals.map((signal, index) => (
                   <article key={signal.external_id ?? `${signal.source_provider}-${signal.published_at}-${index}`} className="p-4 hover:bg-white/[0.03]">
                     <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/35">
