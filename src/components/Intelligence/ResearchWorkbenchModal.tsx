@@ -203,34 +203,37 @@ async function fetchSignals(
   if (region) params.set("region", region);
   if (signalType) params.set("type", signalType);
   try {
-    return asSignalResponse(await fetchJson(
+    const archived = asSignalResponse(await fetchJson(
       `/api/research/signals?${params.toString()}`,
       "The evidence archive is unavailable.",
     ));
+    if (archived.total > 0 || archived.signals.length > 0) return archived;
   } catch {
-    const paths = ["/api/border/news", "/api/border/reliefweb", "/api/border/earthquakes"];
-    const settled = await Promise.allSettled(
-      paths.map((path) => fetchJson(path, `${path} is unavailable.`)),
-    );
-    let signals = liveEvidenceFromPayloads(
-      settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
-    );
-    const search = query.trim().toLowerCase();
-    if (search) {
-      signals = signals.filter((signal) =>
-        `${signal.title} ${signal.summary ?? ""} ${signal.source_provider}`.toLowerCase().includes(search),
-      );
-    }
-    if (region) signals = signals.filter((signal) => signal.region === region);
-    if (signalType) signals = signals.filter((signal) => signal.signal_type === signalType);
-    signals = signals
-      .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
-      .slice(0, 50);
-    if (signals.length === 0 && settled.every((result) => result.status === "rejected")) {
-      throw new Error("Archive and live evidence feeds are unavailable.");
-    }
-    return { signals, total: signals.length, mode: "live-fallback" };
+    // The same live-evidence lane covers an unavailable archive and an empty one.
   }
+
+  const paths = ["/api/border/news", "/api/border/reliefweb", "/api/border/earthquakes"];
+  const settled = await Promise.allSettled(
+    paths.map((path) => fetchJson(path, `${path} is unavailable.`)),
+  );
+  let signals = liveEvidenceFromPayloads(
+    settled.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
+  );
+  const search = query.trim().toLowerCase();
+  if (search) {
+    signals = signals.filter((signal) =>
+      `${signal.title} ${signal.summary ?? ""} ${signal.source_provider}`.toLowerCase().includes(search),
+    );
+  }
+  if (region) signals = signals.filter((signal) => signal.region === region);
+  if (signalType) signals = signals.filter((signal) => signal.signal_type === signalType);
+  signals = signals
+    .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
+    .slice(0, 50);
+  if (signals.length === 0 && settled.every((result) => result.status === "rejected")) {
+    throw new Error("Archive and live evidence feeds are unavailable.");
+  }
+  return { signals, total: signals.length, mode: "live-fallback" };
 }
 
 export default function ResearchWorkbenchModal({
@@ -446,7 +449,7 @@ export default function ResearchWorkbenchModal({
                 </p>
                 {signals.mode === "live-fallback" ? (
                   <div className="mt-5 border border-[var(--accent)]/50 bg-[#24170a] p-3 text-[12px] leading-5 text-[var(--accent)]">
-                    Archive store unavailable. Showing current, source-linked evidence from ReliefWeb, USGS, and the live border desk; this is not historical coverage.
+                    No archival matches are available. Showing current, source-linked evidence from ReliefWeb, USGS, and the live border desk; this is not historical coverage.
                   </div>
                 ) : null}
               </form>
