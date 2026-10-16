@@ -926,14 +926,14 @@ export const externalProviderCatalog: ExternalProviderDescriptor[] = [
   },
   {
     id: "carto-basemaps",
-    label: "CartoDB Basemaps",
+    label: "Light/Dark Basemaps (OSM + Esri Dark Gray)",
     category: "Satellite Imagery",
     description:
-      "Clean minimal base maps (Positron light and Dark Matter) ideal for data-heavy overlay dashboards. Token-free.",
+      "Clean light (OpenStreetMap) and dark (Esri Dark Gray) bases for data-heavy overlay dashboards. Token-free; replaced CARTO after it became key-gated.",
     surfaces: ["Base map selection"],
     endpoints: [
-      "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png",
-      "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png",
+      "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
     ],
   },
   {
