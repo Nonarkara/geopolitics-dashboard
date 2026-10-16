@@ -149,12 +149,12 @@ const BASE_MAPS: BaseMapConfig[] = [
   // Priority 4: ESRI World Topographic
   { id: "TOPO", label: "TOPO", name: "ESRI Topographic", maxZoom: 19,
     tileUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}" },
-  // Priority 5: CartoDB Positron — clean light base for data overlays
-  { id: "LITE", label: "LITE", name: "CartoDB Positron", maxZoom: 20,
-    tileUrl: "https://basemaps.cartocdn.com/light_all/{z}/{x}/{y}@2x.png" },
-  // Priority 5: CartoDB Dark Matter — dark ops base
-  { id: "DARK", label: "DARK", name: "CartoDB Dark", maxZoom: 20,
-    tileUrl: "https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png" },
+  // Priority 5: OpenStreetMap — light base (CARTO is now key-gated)
+  { id: "LITE", label: "LITE", name: "OpenStreetMap", maxZoom: 19,
+    tileUrl: "https://tile.openstreetmap.org/{z}/{x}/{y}.png" },
+  // Priority 5: Esri Dark Gray — dark ops base (keyless)
+  { id: "DARK", label: "DARK", name: "Esri Dark Gray", maxZoom: 16,
+    tileUrl: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}" },
   // NASA GIBS — VIIRS Natural Color
   { id: "VRS", label: "VRS", name: "VIIRS Natural Color", maxZoom: 9,
     gibsLayer: "VIIRS_SNPP_CorrectedReflectance_TrueColor", gibsFormat: "jpg" },
