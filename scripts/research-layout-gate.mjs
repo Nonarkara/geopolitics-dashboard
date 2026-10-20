@@ -71,6 +71,14 @@ try {
       const r = el.getBoundingClientRect();
       return r.left >= 0 && r.right <= innerWidth && el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
     }), `Research unreachable at ${width}`);
+    if (width < 500) {
+      const status = page.locator('header').first().getByText('fallback', { exact: true });
+      assert.ok(await status.isVisible(), `runtime status hidden at ${width}`);
+      assert.ok(await status.evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        return r.left >= 0 && r.right <= innerWidth;
+      }), `runtime status clipped at ${width}`);
+    }
   }
   await page.getByRole('button', { name: 'Research', exact: true }).click();
   for (let width = 320; width <= 1440; width += 8) {

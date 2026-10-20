@@ -123,7 +123,7 @@ export default function TopBar({
             <div className="max-w-[170px] text-[14px] font-black leading-tight tracking-[-0.02em] text-white/92 sm:max-w-none sm:text-[15px]">
               THAILAND GEOPOLITICAL WATCH
             </div>
-            <DashboardVersionBadge className="hidden border-white/15 text-white/60 sm:inline-flex" />
+            <span className="hidden sm:inline-flex"><DashboardVersionBadge className="border-white/15 text-white/60" /></span>
           </div>
           <div className="mt-1 hidden items-center gap-2 text-[12px] font-bold uppercase tracking-[0.2em] text-white/40 lg:flex">
             <span>Myanmar</span>
@@ -251,12 +251,13 @@ export default function TopBar({
         <div className="flex items-center gap-1.5">
           <button
             type="button"
+            aria-label="Research"
             onClick={onOpenResearch}
-            className="flex h-11 items-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
             title="Search evidence, audit source coverage, and inspect satellite context"
           >
             <Microscope size={12} strokeWidth={3} />
-            Research
+            <span className="hidden min-[500px]:inline">Research</span>
           </button>
           <div className="hidden items-center gap-1.5 xl:flex">
           <CommandTooltip content={TOPBAR_TOOLTIPS.apis} position="bottom">
@@ -301,7 +302,7 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="hidden min-w-[92px] flex-col items-end justify-center px-3 min-[500px]:flex md:hidden">
+      <div className="flex min-w-[80px] flex-col items-end justify-center px-2 md:hidden">
         <div className={`text-[13px] font-black uppercase tracking-[0.16em] ${
           runtimePosture === "live" ? "text-white/70" : "text-[var(--accent)]"
         }`}>
