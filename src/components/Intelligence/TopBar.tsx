@@ -114,7 +114,7 @@ export default function TopBar({
 
   return (
     <header className="flex h-16 w-full items-stretch justify-between overflow-hidden border-b border-white/10 bg-[#090a0e] select-none sm:h-[72px]">
-      <div className="flex shrink-0 items-center gap-3 border-r border-white/10 px-3 sm:px-4">
+      <div className="flex min-w-0 items-center gap-2 border-r border-white/10 px-3 sm:shrink-0 sm:px-4">
         <div className="flex h-9 w-9 items-center justify-center border border-[var(--accent)] bg-black sm:h-10 sm:w-10">
           <Shield size={19} className="text-[var(--accent)]" strokeWidth={3} />
         </div>
@@ -137,7 +137,7 @@ export default function TopBar({
         <LogoStrip className="hidden min-[2400px]:flex" />
       </div>
 
-      <div className="hidden min-w-0 flex-1 items-center gap-3 px-4 md:flex">
+      <div className="hidden min-w-0 flex-1 items-center gap-3 overflow-hidden px-4 md:flex">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className={`inline-flex items-center border px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] ${
@@ -148,16 +148,16 @@ export default function TopBar({
               {runtimePosture === "live" ? "Live sources" : `${runtimePosture} data`}
             </span>
             <span
-              className={`inline-flex items-center border px-2.5 py-1 text-[13px] font-black uppercase tracking-[0.16em] ${
+              className={`hidden items-center border px-2.5 py-1 text-[13px] font-black uppercase tracking-[0.16em] lg:inline-flex ${
                 brief ? postureClasses(brief.overallPosture) : "border-white/15 text-white/40"
               }`}
             >
               {brief?.overallPosture ?? "syncing"}
             </span>
-            <span className="text-[13px] font-black tabular-nums text-white/40">
+            <span className="hidden text-[13px] font-black tabular-nums text-white/40 lg:inline">
               {brief ? <><AnimatedNumber value={brief.overallScore} format={(n) => Math.round(n).toString()} className="tabular-nums" />/100</> : "--/100"}
             </span>
-            <span className="inline-flex items-center border border-white/10 bg-white/[0.04] px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/55">
+            <span className="hidden items-center border border-white/10 bg-white/[0.04] px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/55 min-[1800px]:inline-flex">
               {isHistorical ? "Archive playback" : "Live command"}
             </span>
             {isHistorical && timeWindow ? (
@@ -209,7 +209,7 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="hidden items-center gap-2 border-l border-white/10 px-3 xl:flex">
+      <div className="flex shrink-0 items-center gap-2 border-l border-white/10 px-2">
         {/* World Clocks — grouped with subtle dividers between regions */}
         <div className="hidden items-center gap-0 shrink-0 min-[2400px]:flex">
           {COUNTRY_CLOCKS.map((clock, idx) => {
@@ -250,13 +250,15 @@ export default function TopBar({
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
           <button
+            type="button"
             onClick={onOpenResearch}
-            className="flex h-7 items-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
+            className="flex h-11 items-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
             title="Search evidence, audit source coverage, and inspect satellite context"
           >
             <Microscope size={12} strokeWidth={3} />
             Research
           </button>
+          <div className="hidden items-center gap-1.5 xl:flex">
           <CommandTooltip content={TOPBAR_TOOLTIPS.apis} position="bottom">
             <button
               onClick={onOpenArchitecture}
@@ -295,10 +297,11 @@ export default function TopBar({
             <Printer size={12} strokeWidth={3} />
             PDF
           </a>
+          </div>
         </div>
       </div>
 
-      <div className="flex min-w-[92px] flex-col items-end justify-center px-3 md:hidden">
+      <div className="hidden min-w-[92px] flex-col items-end justify-center px-3 min-[500px]:flex md:hidden">
         <div className={`text-[13px] font-black uppercase tracking-[0.16em] ${
           runtimePosture === "live" ? "text-white/70" : "text-[var(--accent)]"
         }`}>

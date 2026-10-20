@@ -188,7 +188,7 @@ function sourceState(source: ApiSourceEntry) {
 }
 
 async function fetchJson(path: string, unavailableMessage: string): Promise<unknown> {
-  const response = await fetch(path, { cache: "no-store" });
+  const response = await fetch(path, { cache: "no-store", signal: AbortSignal.timeout(25_000) });
   if (!response.ok) throw new Error(unavailableMessage);
   return response.json();
 }
@@ -253,16 +253,29 @@ export default function ResearchWorkbenchModal({
   const [openIntel, setOpenIntel] = useState<RegionalOpenIntelResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settled, setSettled] = useState<string[]>([]);
+  const [failed, setFailed] = useState<string[]>([]);
   const closeRef = useRef<HTMLButtonElement | null>(null);
   const closeFromEffect = useEffectEvent(onClose);
 
   const loadWorkbench = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setSettled([]);
+    setFailed([]);
+    const finish = (service: string) => setSettled((previous) => [...previous, service]);
+    const reject = (service: string) => (reason: unknown) => {
+      setFailed((previous) => [...previous, service]);
+      if (service === "sources") setSources(EMPTY_SOURCES);
+      if (service === "imagery") setImagery(null);
+      if (service === "orbitals") setOpenIntel(null);
+      if (service === "evidence") setSignals({ signals: [], total: 0, mode: "archive" });
+      throw reason;
+    };
     const results = await Promise.allSettled([
       fetchJson("/api/sources", "Source coverage is unavailable.").then((payload) => {
         setSources(asSources(payload));
-      }),
+      }).catch(reject("sources")).finally(() => finish("sources")),
       fetchJson("/api/copernicus/preview", "The imagery catalogue is unavailable.").then(
         (payload) => {
           setImagery(
@@ -271,7 +284,7 @@ export default function ResearchWorkbenchModal({
               : null,
           );
         },
-      ),
+      ).catch(reject("imagery")).finally(() => finish("imagery")),
       fetchJson("/api/open-intel/regional", "Regional open intelligence is unavailable.").then(
         (payload) => {
           setOpenIntel(
@@ -280,8 +293,8 @@ export default function ResearchWorkbenchModal({
               : null,
           );
         },
-      ),
-      fetchSignals("", "", "").then(setSignals),
+      ).catch(reject("orbitals")).finally(() => finish("orbitals")),
+      fetchSignals("", "", "").then(setSignals).catch(reject("evidence")).finally(() => finish("evidence")),
     ]);
 
     const failures = results.filter((result) => result.status === "rejected").length;
@@ -322,11 +335,16 @@ export default function ResearchWorkbenchModal({
     event.preventDefault();
     setLoading(true);
     setError(null);
+    setSettled((previous) => previous.filter((service) => service !== "evidence"));
+    setFailed((previous) => previous.filter((service) => service !== "evidence"));
     try {
       setSignals(await fetchSignals(query, region, signalType));
     } catch (caught) {
+      setSignals({ signals: [], total: 0, mode: "archive" });
+      setFailed((previous) => [...previous, "evidence"]);
       setError(caught instanceof Error ? caught.message : "Search failed.");
     } finally {
+      setSettled((previous) => [...previous, "evidence"]);
       setLoading(false);
     }
   };
@@ -339,14 +357,11 @@ export default function ResearchWorkbenchModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="research-title"
-        className="flex h-[94dvh] w-full max-w-[1500px] flex-col overflow-hidden border border-white/20 bg-[#090a0e] text-white"
+        className="research-workbench flex w-full flex-col overflow-hidden border border-white/20 bg-[#090a0e] text-white"
       >
         <header className="flex min-h-16 items-center justify-between gap-4 border-b border-white/10 px-4">
           <div className="min-w-0">
-            <div className="text-[12px] font-black uppercase tracking-[0.22em] text-[var(--accent)]">
-              Evidence before inference
-            </div>
-            <h2 id="research-title" className="truncate text-[18px] font-black uppercase tracking-[0.05em]">
+            <h2 id="research-title" className="text-[18px] font-black">
               Research Workbench
             </h2>
           </div>
@@ -355,10 +370,11 @@ export default function ResearchWorkbenchModal({
               type="button"
               onClick={() => void loadWorkbench()}
               disabled={loading}
-              className="flex h-10 items-center gap-2 border border-white/15 px-3 text-[12px] font-black uppercase tracking-[0.16em] text-white/60 hover:text-white disabled:opacity-40"
+              aria-label="Refresh research"
+              className="research-refresh flex h-11 items-center gap-2 px-2 text-[13px] text-white/70 hover:text-white disabled:opacity-40"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
-              Refresh
+              <span>Refresh</span>
             </button>
             <button
               ref={closeRef}
@@ -372,51 +388,50 @@ export default function ResearchWorkbenchModal({
           </div>
         </header>
 
-        <div className="grid grid-cols-2 border-b border-white/10 bg-black sm:grid-cols-4">
+        <div className="research-counts" aria-live="polite">
           {[
-            ["Evidence matches", signals.total.toLocaleString()],
-            ["Source endpoints", sources.sources.length.toLocaleString()],
-            ["Satellite layers", String(imagery?.imagerySources.length ?? 0)],
-            ["Regional orbitals", String(openIntel?.orbitals.length ?? 0)],
+            ["Evidence", failed.includes("evidence") ? "unavailable" : settled.includes("evidence") ? signals.total.toLocaleString() : "…"],
+            ["Sources", failed.includes("sources") ? "unavailable" : settled.includes("sources") ? sources.sources.length.toLocaleString() : "…"],
+            ["Layers", failed.includes("imagery") ? "unavailable" : settled.includes("imagery") ? String(imagery?.imagerySources.length ?? "—") : "…"],
+            ["Orbitals", failed.includes("orbitals") ? "unavailable" : settled.includes("orbitals") ? String(openIntel?.orbitals.length ?? "—") : "…"],
           ].map(([label, value]) => (
-            <div key={label} className="border-r border-b border-white/10 px-4 py-3 last:border-r-0 sm:border-b-0">
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/35">{label}</div>
-              <div className="mt-1 text-[22px] font-black tabular-nums">{value}</div>
+            <div key={label}>
+              <span>{label}</span><strong>{value}</strong>
             </div>
           ))}
         </div>
 
-        <nav className="grid h-11 grid-cols-3 border-b border-white/10" aria-label="Research views">
+        <nav className="research-tabs" aria-label="Research views">
           {([
             ["evidence", "Evidence desk", Database],
             ["coverage", "Source coverage", BookOpen],
             ["satellite", "Satellite desk", Satellite],
-          ] as const).map(([id, label, Icon]) => (
+          ] as const).map(([id, label]) => (
             <button
               key={id}
               type="button"
               onClick={() => setTab(id)}
               aria-pressed={tab === id}
-              className={`flex items-center justify-center gap-2 border-r border-white/10 text-[12px] font-black uppercase tracking-[0.16em] last:border-r-0 ${
+              className={`text-[13px] font-bold ${
                 tab === id ? "bg-[var(--accent)] text-black" : "text-white/50 hover:text-white"
               }`}
             >
-              <Icon size={14} />
               {label}
             </button>
           ))}
         </nav>
 
-        {error ? (
+        {error || failed.length > 0 ? (
           <div className="border-b border-[var(--accent)] bg-[#24170a] px-4 py-2 text-[13px] text-[var(--accent)]">
-            {error}
+            {failed.length > 0 ? `${failed.join(", ")} unavailable. Refresh to retry.` : error}
           </div>
         ) : null}
 
-        <div className="min-h-0 flex-1 overflow-auto">
+        <div className="research-body min-h-0 overflow-auto">
           {tab === "evidence" ? (
-            <div className="grid min-h-full lg:grid-cols-[320px_1fr]">
-              <form onSubmit={submitSearch} className="border-b border-white/10 p-4 lg:border-b-0 lg:border-r">
+            <div>
+              <form onSubmit={submitSearch} className="research-filters">
+                <div className="research-search">
                 <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-white/40" htmlFor="research-query">
                   Full-text query
                 </label>
@@ -432,39 +447,41 @@ export default function ResearchWorkbenchModal({
                     <Search size={17} />
                   </button>
                 </div>
-                <label className="mt-5 block text-[11px] font-black uppercase tracking-[0.18em] text-white/40" htmlFor="research-region">
+                </div>
+                <div>
+                <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-white/40" htmlFor="research-region">
                   Region
                 </label>
                 <select id="research-region" value={region} onChange={(event) => setRegion(event.target.value)} className="mt-2 h-11 w-full border border-white/15 bg-black px-3 text-[13px] text-white">
                   {REGION_OPTIONS.map(([value, label]) => <option key={value || "all"} value={value}>{label}</option>)}
                 </select>
-                <label className="mt-5 block text-[11px] font-black uppercase tracking-[0.18em] text-white/40" htmlFor="research-type">
+                </div>
+                <div>
+                <label className="block text-[11px] font-black uppercase tracking-[0.18em] text-white/40" htmlFor="research-type">
                   Signal type
                 </label>
                 <select id="research-type" value={signalType} onChange={(event) => setSignalType(event.target.value)} className="mt-2 h-11 w-full border border-white/15 bg-black px-3 text-[13px] text-white">
                   {TYPE_OPTIONS.map((value) => <option key={value || "all"} value={value}>{value || "All types"}</option>)}
                 </select>
-                <p className="mt-5 text-[13px] leading-5 text-white/40">
-                  Results are bounded to 50 rows. Every item retains provider, publication time, region, and source link so the evidence can be audited.
-                </p>
+                </div>
+              </form>
                 {signals.mode === "live-fallback" ? (
-                  <div className="mt-5 border border-[var(--accent)]/50 bg-[#24170a] p-3 text-[12px] leading-5 text-[var(--accent)]">
-                    No archival matches are available. Showing current, source-linked evidence from ReliefWeb, USGS, and the live border desk; this is not historical coverage.
+                  <div className="research-notice text-[13px] leading-5 text-[var(--accent)]">
+                    Current reports from ReliefWeb, USGS and the border desk. No archival matches are available.
                   </div>
                 ) : null}
-              </form>
-              <div className="divide-y divide-white/10">
+              <div className="research-results divide-y divide-white/10" aria-busy={!settled.includes("evidence") || loading}>
                 {signals.signals.length === 0 ? (
-                  <div className="p-8 text-[14px] text-white/45">No evidence matched this query.</div>
+                  <div className="p-4 text-[14px] text-white/65" role="status">{!settled.includes("evidence") ? "Checking evidence sources…" : failed.includes("evidence") || error ? "Evidence unavailable. Refresh to retry." : "No evidence matched this query."}</div>
                 ) : signals.signals.map((signal, index) => (
                   <article key={signal.external_id ?? `${signal.source_provider}-${signal.published_at}-${index}`} className="p-4 hover:bg-white/[0.03]">
-                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-white/35">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-white/65">
                       <span className="border border-white/15 px-1.5 py-0.5 text-[var(--accent)]">{signal.signal_type}</span>
                       <span>{signal.source_provider}</span>
                       <span>{signal.region ?? "unclassified"}</span>
                       <time>{formatTime(signal.published_at)}</time>
                     </div>
-                    <h3 className="mt-2 text-[15px] font-black leading-5 text-white/90">{signal.title}</h3>
+                    <h3 className="mt-2 text-[20px] font-bold leading-6 text-white/95">{signal.title}</h3>
                     {signal.summary ? <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-white/48">{signal.summary}</p> : null}
                     {signal.url || signal.source_url ? (
                       <a href={signal.url ?? signal.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">
@@ -529,11 +546,11 @@ export default function ResearchWorkbenchModal({
                   <h3 className="text-[13px] font-black uppercase tracking-[0.18em]">Space + maritime context</h3>
                 </div>
                 <dl className="mt-4 grid grid-cols-2 gap-px bg-white/10">
-                  <div className="bg-black p-3"><dt className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Orbitals</dt><dd className="mt-1 text-[24px] font-black">{openIntel?.orbitals.length ?? 0}</dd></div>
-                  <div className="bg-black p-3"><dt className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Ports / straits</dt><dd className="mt-1 text-[24px] font-black">{openIntel?.maritimePoints.length ?? 0}</dd></div>
+                  <div className="bg-black p-3"><dt className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Orbitals</dt><dd className="mt-1 text-[24px] font-black">{!settled.includes("orbitals") ? "…" : openIntel ? openIntel.orbitals.length : "—"}</dd></div>
+                  <div className="bg-black p-3"><dt className="text-[10px] font-black uppercase tracking-[0.14em] text-white/35">Ports / straits</dt><dd className="mt-1 text-[24px] font-black">{!settled.includes("orbitals") ? "…" : openIntel ? openIntel.maritimePoints.length : "—"}</dd></div>
                 </dl>
                 <div className="mt-4 text-[12px] leading-5 text-white/45">
-                  Status: <strong className="uppercase text-white/75">{openIntel?.status ?? "unavailable"}</strong><br />
+                  Status: <strong className="uppercase text-white/75">{!settled.includes("orbitals") ? "checking" : openIntel?.status ?? "unavailable"}</strong><br />
                   Source time: {formatTime(openIntel?.sourceTimestamp)}
                 </div>
                 <a href={openIntel?.sourceUrl ?? "https://osirisai.live/docs"} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">

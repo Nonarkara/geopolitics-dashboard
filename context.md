@@ -1,6 +1,6 @@
 # Geopolitics Dashboard — Live Context
 
-Updated 2026-08-11.
+Updated 2026-10-21.
 
 ## Deployment
 
@@ -102,9 +102,26 @@ Workers often exceeds 12s.
 Desktop ROW 3 is Insight Lab + news only. Markets and cameras stay in the
 Intel drawer.
 
-## Tests
+## Research geometry — 2026-10-21
 
-- `npm run test:backend` — node:test unit suite (16 tests).
+Design read: read the evidence first; controls occupy the space needed to choose
+the next report. Reference: the contents and article hierarchy of a Reuters
+news terminal. The report title dominates each result, while filters stay in one
+group above results. A 2px view boundary separates navigation from the 1px report
+separators. The dialog follows content height up to the viewport cap.
+
+The existing Josefin Sans / Source Sans 3 / JetBrains Mono stack is retained:
+display, reading and scientific data have distinct jobs. This is a deliberate
+exception to the generic two-family ceiling, not a new font addition.
+
+`node scripts/research-layout-gate.mjs` checks rendered geometry and hit targets
+across intermediate widths using controlled short evidence, with captures at
+1440/1024/390. It mutates the dialog back to 94dvh and requires rejection. Set
+`LAYOUT_URL` to exercise the same layout against a production preview or live URL.
+
+## Existing regression suites
+
+- `npm run test:backend` — node:test unit suite (27 tests).
 - `npx playwright test tests/border-dashboard.spec.ts tests/phuket-dashboard.spec.ts`
   — browser suites (4 + 5). Note: a bare `npx playwright test` also collects the
   `.test.mts` node:test files and crashes on them; run the spec files explicitly.

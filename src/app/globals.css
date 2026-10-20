@@ -498,3 +498,33 @@ h1, h2, h3, h4, h5, h6 {
 .theme-phuket .live-badge {
   font-size: var(--cmd-floor) !important;
 }
+
+/* Research follows the reading order: choose a view, filter, read evidence.
+   The viewport caps long lists; short results determine their own height. */
+.research-workbench { max-width: 960px; max-height: calc(100dvh - 40px); }
+.research-workbench > header { flex-shrink: 0; gap: 8px; padding: 6px 16px; }
+.research-workbench h2 { font-size: 22px; line-height: 1.2; }
+.research-counts { display: flex; flex-wrap: wrap; gap: 6px 20px; padding: 8px 16px; color: #aaa; font-size: 13px; }
+.research-counts > div { display: flex; align-items: baseline; gap: 8px; }
+.research-counts strong { color: #eee; font-variant-numeric: tabular-nums; }
+.research-tabs { display: flex; flex-shrink: 0; border-bottom: 2px solid #444; padding: 0 8px; }
+.research-tabs button { min-height: 44px; padding: 8px 12px; white-space: nowrap; }
+.research-filters { display: grid; grid-template-columns: minmax(180px, 2fr) minmax(130px, 1fr) minmax(130px, 1fr); gap: 12px; padding: 12px 16px; border-bottom: 1px solid #333; }
+.research-filters > div { min-width: 0; }
+.research-notice { padding: 8px 16px; max-width: 75ch; }
+.research-results article h3 { max-width: 60ch; }
+.research-results article p { max-width: 65ch; color: #bbb; }
+.research-workbench :is(button, input, select, a):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 600px) {
+  .research-workbench { max-height: calc(100dvh - 16px); }
+  .research-workbench > header { padding: 4px 12px; min-height: 56px; }
+  .research-workbench h2 { font-size: 20px; }
+  .research-refresh span { display: none; }
+  .research-refresh { width: 44px; justify-content: center; }
+  .research-counts { gap: 4px 16px; padding: 6px 12px; }
+  .research-tabs { padding: 0; }
+  .research-tabs button { flex: 1; padding: 8px 6px; }
+  .research-filters { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); padding: 10px 12px; gap: 10px; }
+  .research-search { grid-column: 1 / -1; }
+  .research-notice { padding: 8px 12px; }
+}
