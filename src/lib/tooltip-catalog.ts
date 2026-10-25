@@ -154,6 +154,27 @@ export const OVERLAY_TOOLTIPS: Record<string, TooltipContent> = {
     source: "NASA GIBS (MODIS Terra EVI)",
     sourceUrl: "https://worldview.earthdata.nasa.gov",
   },
+  NDV: {
+    fn: "Toggle VIIRS NDVI overlay",
+    shows: "Eight-day composite vegetation condition from VIIRS SNPP",
+    importance: "Adds an independent vegetation-change view for forest stress, crop disruption, and burn recovery",
+    source: "NASA GIBS (VIIRS SNPP)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
+  SMK: {
+    fn: "Toggle MODIS smoke and fire-contrast imagery",
+    shows: "Daily MODIS Terra bands 3-6-7 false color for smoke, burn scars, and hot surfaces",
+    importance: "Gives thermal markers visual context without pretending the raster is a second independent fire detection feed",
+    source: "NASA GIBS (MODIS Terra)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
+  LTV: {
+    fn: "Toggle VIIRS daytime land-surface temperature",
+    shows: "Daily VIIRS SNPP daytime land-surface temperature",
+    importance: "Separates broad heat stress from discrete FIRMS hotspots and helps interpret drought and fire conditions",
+    source: "NASA GIBS (VIIRS SNPP)",
+    sourceUrl: "https://worldview.earthdata.nasa.gov",
+  },
   NGT: {
     fn: "Toggle nighttime lights overlay",
     shows: "VIIRS Day/Night Band showing artificial light sources and nighttime activity",
@@ -249,6 +270,27 @@ export const INTEL_TOGGLE_TOOLTIPS: Record<string, TooltipContent> = {
     importance: "Enables quick distance estimation between points — essential for operational planning and response time calculation",
     source: "DrNon Global Satellite Toolkit",
     sourceUrl: "https://github.com/Nonarkara/DrNon-Global-Satellite-Toolkit",
+  },
+  DAM: {
+    fn: "Toggle static-infrastructure layer (dams)",
+    shows: "Mekong-region dam footprints, pumping stations, and pipeline segments from OpenStreetMap",
+    importance: "Context for water-flow control, regional power dependency, and historical flood-infrastructure signals along the Thai–Cambodia–Laos border",
+    source: "OpenStreetMap via gods-eye-view (ODbL 1.0)",
+    sourceUrl: "https://github.com/bilawalsidhu/gods-eye-view/blob/main/src/data/local_data/dams/",
+  },
+  ORBT: {
+    fn: "Toggle orbital objects over Southeast Asia",
+    shows: "TLE-derived current subpoints for public satellites inside the regional frame",
+    importance: "Adds space-domain context for weather, navigation, Earth observation, and communications coverage",
+    source: "OSIRIS public API / public TLE feeds",
+    sourceUrl: "https://osirisai.live/docs",
+  },
+  PORT: {
+    fn: "Toggle regional ports and maritime chokepoints",
+    shows: "Strategic port and chokepoint reference points across Southeast Asia",
+    importance: "Connects border events to shipping corridors, logistics exposure, and maritime access",
+    source: "OSIRIS public API",
+    sourceUrl: "https://osirisai.live/docs",
   },
 };
 

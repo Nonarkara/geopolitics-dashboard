@@ -1,6 +1,7 @@
 import axios from "axios";
 import { query } from "./db";
 import { getErrorMessage } from "./errors";
+import { getTimeoutSignal } from "./http";
 import {
   loadCachedIntelligencePayload,
   storeCachedIntelligencePayload,
@@ -44,6 +45,16 @@ const INTELLIGENCE_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 min — keeps news/pul
 const REQUEST_TIMEOUT_MS = 12_000;
 const FEED_LOOKBACK_DAYS = 45;
 const FEED_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
+let packageInFlight: Promise<IntelligencePackageResponse> | null = null;
+
+export function loadIntelligencePackages(): Promise<IntelligencePackageResponse> {
+  if (!packageInFlight) {
+    packageInFlight = loadIntelligencePackagesUnshared().finally(() => {
+      packageInFlight = null;
+    });
+  }
+  return packageInFlight;
+}
 
 type SeedKind = IntelligenceItem["kind"];
 
@@ -932,21 +943,19 @@ function matchesPackage(item: SeedItem, definition: PackageDefinition) {
 async function fetchSourceSeeds(
   source: FeedSource,
   focusTags: string[],
-  sourceCache: Map<string, { items: SeedItem[]; health: SourceHealth }>,
+  sourceCache: Map<string, Promise<FeedItem[]>>,
 ): Promise<{ items: SeedItem[]; health: SourceHealth }> {
-  const cached = sourceCache.get(source.id);
-
-  if (cached) {
-    return cached;
-  }
-
   const startedAt = Date.now();
 
   try {
-    const feedItems =
-      source.kind === "json"
-        ? await fetchJsonSource(source)
-        : await fetchRssSource(source);
+    const key = `${source.kind}:${source.url}`;
+    let pending = sourceCache.get(key);
+    if (!pending) {
+      pending = source.kind === "json" ? fetchJsonSource(source) : fetchRssSource(source);
+      sourceCache.set(key, pending);
+    }
+    // Share raw retrieval, not package-specific tag/score interpretation.
+    const feedItems = await pending;
     const currentFeedItems = feedItems.filter(isFeedItemInWindow);
     const seeds = currentFeedItems.map((item) =>
       buildSeedFromFeedItem(item, source, focusTags),
@@ -968,7 +977,6 @@ async function fetchSourceSeeds(
     };
 
     const result = { items: seeds, health };
-    sourceCache.set(source.id, result);
     return result;
   } catch (error: unknown) {
     const result = {
@@ -984,7 +992,6 @@ async function fetchSourceSeeds(
       },
     };
 
-    sourceCache.set(source.id, result);
     return result;
   }
 }
@@ -1019,6 +1026,7 @@ function buildRankedNewsItems(items: SeedItem[], limit: number) {
 }
 
 export async function loadFires(): Promise<FireEvent[]> {
+  const fallback = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackFires : [];
   try {
     const res = await query<FireEvent>(`
       SELECT latitude, longitude, brightness, confidence, acq_date
@@ -1028,13 +1036,14 @@ export async function loadFires(): Promise<FireEvent[]> {
       LIMIT 80
     `);
 
-    return res.rows.length > 0 ? res.rows : fallbackFires;
+    return res.rows.length > 0 ? res.rows : fallback;
   } catch {
-    return fallbackFires;
+    return fallback;
   }
 }
 
 export async function loadRainfall(): Promise<RainfallPoint[]> {
+  const fallback = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackRainfall : [];
   try {
     const res = await query<RainfallRow>(`
       SELECT location, value
@@ -1043,8 +1052,9 @@ export async function loadRainfall(): Promise<RainfallPoint[]> {
       LIMIT 40
     `);
 
-    const rows = res.rows.map((row) => {
-      const coords = LOCATION_COORDS[row.location] || { lat: 15, lng: 100 };
+    const rows = res.rows.flatMap((row) => {
+      const coords = LOCATION_COORDS[row.location];
+      if (!coords || !Number.isFinite(row.value)) return [];
 
       return {
         lat: coords.lat,
@@ -1054,14 +1064,14 @@ export async function loadRainfall(): Promise<RainfallPoint[]> {
       };
     });
 
-    return rows.length > 0 ? rows : fallbackRainfall;
+    return rows.length > 0 ? rows : fallback;
   } catch {
-    return fallbackRainfall;
+    return fallback;
   }
 }
 
 export async function loadRefugeeMovements(): Promise<RefugeeMovement[]> {
-  return fallbackRefugees;
+  return process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackRefugees : [];
 }
 
 function buildIncidentSeeds(incidents: IncidentFeature[]): SeedItem[] {
@@ -1317,10 +1327,7 @@ async function summarizeWithOpenAi(
           { role: "user", content: buildSummaryUserContent(definition, items) },
         ],
       }),
-      signal:
-        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-          ? (AbortSignal as any).timeout(timeoutMs)
-          : undefined,
+      signal: getTimeoutSignal(timeoutMs),
     });
 
     if (!response.ok) return null;
@@ -1356,10 +1363,7 @@ async function summarizeWithOllama(
           { role: "user", content: buildSummaryUserContent(definition, items) },
         ],
       }),
-      signal:
-        typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-          ? (AbortSignal as any).timeout(timeoutMs)
-          : undefined,
+      signal: getTimeoutSignal(timeoutMs),
     });
 
     if (!response.ok) return null;
@@ -1425,7 +1429,7 @@ function buildPackageStats(items: SeedItem[]) {
 
 async function buildPackage(
   definition: PackageDefinition,
-  sourceCache: Map<string, { items: SeedItem[]; health: SourceHealth }>,
+  sourceCache: Map<string, Promise<FeedItem[]>>,
   syntheticItems: SeedItem[],
 ): Promise<{ pkg: IntelligencePackage; sources: SourceHealth[] }> {
   const sources = FEED_SOURCES.filter((source) =>
@@ -1503,9 +1507,9 @@ async function buildLivePackagePayload(): Promise<IntelligencePackageResponse> {
     loadRainfall(),
     loadRefugeeMovements(),
   ]);
-  const sourceCache = new Map<string, { items: SeedItem[]; health: SourceHealth }>();
+  const sourceCache = new Map<string, Promise<FeedItem[]>>();
   const syntheticItems = [
-    ...buildIncidentSeeds(incidents),
+    ...buildIncidentSeeds(incidents === fallbackIncidents && process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true" ? [] : incidents),
     ...buildMarketSeeds(indicators),
     ...buildRainfallSeeds(rainfall),
     ...buildFireSeeds(fires),
@@ -1532,13 +1536,13 @@ async function buildLivePackagePayload(): Promise<IntelligencePackageResponse> {
         .map((pkg) => pkg.updatedAt)
         .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ??
       new Date().toISOString(),
-    mode: "live",
+    mode: packages.some((pkg) => pkg.items.length > 0) ? "live" : "offline",
     packages,
     sources,
   };
 }
 
-export async function loadIntelligencePackages(): Promise<IntelligencePackageResponse> {
+async function loadIntelligencePackagesUnshared(): Promise<IntelligencePackageResponse> {
   const cached = await loadCachedIntelligencePayload(INTELLIGENCE_CACHE_MAX_AGE_MS);
 
   if (cached?.fresh) {
@@ -1552,6 +1556,10 @@ export async function loadIntelligencePackages(): Promise<IntelligencePackageRes
   } catch {
     if (cached?.payload) {
       return synthesizeStalePayload(cached.payload);
+    }
+
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true") {
+      return { generatedAt: new Date().toISOString(), mode: "offline", packages: [], sources: [] };
     }
 
     return {
@@ -1704,6 +1712,14 @@ export async function loadIntelligencePackages(): Promise<IntelligencePackageRes
 
 export async function buildNewsFromPackages(): Promise<NewsResponse> {
   const payload = await loadIntelligencePackages();
+  if (payload.mode !== "live") {
+    return {
+      generatedAt: payload.generatedAt,
+      news: [],
+      errorCode: "LIVE_DATA_UNAVAILABLE",
+    };
+  }
+
   const allItems = payload.packages.flatMap((pkg) => pkg.items);
   const rankedItems = buildRankedNewsItems(allItems, 6);
   const items = rankedItems.map<NewsItem>((item) => ({
@@ -1717,26 +1733,29 @@ export async function buildNewsFromPackages(): Promise<NewsResponse> {
     }));
 
   return {
-    generatedAt: getLatestTimestamp(rankedItems.map((item) => item.publishedAt)),
-    news: items.length > 0 ? items : fallbackNews.news,
+    generatedAt:
+      getLatestTimestamp(rankedItems.map((item) => item.publishedAt)) ??
+      payload.generatedAt,
+    news: items,
   };
 }
 
 export async function buildTickerFromPackages(): Promise<TickerResponse> {
-  const [payload, indicators, incidents] = await Promise.all([
+  const [payload, indicators, incidentsRaw] = await Promise.all([
     loadIntelligencePackages(),
-    loadThailandEconomics().catch(() => fallbackEconomicIndicators),
-    loadThailandIncidents().catch(() => fallbackIncidents),
+    loadThailandEconomics().catch(() => [] as EconomicIndicator[]),
+    loadThailandIncidents().catch(() => [] as IncidentFeature[]),
   ]);
+  const incidents = incidentsRaw === fallbackIncidents ? [] : incidentsRaw;
   const topPackage = payload.packages[0];
-  const leadIndicator = indicators[0] ?? fallbackEconomicIndicators[0];
+  const leadIndicator = indicators[0];
   const dominantTheme = topPackage?.dominantTags[0] ?? "conditions";
 
   const items: TickerItem[] = [
     {
       id: "package-load",
       label: "Packages",
-      value: `${payload.packages.length} live`,
+      value: `${payload.packages.length} ${payload.mode}`,
       delta: topPackage?.status ?? payload.mode,
       tone: payload.mode === "live" ? "up" : "neutral",
     },
@@ -1747,25 +1766,29 @@ export async function buildTickerFromPackages(): Promise<TickerResponse> {
       delta: topPackage?.title ?? "Thailand",
       tone: incidents.length >= 4 ? "up" : "neutral",
     },
-    {
-      id: "market-lead",
-      label: leadIndicator.label,
-      value:
-        typeof leadIndicator.value === "number"
-          ? leadIndicator.value.toLocaleString(undefined, {
-              maximumFractionDigits: 2,
-            })
-          : leadIndicator.value,
-      delta: formatIndicatorChange(leadIndicator.change),
-      tone:
-        typeof leadIndicator.change === "number"
-          ? leadIndicator.change > 0
-            ? "up"
-            : leadIndicator.change < 0
-              ? "down"
-              : "neutral"
-          : "neutral",
-    },
+    ...(leadIndicator
+      ? [
+          {
+            id: "market-lead",
+            label: leadIndicator.label,
+            value:
+              typeof leadIndicator.value === "number"
+                ? leadIndicator.value.toLocaleString(undefined, {
+                    maximumFractionDigits: 2,
+                  })
+                : String(leadIndicator.value),
+            delta: formatIndicatorChange(leadIndicator.change),
+            tone:
+              typeof leadIndicator.change === "number"
+                ? leadIndicator.change > 0
+                  ? ("up" as const)
+                  : leadIndicator.change < 0
+                    ? ("down" as const)
+                    : ("neutral" as const)
+                : ("neutral" as const),
+          },
+        ]
+      : []),
     {
       id: "dominant-theme",
       label: "Theme",
@@ -1777,14 +1800,14 @@ export async function buildTickerFromPackages(): Promise<TickerResponse> {
 
   return {
     generatedAt: payload.generatedAt,
-    items: items.length > 0 ? items : fallbackTicker.items,
+    items,
   };
 }
 
 export async function buildLatestBriefing(): Promise<BriefingPayload> {
   const [payload, indicators] = await Promise.all([
     loadIntelligencePackages(),
-    loadThailandEconomics().catch(() => fallbackEconomicIndicators),
+    loadThailandEconomics().catch(() => [] as EconomicIndicator[]),
   ]);
   const leadPackage =
     payload.packages

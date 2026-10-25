@@ -163,7 +163,7 @@ export default function TopBar({
           <div className="flex-col hidden sm:flex">
             <div className="eyebrow leading-none">Phuket Op Center</div>
             <div className="flex items-center gap-2">
-              <div className="text-[14px] font-bold tracking-tight text-[var(--ink)]">
+              <div className="text-[16px] font-bold tracking-tight text-[var(--ink)]">
                 COASTAL COMMAND
               </div>
               <DashboardVersionBadge className="border-[var(--line)] text-[var(--cool)]" />
@@ -171,15 +171,15 @@ export default function TopBar({
           </div>
           <div className="h-8 w-[1px] bg-[var(--line)] hidden sm:block" />
           <div className="flex items-baseline gap-2">
-            <span className="font-mono text-[22px] font-bold tracking-tighter text-[var(--ink)]">
+            <span className="font-mono text-[24px] font-bold tracking-tighter text-[var(--ink)]">
               {time || "--:--:--"}
             </span>
-            <span className="text-[9px] font-mono text-[var(--dim)] uppercase tracking-wider">
+            <span className="text-[13px] font-mono text-[var(--dim)] uppercase tracking-wider">
               HKT / LIVE
             </span>
           </div>
           {phuketEnv ? (
-            <div className="hidden items-center gap-3 rounded-full border border-[var(--line)] px-3 py-1 text-[10px] font-mono uppercase tracking-[0.14em] lg:flex">
+            <div className="hidden items-center gap-3 rounded-full border border-[var(--line)] px-3 py-1 text-[13px] font-mono uppercase tracking-[0.14em] lg:flex">
               <span>{phuketEnv.temperature ?? "--"}C</span>
               <span className={aqiColor(phuketEnv.aqi)}>AQI {phuketEnv.aqi ?? "--"}</span>
             </div>
@@ -190,8 +190,8 @@ export default function TopBar({
           <div className="hidden items-center gap-4 xl:flex">
             {TOP_MARKETS.slice(0, 5).map((market, idx) => (
               <div key={market.country} className="flex items-center gap-2 border-r border-[var(--line)] pr-4 last:border-0 last:pr-0">
-                <span className="text-[8px] font-mono text-[var(--dim)]">{market.city.substring(0, 3).toUpperCase()}</span>
-                <span className="text-[11px] font-mono font-semibold">{marketTimes[idx] || "--:--"}</span>
+                <span className="text-[12px] font-mono text-[var(--dim)]">{market.city.substring(0, 3).toUpperCase()}</span>
+                <span className="text-[14px] font-mono font-semibold">{marketTimes[idx] || "--:--"}</span>
               </div>
             ))}
           </div>
@@ -205,7 +205,7 @@ export default function TopBar({
               className="p-1.5 text-[var(--dim)] hover:text-[var(--ink)] transition-colors"
               title="APIs / Architecture"
             >
-              <Network size={16} />
+              <Network size={17} />
             </button>
             {onOpenDataExplorer ? (
               <button
@@ -214,7 +214,7 @@ export default function TopBar({
                 className="p-1.5 text-[var(--dim)] hover:text-[var(--ink)] transition-colors"
                 title="Data / Export"
               >
-                <Database size={16} />
+                <Database size={17} />
               </button>
             ) : null}
             <button
@@ -223,7 +223,7 @@ export default function TopBar({
               className="p-1.5 text-[var(--dim)] hover:text-[var(--ink)] transition-colors"
               title="Help / Manual"
             >
-              <BookOpen size={16} />
+              <BookOpen size={17} />
             </button>
           </div>
         </div>

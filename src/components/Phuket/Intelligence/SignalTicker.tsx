@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { ArrowDownRight, ArrowRight, ArrowUpRight } from "lucide-react";
-import { fallbackTicker } from "../../../lib/mock-data";
 import type { TickerResponse } from "../../../types/dashboard";
+
+const emptyTicker: TickerResponse = { items: [], generatedAt: "" };
 
 function isTickerResponse(value: unknown): value is TickerResponse {
   return (
@@ -15,7 +16,7 @@ function isTickerResponse(value: unknown): value is TickerResponse {
 }
 
 export default function SignalTicker() {
-  const [ticker, setTicker] = useState<TickerResponse>(fallbackTicker);
+  const [ticker, setTicker] = useState<TickerResponse>(emptyTicker);
 
   useEffect(() => {
     const load = async () => {
@@ -27,7 +28,7 @@ export default function SignalTicker() {
           setTicker(payload);
         }
       } catch {
-        setTicker(fallbackTicker);
+        // Fail closed: an empty strip beats fabricated signals.
       }
     };
 
@@ -58,17 +59,17 @@ export default function SignalTicker() {
             className="flex min-w-0 items-center justify-between gap-3 border-r border-[var(--line)] px-4 last:border-r-0"
           >
             <div className="min-w-0 flex items-center gap-3">
-              <span className="text-[8px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
+              <span className="text-[12px] font-bold uppercase tracking-[0.18em] text-[var(--dim)]">
                 {item.label}
               </span>
-              <span className="truncate text-[12px] font-bold font-mono tabular-nums text-[var(--ink)]">
+              <span className="truncate text-[14px] font-bold font-mono tabular-nums text-[var(--ink)]">
                 {item.value}
               </span>
             </div>
             <div
-              className={`flex items-center gap-1 text-[9px] font-mono tabular-nums ${toneClass}`}
+              className={`flex items-center gap-1 text-[13px] font-mono tabular-nums ${toneClass}`}
             >
-              <Icon size={10} />
+              <Icon size={12} />
               <span className="truncate">{item.delta}</span>
             </div>
           </div>

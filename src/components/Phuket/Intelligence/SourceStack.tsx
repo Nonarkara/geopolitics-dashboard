@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { RefreshCw } from "lucide-react";
-import { fallbackSources } from "../../../lib/mock-data";
 import { buildMapOverlayCatalog } from "../../../lib/map-overlays";
 import type {
   ApiSourceResponse,
@@ -30,7 +29,10 @@ function isMapOverlayCatalogResponse(
 }
 
 export default function SourceStack() {
-  const [sources, setSources] = useState<ApiSourceResponse>(fallbackSources);
+  const [sources, setSources] = useState<ApiSourceResponse>({
+    generatedAt: "",
+    sources: [],
+  });
   const [catalog, setCatalog] = useState<MapOverlayCatalogResponse>(
     buildMapOverlayCatalog(),
   );
@@ -53,7 +55,7 @@ export default function SourceStack() {
         setCatalog(overlayPayload);
       }
     } catch {
-      setSources(fallbackSources);
+      // Fail closed on sources; the overlay catalog is a real static build.
       setCatalog(buildMapOverlayCatalog());
     }
   }, []);
@@ -82,19 +84,19 @@ export default function SourceStack() {
         <div className="flex items-center justify-between border-b border-[var(--line)] pb-3">
           <div>
             <div className="eyebrow">Sources</div>
-            <div className="pt-1 text-[14px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+            <div className="pt-1 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
               Data feeds
             </div>
           </div>
           <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh sources">
-            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
         </div>
         <div className="divide-y divide-[var(--line)] pt-2">
           {sources.sources.slice(0, 4).map((source) => (
             <div
               key={source.id}
-              className="grid grid-cols-[70px_1fr] gap-3 py-3 text-[10px]"
+              className="grid grid-cols-[70px_1fr] gap-3 py-3 text-[13px]"
             >
               <div className="font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
                 {source.target}
@@ -104,7 +106,7 @@ export default function SourceStack() {
                   <div className="font-medium text-[var(--ink)]">{source.label}</div>
                   {source.health ? (
                     <span
-                      className={`rounded-full px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-[0.14em] ${
+                      className={`rounded-full px-1.5 py-0.5 text-[12px] font-bold uppercase tracking-[0.14em] ${
                         source.health === "live"
                           ? "bg-[rgba(34,197,94,0.15)] text-[#22c55e]"
                           : source.health === "stale"
@@ -140,17 +142,17 @@ export default function SourceStack() {
               className="border-t border-[var(--line)] px-0 py-3 first:border-t-0"
             >
               <div className="flex items-center justify-between gap-2">
-                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--cool)]">
+                <div className="text-[13px] font-bold uppercase tracking-[0.14em] text-[var(--cool)]">
                   {source.label}
                 </div>
-                <span className="text-[8px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+                <span className="text-[12px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
                   {source.shortLabel}
                 </span>
               </div>
-              <p className="pt-1 text-[10px] leading-4 text-[var(--dim)]">
+              <p className="pt-1 text-[13px] leading-4 text-[var(--dim)]">
                 {source.description}
               </p>
-              <div className="pt-1 text-[9px] uppercase tracking-[0.14em] text-[var(--dim)]">
+              <div className="pt-1 text-[13px] uppercase tracking-[0.14em] text-[var(--dim)]">
                 {source.source}
               </div>
             </div>

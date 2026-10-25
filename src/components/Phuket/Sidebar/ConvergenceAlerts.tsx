@@ -64,29 +64,29 @@ function AlertCard({ alert }: { alert: ConvergenceAlert }) {
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.16em] ${postureClasses(alert.posture)}`}
+            className={`rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-[0.16em] ${postureClasses(alert.posture)}`}
           >
             {postureLabel(alert.posture)}
           </span>
-          <span className="text-[9px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
+          <span className="text-[13px] font-mono uppercase tracking-[0.14em] text-[var(--dim)]">
             {alert.windowHours}h
           </span>
         </div>
-        <span className="text-[13px] font-mono font-bold tabular-nums text-[var(--ink)]">
+        <span className="text-[15px] font-mono font-bold tabular-nums text-[var(--ink)]">
           {alert.score}
         </span>
       </div>
 
-      <h4 className="pt-2 text-[14px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
+      <h4 className="pt-2 text-[16px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
         {alert.title}
       </h4>
-      <p className="pt-1 text-[11px] leading-5 text-[var(--muted)]">{alert.summary}</p>
+      <p className="pt-1 text-[14px] leading-5 text-[var(--muted)]">{alert.summary}</p>
 
       <div className="pt-2 flex flex-wrap gap-1.5">
         {alert.families.map((family) => (
           <span
             key={family}
-            className="rounded-full bg-[var(--line)] px-2 py-0.5 text-[9px] capitalize text-[var(--muted)]"
+            className="rounded-full bg-[var(--line)] px-2 py-0.5 text-[13px] capitalize text-[var(--muted)]"
           >
             {family}
           </span>
@@ -100,17 +100,17 @@ function AlertCard({ alert }: { alert: ConvergenceAlert }) {
             className="border-l border-[var(--line-bright)] pl-3"
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--cool)]">
+              <span className="text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--cool)]">
                 {item.family}
               </span>
-              <span className="text-[9px] font-mono text-[var(--dim)]">
+              <span className="text-[13px] font-mono text-[var(--dim)]">
                 {formatObservedAt(item.observedAt)}
               </span>
             </div>
-            <div className="pt-1 text-[11px] font-medium text-[var(--ink)]">
+            <div className="pt-1 text-[14px] font-medium text-[var(--ink)]">
               {item.title}
             </div>
-            <div className="pt-1 text-[10px] leading-4 text-[var(--muted)]">
+            <div className="pt-1 text-[13px] leading-4 text-[var(--muted)]">
               {item.source}
             </div>
           </div>
@@ -119,10 +119,10 @@ function AlertCard({ alert }: { alert: ConvergenceAlert }) {
 
       {alert.dataGaps.length > 0 ? (
         <div className="mt-3 border-l border-[#f59e0b] pl-3">
-          <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
+          <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#f59e0b]">
             Data gap
           </div>
-          <div className="pt-1 text-[10px] leading-4 text-[var(--muted)]">
+          <div className="pt-1 text-[13px] leading-4 text-[var(--muted)]">
             {alert.dataGaps[0]}
           </div>
         </div>
@@ -155,7 +155,7 @@ export default function ConvergenceAlerts() {
 
   if (!payload) {
     return (
-      <div className="border border-[var(--line)] p-3 text-[11px] leading-5 text-[var(--muted)]">
+      <div className="border border-[var(--line)] p-3 text-[14px] leading-5 text-[var(--muted)]">
         Andaman area signals are loading.
       </div>
     );
@@ -166,26 +166,26 @@ export default function ConvergenceAlerts() {
       <div className="border border-[var(--line)] p-3">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="text-[9px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
               {payload.corridor.label}
             </div>
-            <div className="pt-1 text-[15px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
+            <div className="pt-1 text-[17px] font-semibold tracking-[-0.02em] text-[var(--ink)]">
               Area pressure
             </div>
           </div>
           <div className="text-right">
             <span
-              className={`inline-flex rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.16em] ${postureClasses(payload.posture)}`}
+              className={`inline-flex rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-[0.16em] ${postureClasses(payload.posture)}`}
             >
               {postureLabel(payload.posture)}
             </span>
-            <div className="pt-1 text-[18px] font-mono font-bold tabular-nums text-[var(--ink)]">
+            <div className="pt-1 text-[20px] font-mono font-bold tabular-nums text-[var(--ink)]">
               {payload.score}
             </div>
           </div>
         </div>
 
-        <p className="pt-3 text-[11px] leading-5 text-[var(--muted)]">
+        <p className="pt-3 text-[14px] leading-5 text-[var(--muted)]">
           {payload.summary}
         </p>
 
@@ -200,10 +200,10 @@ export default function ConvergenceAlerts() {
               key={stat.label}
               className="border border-[var(--line)] px-2 py-2 text-center"
             >
-              <div className="text-[8px] font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
+              <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-[var(--dim)]">
                 {stat.label}
               </div>
-              <div className={`pt-1 text-[14px] font-mono font-bold ${stat.tone}`}>
+              <div className={`pt-1 text-[16px] font-mono font-bold ${stat.tone}`}>
                 {stat.value}
               </div>
             </div>
@@ -217,12 +217,12 @@ export default function ConvergenceAlerts() {
 
       {payload.dataGaps.length > 0 ? (
         <div className="border border-[var(--line)] p-3">
-          <div className="text-[8px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
+          <div className="text-[12px] font-bold uppercase tracking-[0.16em] text-[var(--dim)]">
             Coverage notes
           </div>
           <div className="pt-2 space-y-2">
             {payload.dataGaps.slice(0, 2).map((gap) => (
-              <div key={gap} className="text-[10px] leading-4 text-[var(--muted)]">
+              <div key={gap} className="text-[13px] leading-4 text-[var(--muted)]">
                 {gap}
               </div>
             ))}

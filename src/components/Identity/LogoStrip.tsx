@@ -18,26 +18,25 @@ const SECONDARY_LOGOS = [
 export default function LogoStrip({ className }: { className?: string }) {
   return (
     <div className={`flex items-center gap-3 ${className ?? ""}`}>
-      {/* Primary sponsor — PMU-A */}
-      <div className="relative h-10 w-24 shrink-0">
+      <div className="hidden xl:block text-[12px] font-black uppercase tracking-[0.22em] text-white/25">
+        Backed by
+      </div>
+      <div className="h-8 w-px bg-white/10 shrink-0" />
+      <div className="relative h-9 w-24 shrink-0 bg-white/95 p-1">
         <Image
           src={PRIMARY_LOGO.src}
           alt={PRIMARY_LOGO.alt}
           fill
           sizes="96px"
-          className="object-contain"
+          className="object-contain p-1"
         />
       </div>
-
-      {/* Divider */}
-      <div className="h-8 w-px bg-black/10 shrink-0" />
-
-      {/* Secondary sponsors */}
-      <div className="flex items-center gap-2">
+      <div className="hidden md:block h-7 w-px bg-white/10 shrink-0" />
+      <div className="flex items-center gap-2.5">
         {SECONDARY_LOGOS.map((logo, i) => (
           <div
             key={i}
-            className="relative h-6 w-12 shrink-0 grayscale opacity-40 hover:grayscale-0 hover:opacity-100 transition-all"
+            className="relative h-6 w-12 shrink-0 bg-white/95 p-[2px] opacity-80 transition-all hover:opacity-100"
           >
             <Image
               src={logo.src}

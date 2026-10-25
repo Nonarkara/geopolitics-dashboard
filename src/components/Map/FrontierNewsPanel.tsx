@@ -38,11 +38,11 @@ interface FrontierData {
 function severityIcon(severity: "alert" | "watch" | "stable") {
   switch (severity) {
     case "alert":
-      return <AlertTriangle size={8} className="text-[var(--accent)]" />;
+      return <AlertTriangle size={11} className="text-[var(--accent)]" />;
     case "watch":
-      return <Eye size={8} className="text-[var(--hazard)]" />;
+      return <Eye size={11} className="text-[var(--hazard)]" />;
     default:
-      return <Radio size={8} className="text-[var(--safe)]" />;
+      return <Radio size={11} className="text-[var(--safe)]" />;
   }
 }
 
@@ -124,7 +124,7 @@ export default function FrontierNewsPanel({ areaId }: FrontierNewsPanelProps) {
   if (loading && !data) {
     return (
       <div className="border border-white/10 bg-black/70 backdrop-blur-sm px-3 py-3">
-        <div className="text-[8px] font-black uppercase tracking-[0.18em] text-white/40 animate-pulse">
+        <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/40 animate-pulse">
           Loading frontier intelligence…
         </div>
       </div>
@@ -138,24 +138,24 @@ export default function FrontierNewsPanel({ areaId }: FrontierNewsPanelProps) {
       {/* Header with histogram */}
       <div className="px-3 py-2 border-b border-white/10">
         <div className="flex items-center justify-between mb-1.5">
-          <span className="text-[9px] font-black uppercase tracking-[0.14em] text-white/70">
+          <span className="text-[13px] font-black uppercase tracking-[0.14em] text-white/70">
             {data.counterpart} Headlines
           </span>
-          <span className="text-[8px] font-mono text-white/30">
+          <span className="text-[12px] font-mono text-white/30">
             {data.signals.length} signals
           </span>
         </div>
         <MiniHistogram data={data.histogram} />
         <div className="flex justify-between mt-0.5">
-          <span className="text-[7px] text-white/25">7d ago</span>
-          <span className="text-[7px] text-white/25">now</span>
+          <span className="text-[12px] text-white/25">7d ago</span>
+          <span className="text-[12px] text-white/25">now</span>
         </div>
       </div>
 
       {/* Signals list */}
       <div className="max-h-[180px] overflow-y-auto">
         {data.signals.length === 0 && data.incidents.length === 0 ? (
-          <div className="px-3 py-2 text-[8px] text-white/30">
+          <div className="px-3 py-2 text-[12px] text-white/30">
             No active signals for this frontier
           </div>
         ) : (
@@ -170,16 +170,16 @@ export default function FrontierNewsPanel({ areaId }: FrontierNewsPanelProps) {
               >
                 <div className="mt-0.5 shrink-0">{severityIcon(signal.severity)}</div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[9px] font-bold text-white/80 leading-tight line-clamp-2 group-hover:text-white">
+                  <div className="text-[13px] font-bold text-white/80 leading-tight line-clamp-2 group-hover:text-white">
                     {signal.title}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[7px] text-white/30">{signal.source}</span>
-                    <span className="text-[7px] text-white/20">{timeAgo(signal.publishedAt)}</span>
+                    <span className="text-[12px] text-white/30">{signal.source}</span>
+                    <span className="text-[12px] text-white/20">{timeAgo(signal.publishedAt)}</span>
                   </div>
                 </div>
                 <ExternalLink
-                  size={7}
+                  size={10}
                   className="mt-1 shrink-0 text-white/20 group-hover:text-white/50"
                 />
               </a>
@@ -191,17 +191,17 @@ export default function FrontierNewsPanel({ areaId }: FrontierNewsPanelProps) {
               >
                 <div className="mt-0.5 shrink-0">
                   <AlertTriangle
-                    size={8}
+                    size={11}
                     style={{ color: severityColor(inc.fatalities >= 1 ? "alert" : "watch") }}
                   />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-[9px] font-bold text-white/80 leading-tight line-clamp-1">
+                  <div className="text-[13px] font-bold text-white/80 leading-tight line-clamp-1">
                     {inc.title}
                   </div>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-[7px] text-white/30">{inc.location}</span>
-                    <span className="text-[7px] text-white/20">{inc.type}</span>
+                    <span className="text-[12px] text-white/30">{inc.location}</span>
+                    <span className="text-[12px] text-white/20">{inc.type}</span>
                   </div>
                 </div>
               </div>
@@ -213,11 +213,11 @@ export default function FrontierNewsPanel({ areaId }: FrontierNewsPanelProps) {
       {/* Watchpoints footer */}
       {data.watchpoints.length > 0 && (
         <div className="px-3 py-1.5 border-t border-white/10 bg-white/[0.02]">
-          <div className="text-[7px] font-black uppercase tracking-[0.12em] text-white/30 mb-0.5">
+          <div className="text-[12px] font-black uppercase tracking-[0.12em] text-white/30 mb-0.5">
             Watchpoints
           </div>
           {data.watchpoints.slice(0, 2).map((wp, i) => (
-            <div key={i} className="text-[8px] text-white/40 leading-tight truncate">
+            <div key={i} className="text-[12px] text-white/40 leading-tight truncate">
               • {wp}
             </div>
           ))}

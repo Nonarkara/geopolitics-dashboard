@@ -1,14 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  fallbackCopernicusPreview,
-  fallbackSources,
-} from "../../lib/mock-data";
 import type {
   ApiSourceResponse,
   CopernicusPreviewResponse,
 } from "../../types/dashboard";
+
+const emptySources: ApiSourceResponse = { generatedAt: "", sources: [] };
 
 function isApiSourceResponse(value: unknown): value is ApiSourceResponse {
   return (
@@ -31,10 +29,8 @@ function isCopernicusPreviewResponse(
 }
 
 export default function SourceStack() {
-  const [sources, setSources] = useState<ApiSourceResponse>(fallbackSources);
-  const [, setPreview] = useState<CopernicusPreviewResponse>(
-    fallbackCopernicusPreview,
-  );
+  const [sources, setSources] = useState<ApiSourceResponse>(emptySources);
+  const [preview, setPreview] = useState<CopernicusPreviewResponse | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -54,8 +50,7 @@ export default function SourceStack() {
           setPreview(previewPayload);
         }
       } catch {
-        setSources(fallbackSources);
-        setPreview(fallbackCopernicusPreview);
+        // Fail closed: keep the honest empty state instead of mock sources.
       }
     };
 
@@ -71,27 +66,18 @@ export default function SourceStack() {
             key={source.id}
             className="flex items-center justify-between gap-1 border border-[var(--line-dim)] px-2 py-1 bg-white"
           >
-            <span className="text-[8px] font-black truncate">{source.label}</span>
-            <span className="stat-pill safe shrink-0 text-[7px]">{source.target?.slice(0, 4) || "OK"}</span>
+            <span className="text-[12px] font-black truncate">{source.label}</span>
+            <span className="stat-pill safe shrink-0 text-[12px]">{source.target?.slice(0, 4) || "OK"}</span>
           </div>
         ))}
       </div>
 
-      {/* Multi-national source indicators */}
-      <div className="grid grid-cols-4 gap-1">
-        {[
-          { flag: "US", name: "NASA" },
-          { flag: "JP", name: "JAXA" },
-          { flag: "EU", name: "ESA" },
-          { flag: "IN", name: "ISRO" },
-          { flag: "RU", name: "ROSCO" },
-          { flag: "CN", name: "CNSA" },
-          { flag: "UK", name: "UKSA" },
-          { flag: "KR", name: "KARI" },
-        ].map((src) => (
-          <div key={src.flag} className="flex flex-col items-center py-1 border border-[var(--line-dim)] bg-[var(--bg)]">
-            <span className="text-[7px] font-black opacity-50">{src.flag}</span>
-            <span className="text-[6px] font-black opacity-25 uppercase">{src.name}</span>
+      {/* Only imagery sources actually exposed by this deployment. */}
+      <div className="grid grid-cols-2 gap-1">
+        {(preview?.imagerySources ?? []).slice(0, 4).map((source) => (
+          <div key={source.id} className="flex min-w-0 flex-col py-1 px-1.5 border border-[var(--line-dim)] bg-[var(--bg)]">
+            <span className="truncate text-[12px] font-black opacity-50">{source.id}</span>
+            <span className="truncate text-[11px] font-black opacity-25 uppercase">{source.label}</span>
           </div>
         ))}
       </div>

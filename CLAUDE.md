@@ -2,30 +2,31 @@
 
 ASEAN regional command center — 14-layer satellite maps, live news ticker, YouTube TV feeds (Burma, Cambodia, Malaysia), AI incident analysis, ASEAN atomic clocks, economic stats. Designed for 72-inch presentation screens.
 
-Live: `geopolitics-dashboard.fly.dev` (Fly.io)
+Live: Cloudflare Worker `geopolitics-dashboard` (deployed from the `overhaul` branch via OpenNext — see README). Cloudflare Pages and Fly.io are both retired; do not reintroduce either.
 
 ## Tech Stack
 
-Next.js 16 + React 19 + TypeScript + Tailwind 4 + Deck.gl 9.2 + Mapbox GL + Supabase + Framer Motion
+Next.js16.4.3 + React19 + TypeScript + Tailwind4 + Deck.gl9.4 + MapLibre6 + OpenNext1.20.13. Mapbox is retired. Production Postgres is not configured; see context.md before making infrastructure claims.
 
 ## Build & Deploy
 
 ```bash
-npm run dev                # Dev server (Turbopack)
-npm run build              # Production build (standalone output)
-flyctl deploy              # Deploy to Fly.io (Docker multi-stage)
+npm run dev                                          # Dev server
+npm run build:worker                                 # opennextjs-cloudflare build
+npm run deploy                                        # opennextjs-cloudflare deploy → Worker `geopolitics-dashboard`
 ```
 
 Type-check before every build: `tsc --noEmit`
 
-Deployment: Fly.io with Docker multi-stage build (`Dockerfile`). Config in `fly.toml`. Region: `sin` (Singapore). The app runs Node.js — no edge runtime restrictions.
+Deployment: Cloudflare Workers via OpenNext (`wrangler.jsonc` + `open-next.config.ts`, both live on `overhaul`). Database reaches Supabase Postgres through Cloudflare Hyperdrive. Scheduled refreshes run from GitHub Actions, since Cloudflare has no native cron for Next.js routes.
 
 ## Design System
 
 ### Tokens (in `src/app/globals.css`)
 
 ```css
-/* Tactical Precision Palette */
+/* Historical palette recipe, superseded by globals.css and workspace design law.
+   Active surface is monochrome with amber #f59e0b; do not restore these colors. */
 --bg: #f2f2f0;        --bg-raised: #ffffff;   --bg-surface: #ffffff;
 --ink: #000000;       --muted: #555552;        --dim: #999994;
 --line: #000000;      --line-dim: #e0e0dc;
@@ -52,16 +53,16 @@ Deployment: Fly.io with Docker multi-stage build (`Dockerfile`). Config in `fly.
 --text-2xl: 2rem;       --text-3xl: 2.5rem;
 ```
 
-Fonts: `--font-display: "Josefin Sans"` (headings), `--font-ui: "Source Sans 3"` (body/UI), `--font-mono: "JetBrains Mono"` (data/code)
+Fonts (owner-requested update 2026-10-25): `--font-display` and `--font-ui`: Jost (headings/body/UI); `--font-mono`: JetBrains Mono (data/code). Two families; preserve readable text and measured numeric alignment.
 
 **Banned fonts (§11.10):** Never use Roboto, Inter, Poppins, Montserrat, Open Sans, or Lato.
 
 ### Layout Rules
 
-- **1920×1080 base** — CSS `transform: scale()` auto-scales to any screen
+- **Phone-first MSH** — actual390×844,1024×900,1440×900 compositions; never scale a desktop canvas to fit
 - **Zero border-radius** — `border-radius: 0 !important` across all elements
 - **Connected grid** — `1.5px` gap on `var(--line)` background; cells use `var(--bg-surface)`
-- **Glass morphism** — `backdrop-filter: blur(20px) saturate(180%)` via `var(--glass)`
+- **No decorative glass, shadows or gradients** — grouping and hierarchy must carry meaning
 - **Ease** — `--ease: cubic-bezier(0.23, 1, 0.32, 1)` for all transitions
 - **Page entry** — `@keyframes pageEnter { from { opacity:0; translateY(6px) } to { opacity:1; translateY(0) } }` at 400ms
 
@@ -126,8 +127,8 @@ async function fetchJson<T>(url: string, retries = 2, backoff = 300): Promise<T>
 
 Cache priority:
 1. **In-memory module cache** (sync, instant)
-2. **Supabase HTTP** (`supabase-js`)
-3. **PostGIS direct TCP** (`pg` — lazy dynamic import, falls back gracefully)
+2. **Supabase HTTP** (`supabase-js`, works natively on Workers)
+3. **PostGIS direct TCP** (`pg` via Cloudflare Hyperdrive — lazy dynamic import, falls back gracefully if unavailable)
 4. **Mock fallback** (static export mode, dev without DB)
 
 ### API Response Envelope
@@ -205,13 +206,13 @@ function useInView(threshold = 0.2): [React.RefObject<Element>, boolean] {
 
 ---
 
-## AI Integration (Claude API)
+## AI Integration — server-only
 
-Briefing assistant pattern — port from SCITI GeminiChat, adapted for Claude:
+Active code: `src/lib/ai-config.ts`, `intelligence.ts`, `ai-narrative.ts`. Local Ollama and optional server-side OpenAI-compatible summaries. Secrets stay in Worker bindings/environment variables. Never put provider keys in client code or localStorage. The following old Claude recipe is historical context, not the current implementation or authority to add a browser-key workflow:
 
 - **Model:** `claude-sonnet-4-6` (or latest Sonnet)
-- **Pattern:** Client-side, user-supplied API key stored in `localStorage`
-- **Key storage:** `localStorage.getItem("geopolitics-claude-key")`
+- **Pattern:** Server-side only; current provider/model configuration comes from environment variables
+- **Key storage:** Worker secrets; never browser storage
 - **RAG context:** Inject per turn — top 5 incidents + active theater briefing + data source list
 - **History:** Last 6 messages (sliding window)
 - **Config:** `max_tokens: 1024`, `temperature: 0.5` (intelligence, not creative writing)
@@ -228,13 +229,31 @@ Request shape (Anthropic Messages API):
 }
 ```
 
+System prompt structure:
+
+```
+You are the ASEAN Geopolitics Command Center briefing assistant.
+You help analysts interpret regional incidents, signal patterns, and data sources.
+
+THEATER CONTEXT:
+<active theater name, current incident count, top signals>
+
+TOP INCIDENTS:
+<last 5 intelligence items with severity and source>
+
+DATA SOURCES:
+<active sources with freshness status>
+
+Answer factually. Cite sources. Flag stale data. Do not speculate beyond available intelligence.
+```
+
 ---
 
 ## Database
 
 Supabase PostgreSQL + PostGIS.
 
-**Rule:** `pg` uses lazy dynamic import in `src/lib/db.ts` — falls back gracefully if unavailable. `supabase-js` HTTP client works everywhere.
+**Rule:** `supabase-js` HTTP client works everywhere, including Worker routes, and is preferred for simple CRUD. `pg` direct TCP (`src/lib/db.ts`) reaches Postgres via Cloudflare Hyperdrive on Workers, uses a lazy dynamic import, and falls back gracefully (never throws unhandled) if `pg` or the Hyperdrive binding is unavailable in a given runtime — use it for complex analytical queries (PostGIS, window functions, CTEs, transactions via `withDatabaseTransaction`).
 
 All geospatial columns require GIST index:
 
@@ -249,7 +268,7 @@ CREATE INDEX idx_events_geom ON events USING GIST (geom);
 INSERT INTO data_snapshots (table_name, snapshot_date, data) VALUES (...);
 ```
 
-Redis optional — degrade gracefully (`REDIS_URL` may not be set).
+Redis optional — degrade gracefully (`REDIS_URL` may not be set on CF Workers).
 
 ---
 
@@ -274,7 +293,26 @@ Redis optional — degrade gracefully (`REDIS_URL` may not be set).
 
 ## Testing
 
-Framework: **Vitest** + `@testing-library/react`. Playwright for UI tests.
+Active framework: Node `node:test` via `tsx`, and Playwright. The Vitest setup recipe below is historical, not an installed runner. Use package.json and the existing tests rather than adding a second runner.
+
+Test setup mocks (required in `src/test/setup.ts`):
+
+```typescript
+// Mock window.scrollTo (JSDOM doesn't implement it)
+window.scrollTo = vi.fn();
+
+// Mock localStorage with real Map backing
+const storage = new Map<string, string>();
+Object.defineProperty(window, "localStorage", {
+  value: { getItem: (k) => storage.get(k) ?? null, setItem: (k,v) => storage.set(k,v),
+           removeItem: (k) => storage.delete(k), clear: () => storage.clear() }
+});
+
+// Mock IntersectionObserver (required for useInView)
+global.IntersectionObserver = vi.fn(() => ({
+  observe: vi.fn(), unobserve: vi.fn(), disconnect: vi.fn()
+})) as unknown as typeof IntersectionObserver;
+```
 
 Coverage targets:
 - Smoke test for each theater panel component
@@ -296,4 +334,11 @@ Coverage targets:
 
 ## Static Export Mode
 
-`NEXT_PUBLIC_STATIC_EXPORT=true` + `NEXT_OUTPUT=export` — strips API routes, uses mock data. GitHub Pages demo only.
+`NEXT_PUBLIC_STATIC_EXPORT=true` + `NEXT_OUTPUT=export` — strips API routes, uses mock data. GitHub Pages demo only. The real Cloudflare Worker deployment (`overhaul` branch) uses full SSR via OpenNext.
+
+## Cloudflare Compatibility
+
+- `@supabase/supabase-js` — works natively on Workers (HTTP-based)
+- `pg` direct TCP — reaches Postgres through the Cloudflare Hyperdrive binding; requires `nodejs_compat` in `wrangler.jsonc`; falls back gracefully (never throws unhandled) if unavailable in a given runtime
+- Redis — optional, degrade gracefully if `REDIS_URL` not set
+- No Vercel or Cloudflare Pages configs — `vercel.json` and `wrangler.toml` were retired when the deploy moved to Cloudflare Workers via OpenNext; do not reintroduce either

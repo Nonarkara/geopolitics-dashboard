@@ -1,0 +1,224 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "name": "Thai-Burma border refugee camps",
+    "camp_count": 9,
+    "corridor_total": 82289,
+    "corridor_origin": "Myanmar (UNHCR origin code MMR)",
+    "corridor_asylum": "Thailand (UNHCR asylum code THA)",
+    "as_of": "2026-08-31",
+    "corridor_source": "UNHCR population API (2026)",
+    "camp_share_baseline": "TBC Programme Report, December 2025",
+    "license": "UNHCR (CC0) + TBC (public, attribution)",
+    "operator_runbook": ".venv-ingestion/bin/python ingestion/fetch_refugee_camps.py"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.58,
+          16.836
+        ]
+      },
+      "properties": {
+        "name": "Mae La",
+        "country": "TH",
+        "province": "Tak",
+        "district": "Tha Song Yang",
+        "established": 1984,
+        "operator": "Burmese Border Consortium (TBC)",
+        "population": 34068,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.414,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.554,
+          16.91
+        ]
+      },
+      "properties": {
+        "name": "Mae Ra Ma Luang",
+        "country": "TH",
+        "province": "Tak",
+        "district": "Tha Song Yang",
+        "established": 1995,
+        "operator": "TBC",
+        "population": 11274,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.137,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.503,
+          16.954
+        ]
+      },
+      "properties": {
+        "name": "Mae La Oon",
+        "country": "TH",
+        "province": "Tak",
+        "district": "Tha Song Yang",
+        "established": 1994,
+        "operator": "TBC",
+        "population": 6583,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.08,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.654,
+          16.812
+        ]
+      },
+      "properties": {
+        "name": "Umpiem",
+        "country": "TH",
+        "province": "Tak",
+        "district": "Phop Phra",
+        "established": 1999,
+        "operator": "TBC",
+        "population": 9463,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.115,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.687,
+          16.751
+        ]
+      },
+      "properties": {
+        "name": "Nu Po",
+        "country": "TH",
+        "province": "Tak",
+        "district": "Phop Phra",
+        "established": 1997,
+        "operator": "TBC",
+        "population": 6583,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.08,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.448,
+          15.082
+        ]
+      },
+      "properties": {
+        "name": "Tham Hin",
+        "country": "TH",
+        "province": "Kanchanaburi",
+        "district": "Sangkhlaburi",
+        "established": 1997,
+        "operator": "TBC",
+        "population": 7406,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.09,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          98.43,
+          15.137
+        ]
+      },
+      "properties": {
+        "name": "Ban Don Yang",
+        "country": "TH",
+        "province": "Kanchanaburi",
+        "district": "Sangkhlaburi",
+        "established": 1997,
+        "operator": "TBC",
+        "population": 1646,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.02,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.789,
+          17.793
+        ]
+      },
+      "properties": {
+        "name": "Ban Mai Nai Soi",
+        "country": "TH",
+        "province": "Mae Hong Son",
+        "district": "Sop Moei",
+        "established": 1996,
+        "operator": "TBC",
+        "population": 3292,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.04,
+        "kind": "refugee_camps"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          97.939,
+          18.084
+        ]
+      },
+      "properties": {
+        "name": "Ban Mae Surin",
+        "country": "TH",
+        "province": "Mae Hong Son",
+        "district": "Khun Yuam",
+        "established": 1996,
+        "operator": "TBC",
+        "population": 1975,
+        "population_source": "TBC Dec 2025 share × UNHCR corridor",
+        "corridor_total": 82289,
+        "camp_share": 0.024,
+        "kind": "refugee_camps"
+      }
+    }
+  ]
+}

@@ -1,13 +1,21 @@
 import path from "node:path";
 
+const isStaticExport = process.env.NEXT_OUTPUT === "export";
+const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 const nextConfig = {
-  output: "standalone",
+  ...(isStaticExport
+    ? {
+        output: "export",
+        ...(basePath ? { basePath } : {}),
+        images: { unoptimized: true },
+      }
+    : {}),
   transpilePackages: [
     "@deck.gl/core",
     "@deck.gl/layers",
     "@deck.gl/aggregation-layers",
     "@deck.gl/geo-layers",
-    "@deck.gl/mapbox",
     "@deck.gl/react",
     "@luma.gl/core",
     "@luma.gl/engine",
@@ -17,12 +25,10 @@ const nextConfig = {
   ],
   turbopack: {},
   env: {
-    NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN:
-      process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-      process.env.MAPBOX_ACCESS_TOKEN ??
-      "",
     NEXT_PUBLIC_ENABLE_DATA_EXPLORER:
       process.env.NEXT_PUBLIC_ENABLE_DATA_EXPLORER ?? "",
+    NEXT_PUBLIC_STATIC_EXPORT:
+      process.env.NEXT_PUBLIC_STATIC_EXPORT ?? "",
   },
   async headers() {
     return [
@@ -32,6 +38,12 @@ const nextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          {
+            key: "Strict-Transport-Security",
+            value: "max-age=31536000; includeSubDomains",
+          },
+          { key: "X-DNS-Prefetch-Control", value: "off" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",

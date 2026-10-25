@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BookOpen, Database, Printer, Shield } from "lucide-react";
+import { BookOpen, Database, Microscope, Printer, Shield } from "lucide-react";
 import AnimatedNumber from "../Common/AnimatedNumber";
 import CommandTooltip from "../Common/CommandTooltip";
+import DashboardVersionBadge from "../Common/DashboardVersionBadge";
+import LogoStrip from "../Identity/LogoStrip";
 import { TOPBAR_TOOLTIPS } from "../../lib/tooltip-catalog";
 import { useTimeWindow } from "../../contexts/TimeWindowContext";
 import { formatBangkokDayLabel } from "../../lib/time-window";
-import type { BorderCommandBrief } from "../../types/dashboard";
+import type { BorderCommandBrief, DashboardStatusPayload } from "../../types/dashboard";
 
 // ── WORLD CLOCKS ─────────────────────────────────────────────────────────────
 // Use IANA timezone IDs so DST is handled automatically.
@@ -71,25 +73,29 @@ const GROUP_LABELS: Record<string, string> = {
 function postureClasses(posture: BorderCommandBrief["overallPosture"]) {
   switch (posture) {
     case "priority":
-      return "border-[var(--accent)] bg-[rgba(255,59,48,0.08)] text-[var(--accent)]";
+      return "border-[var(--accent)] bg-black text-[var(--accent)]";
     case "watch":
-      return "border-[var(--hazard)] bg-[rgba(245,158,11,0.08)] text-[var(--hazard)]";
+      return "border-[var(--accent)] bg-black text-[var(--accent)]";
     default:
-      return "border-[var(--safe)] bg-[rgba(34,197,94,0.08)] text-[var(--safe)]";
+      return "border-white/20 bg-black text-white/65";
   }
 }
 
 interface TopBarProps {
   brief: BorderCommandBrief | null;
+  status: DashboardStatusPayload | null;
   onOpenManual: () => void;
   onOpenArchitecture: () => void;
+  onOpenResearch: () => void;
   onOpenDataExplorer?: () => void;
 }
 
 export default function TopBar({
   brief,
+  status,
   onOpenManual,
   onOpenArchitecture,
+  onOpenResearch,
   onOpenDataExplorer,
 }: TopBarProps) {
   const { isHistorical, timeWindow, bangkokDay } = useTimeWindow();
@@ -103,49 +109,74 @@ export default function TopBar({
     return () => clearInterval(timer);
   }, []);
 
+  const runtimePosture = status?.posture ?? (status?.status === "ok" ? "live" : "fallback");
+  const databasePosture = status?.services.database ?? "checking";
+  const compactDatabasePosture = databasePosture === "not configured" ? "no database" : databasePosture;
+
   return (
-    <header className="flex h-20 w-full items-stretch justify-between border-b border-white/10 bg-[#08090e] select-none">
-      <div className="flex items-center gap-3 border-r border-white/10 px-5">
-        <Shield size={16} className="text-[var(--accent)]" strokeWidth={3} />
-        <div>
-          <div className="text-[11px] font-black tracking-tight leading-none text-white/90">
-            THAILAND GEOPOLITICAL WATCH
+    <header className="flex h-16 w-full items-stretch justify-between overflow-hidden border-b border-white/10 bg-[#090a0e] select-none sm:h-[72px]">
+      <div className="flex min-w-0 items-center gap-2 border-r border-white/10 px-3 sm:shrink-0 sm:px-4">
+        <div className="flex h-9 w-9 items-center justify-center border border-[var(--accent)] bg-black sm:h-10 sm:w-10">
+          <Shield size={19} className="text-[var(--accent)]" strokeWidth={3} />
+        </div>
+        <div className="min-w-0">
+          <div className="flex items-center gap-2.5">
+            <div className="max-w-[170px] text-[14px] font-black leading-tight tracking-[-0.02em] text-white/92 sm:max-w-none sm:text-[15px]">
+              THAILAND GEOPOLITICAL WATCH
+            </div>
+            <span className="hidden sm:inline-flex"><DashboardVersionBadge className="border-white/15 text-white/60" /></span>
           </div>
-          <div className="mt-1 text-[8px] font-bold uppercase tracking-[0.2em] text-white/40">
-            Myanmar / Cambodia / Malaysia
+          <div className="mt-1 hidden items-center gap-2 text-[12px] font-bold uppercase tracking-[0.2em] text-white/40 lg:flex">
+            <span>Myanmar</span>
+            <span className="h-[3px] w-[3px] bg-white/20" />
+            <span>Cambodia</span>
+            <span className="h-[3px] w-[3px] bg-white/20" />
+            <span>Southern theatre</span>
           </div>
         </div>
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[2400px]:block" />
+        <LogoStrip className="hidden min-[2400px]:flex" />
       </div>
 
-      <div className="flex min-w-0 flex-1 items-center gap-3 px-5">
+      <div className="hidden min-w-0 flex-1 items-center gap-3 overflow-hidden px-4 md:flex">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center border px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] ${
+              runtimePosture === "live"
+                ? "border-white/20 text-white/75"
+                : "border-[var(--accent)] text-[var(--accent)]"
+            }`}>
+              {runtimePosture === "live" ? "Live sources" : `${runtimePosture} data`}
+            </span>
             <span
-              className={`inline-flex items-center border px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.16em] ${
+              className={`hidden items-center border px-2.5 py-1 text-[13px] font-black uppercase tracking-[0.16em] lg:inline-flex ${
                 brief ? postureClasses(brief.overallPosture) : "border-white/15 text-white/40"
               }`}
             >
               {brief?.overallPosture ?? "syncing"}
             </span>
-            <span className="text-[10px] font-black tabular-nums text-white/40">
+            <span className="hidden text-[13px] font-black tabular-nums text-white/40 lg:inline">
               {brief ? <><AnimatedNumber value={brief.overallScore} format={(n) => Math.round(n).toString()} className="tabular-nums" />/100</> : "--/100"}
             </span>
+            <span className="hidden items-center border border-white/10 bg-white/[0.04] px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-white/55 min-[1800px]:inline-flex">
+              {isHistorical ? "Archive playback" : "Live command"}
+            </span>
             {isHistorical && timeWindow ? (
-              <span className="inline-flex items-center border border-[#f59e0b]/40 bg-[#f59e0b]/10 px-2 py-1 text-[8px] font-black uppercase tracking-[0.16em] text-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.2)]">
+              <span className="inline-flex items-center border border-[var(--accent)] bg-black px-2 py-1 text-[12px] font-black uppercase tracking-[0.16em] text-[var(--accent)]">
                 Playback {formatBangkokDayLabel(bangkokDay ?? "")}
               </span>
             ) : null}
           </div>
-          <div className="mt-2 text-[14px] font-black uppercase tracking-tight text-white/90 truncate">
+          <div className="mt-2 text-[16px] font-black uppercase tracking-tight text-white/90 truncate">
             {brief?.headline ?? "Building the tri-border command picture"}
           </div>
-          <div className="mt-1 text-[10px] leading-tight text-white/50 line-clamp-2">
+          <div className="mt-1 hidden text-[13px] leading-tight text-white/50 xl:line-clamp-1">
             {brief?.summary ??
               "Synchronizing incidents, market signals, and border cameras for the executive view."}
           </div>
         </div>
 
-        <div className="hidden min-w-0 flex-1 gap-[1px] bg-white/5 lg:grid lg:grid-cols-3">
+        <div className="hidden min-w-0 flex-1 gap-[1px] bg-white/5 2xl:grid 2xl:grid-cols-3">
           {(brief?.areas ?? []).slice(0, 3).map((area) => {
             const postureColor =
               area.posture === "priority"
@@ -160,17 +191,17 @@ export default function TopBar({
                   style={{ backgroundColor: postureColor }}
                 />
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.16em] text-white/60">
+                  <span className="text-[13px] font-black uppercase tracking-[0.16em] text-white/60">
                     {area.counterpart}
                   </span>
-                  <span className="text-[10px] font-black tabular-nums" style={{ color: postureColor }}>
+                  <span className="text-[13px] font-black tabular-nums" style={{ color: postureColor }}>
                     {area.score ?? "--"}
                   </span>
                 </div>
-                <div className="mt-1 text-[10px] font-black uppercase tracking-tight text-white/90 truncate">
+                <div className="mt-1 text-[13px] font-black uppercase tracking-tight text-white/90 truncate">
                   {area.label}
                 </div>
-                <div className="mt-0.5 text-[8px] leading-tight text-white/40 line-clamp-1">
+                <div className="mt-0.5 text-[12px] leading-tight text-white/40 line-clamp-1">
                   {area.signals[0] ?? area.summary}
                 </div>
               </div>
@@ -179,9 +210,9 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="flex items-center gap-2 border-l border-white/10 px-3 overflow-x-auto scrollbar-none">
+      <div className="flex shrink-0 items-center gap-2 border-l border-white/10 px-2">
         {/* World Clocks — grouped with subtle dividers between regions */}
-        <div className="flex items-center gap-0 shrink-0">
+        <div className="hidden items-center gap-0 shrink-0 min-[2400px]:flex">
           {COUNTRY_CLOCKS.map((clock, idx) => {
             const prevGroup = idx > 0 ? COUNTRY_CLOCKS[idx - 1].group : null;
             const showDivider = prevGroup && prevGroup !== clock.group;
@@ -191,22 +222,22 @@ export default function TopBar({
                 {showDivider && (
                   <div className="flex flex-col items-center justify-center px-1.5">
                     <div className="h-6 w-px bg-white/10" />
-                    <div className="mt-0.5 text-[6px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">
+                    <div className="mt-0.5 text-[11px] font-black uppercase tracking-widest text-white/20 whitespace-nowrap">
                       {GROUP_LABELS[clock.group ?? ""] ?? ""}
                     </div>
                   </div>
                 )}
                 <div className={`px-2 py-1.5 text-center transition-opacity ${night ? "opacity-30" : "opacity-100"}`}>
-                  <div className={`text-[13px] font-black tabular-nums tracking-tight leading-none ${night ? "text-white/50" : "text-white/90"}`}>
+                  <div className={`text-[15px] font-black tabular-nums tracking-tight leading-none ${night ? "text-white/50" : "text-white/90"}`}>
                     {formatTimeForTz(clock.tz)}
                   </div>
                   <div className="mt-0.5 flex items-center justify-center gap-0.5">
-                    <span className="text-[8px] leading-none">{clock.flag}</span>
-                    <span className={`text-[7px] font-black uppercase tracking-[0.14em] ${night ? "text-white/20" : "text-white/35"}`}>
+                    <span className="text-[12px] leading-none">{clock.flag}</span>
+                    <span className={`text-[12px] font-black uppercase tracking-[0.14em] ${night ? "text-white/20" : "text-white/35"}`}>
                       {clock.label}
                     </span>
                     {night && (
-                      <span className="text-[6px] text-white/20">🌙</span>
+                      <span className="text-[11px] text-white/20">🌙</span>
                     )}
                   </div>
                 </div>
@@ -215,16 +246,27 @@ export default function TopBar({
           })}
         </div>
 
-        <div className="h-10 w-px bg-white/10 shrink-0" />
+        <div className="hidden h-10 w-px shrink-0 bg-white/10 min-[2400px]:block" />
 
         {/* Action buttons */}
         <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            aria-label="Research"
+            onClick={onOpenResearch}
+            className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 border border-[var(--accent)] bg-transparent px-2.5 text-[12px] font-black text-[var(--accent)] transition-all hover:bg-[var(--accent)] hover:text-black"
+            title="Search evidence, audit source coverage, and inspect satellite context"
+          >
+            <Microscope size={12} strokeWidth={3} />
+            <span className="hidden min-[500px]:inline">Research</span>
+          </button>
+          <div className="hidden items-center gap-1.5 xl:flex">
           <CommandTooltip content={TOPBAR_TOOLTIPS.apis} position="bottom">
             <button
               onClick={onOpenArchitecture}
-              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[8px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
+              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
             >
-              <Shield size={9} strokeWidth={3} />
+              <Shield size={12} strokeWidth={3} />
               APIs
             </button>
           </CommandTooltip>
@@ -232,9 +274,9 @@ export default function TopBar({
             <CommandTooltip content={TOPBAR_TOOLTIPS.data} position="bottom">
               <button
                 onClick={onOpenDataExplorer}
-                className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[8px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
+                className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
               >
-                <Database size={9} strokeWidth={3} />
+                <Database size={12} strokeWidth={3} />
                 Data
               </button>
             </CommandTooltip>
@@ -242,9 +284,9 @@ export default function TopBar({
           <CommandTooltip content={TOPBAR_TOOLTIPS.docs} position="bottom">
             <button
               onClick={onOpenManual}
-              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[8px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
+              className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
             >
-              <BookOpen size={9} strokeWidth={3} />
+              <BookOpen size={12} strokeWidth={3} />
               Docs
             </button>
           </CommandTooltip>
@@ -252,11 +294,23 @@ export default function TopBar({
             href="/briefing"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[8px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
+            className="flex h-7 items-center gap-1.5 border border-white/15 bg-transparent px-2.5 text-[12px] font-black uppercase tracking-widest text-white/40 transition-all hover:bg-white/[0.06] hover:text-white"
           >
-            <Printer size={9} strokeWidth={3} />
+            <Printer size={12} strokeWidth={3} />
             PDF
           </a>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex min-w-[80px] shrink-0 flex-col items-end justify-center px-2 md:hidden">
+        <div className={`text-[13px] font-black uppercase tracking-[0.16em] ${
+          runtimePosture === "live" ? "text-white/70" : "text-[var(--accent)]"
+        }`}>
+          {runtimePosture}
+        </div>
+        <div title={databasePosture} data-testid="phone-database-status" className="mt-1 whitespace-nowrap text-[12px] uppercase tracking-[0.1em] text-white/35">
+          {compactDatabasePosture}
         </div>
       </div>
     </header>

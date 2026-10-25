@@ -100,26 +100,26 @@ function MetricCard({ metric }: { metric: AseanProfileMetric }) {
   return (
     <article className="border border-[var(--line)] p-3">
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--dim)]">
+        <div className="text-[13px] font-semibold uppercase tracking-[0.12em] text-[var(--dim)]">
           {metric.label}
         </div>
-        <span className="rounded-full bg-[var(--line)] px-2 py-0.5 text-[8px] font-mono text-[var(--muted)]">
+        <span className="rounded-full bg-[var(--line)] px-2 py-0.5 text-[12px] font-mono text-[var(--muted)]">
           {metric.year ?? "--"}
         </span>
       </div>
 
-      <div className="pt-2 text-[18px] font-semibold tracking-[-0.03em] text-[var(--ink)]">
+      <div className="pt-2 text-[20px] font-semibold tracking-[-0.03em] text-[var(--ink)]">
         {formatMetricValue(metric)}
       </div>
 
       {secondary ? (
-        <div className="pt-1 text-[10px] leading-4 text-[var(--muted)]">{secondary}</div>
+        <div className="pt-1 text-[13px] leading-4 text-[var(--muted)]">{secondary}</div>
       ) : null}
 
       {metric.note ? (
-        <div className="pt-1 text-[10px] leading-4 text-[var(--muted)]">{metric.note}</div>
+        <div className="pt-1 text-[13px] leading-4 text-[var(--muted)]">{metric.note}</div>
       ) : metric.unit && metric.id !== "gdp-per-person" && metric.id !== "population" ? (
-        <div className="pt-1 text-[10px] leading-4 text-[var(--muted)]">{metric.unit}</div>
+        <div className="pt-1 text-[13px] leading-4 text-[var(--muted)]">{metric.unit}</div>
       ) : null}
     </article>
   );
@@ -175,17 +175,17 @@ export default function AseanEconomicsPanel() {
     <div className="space-y-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--cool)]">
-            <TrendingUp size={12} />
+          <div className="flex items-center gap-2 text-[14px] font-semibold uppercase tracking-[0.16em] text-[var(--cool)]">
+            <TrendingUp size={14} />
             <span>Country profile</span>
           </div>
-          <h3 className="pt-2 text-[17px] font-semibold tracking-[-0.03em] text-[var(--ink)]">
+          <h3 className="pt-2 text-[19px] font-semibold tracking-[-0.03em] text-[var(--ink)]">
             {payload?.country.label ?? selectedLabel}
           </h3>
         </div>
-        <div className="text-right text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
+        <div className="text-right text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
           <div>Updated</div>
-          <div className="pt-1 text-[11px] text-[var(--muted)]">
+          <div className="pt-1 text-[14px] text-[var(--muted)]">
             {formatUpdatedAt(payload?.generatedAt)}
           </div>
         </div>
@@ -195,7 +195,7 @@ export default function AseanEconomicsPanel() {
         <select
           value={selectedCountry}
           onChange={(event) => setSelectedCountry(event.target.value)}
-          className="w-full appearance-none border border-[var(--line)] bg-transparent px-3 py-2.5 pr-10 text-[13px] font-medium text-[var(--ink)] outline-none transition-colors hover:border-[var(--line-bright)] focus:border-[var(--cool)]"
+          className="w-full appearance-none border border-[var(--line)] bg-transparent px-3 py-2.5 pr-10 text-[15px] font-medium text-[var(--ink)] outline-none transition-colors hover:border-[var(--line-bright)] focus:border-[var(--cool)]"
           aria-label="Select ASEAN country"
         >
           {ASEAN_COUNTRIES.map((country) => (
@@ -205,17 +205,17 @@ export default function AseanEconomicsPanel() {
           ))}
         </select>
         <ChevronDown
-          size={16}
+          size={17}
           className="pointer-events-none absolute right-3 top-[calc(1rem+12px)] text-[var(--dim)]"
         />
       </div>
 
       {isLoading && !payload ? (
-        <div className="mt-4 border border-[var(--line)] p-3 text-[11px] leading-5 text-[var(--muted)]">
+        <div className="mt-4 border border-[var(--line)] p-3 text-[14px] leading-5 text-[var(--muted)]">
           Loading latest macro profile and country economics coverage.
         </div>
       ) : !payload ? (
-        <div className="mt-4 border border-[var(--line)] p-3 text-[11px] leading-5 text-[var(--muted)]">
+        <div className="mt-4 border border-[var(--line)] p-3 text-[14px] leading-5 text-[var(--muted)]">
           The country profile is unavailable right now. The selector is still active, and
           the panel will retry on the next refresh cycle.
         </div>
@@ -228,8 +228,8 @@ export default function AseanEconomicsPanel() {
           </div>
 
           <div className="mt-4 border border-[var(--line)] p-3">
-            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--dim)]">
-              <Globe2 size={12} />
+            <div className="flex items-center gap-2 text-[13px] font-semibold uppercase tracking-[0.14em] text-[var(--dim)]">
+              <Globe2 size={14} />
               <span>Relevant economics news</span>
             </div>
 
@@ -243,16 +243,16 @@ export default function AseanEconomicsPanel() {
                     rel="noreferrer"
                     className="block border border-[var(--line)] p-3 transition-colors hover:border-[var(--line-bright)]"
                   >
-                    <div className="text-[12px] font-medium leading-5 text-[var(--ink)]">
+                    <div className="text-[14px] font-medium leading-5 text-[var(--ink)]">
                       {item.title}
                     </div>
-                    <div className="pt-2 text-[10px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
+                    <div className="pt-2 text-[13px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
                       {item.source} · {formatUpdatedAt(item.publishedAt)}
                     </div>
                   </a>
                 ))
               ) : (
-                <div className="text-[11px] leading-5 text-[var(--muted)]">
+                <div className="text-[14px] leading-5 text-[var(--muted)]">
                   No recent country-scoped economics headlines were matched in the current
                   14-day news window.
                 </div>
@@ -260,7 +260,7 @@ export default function AseanEconomicsPanel() {
             </div>
           </div>
 
-          <div className="pt-3 text-[10px] leading-4 text-[var(--dim)]">
+          <div className="pt-3 text-[13px] leading-4 text-[var(--dim)]">
             World Bank · Country news feed
           </div>
         </>

@@ -1,7 +1,8 @@
 import { DASHBOARD_VERSION } from "./dashboard-version";
+import { loadCronJobStatuses } from "./cron-jobs";
 import { isDatabaseConfigured, query } from "./db";
 import { isDataExplorerEnabled } from "./feature-flags";
-import { hasUsableMapboxToken } from "./mapbox";
+import { getTimeoutSignal } from "./http";
 import type {
   DashboardDatasetCriticality,
   DashboardDatasetStatus,
@@ -81,18 +82,18 @@ function hasConfiguredFirmsRefresh() {
 const datasetDescriptors: DatasetDescriptor[] = [
   {
     id: "conflict_events",
-    label: "Conflict events",
+    label: "Conflict archive",
     source: "Postgres `events`",
     criticality: "optional",
     tableName: "events",
     latestExpression: "MAX(event_date)::text",
     staleAfterMinutes: 48 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so incident routes fall back to packaged sample data.",
-    emptyState: "fallback",
+      "No conflict archive is configured. Stored incidents are unavailable; news-derived signals are a separate source.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The event store is empty, so incident surfaces are currently leaning on packaged fallback rows.",
+      "The conflict archive is empty. No packaged incident observations are substituted.",
     refreshDependency: {
       label: "ACLED access credentials",
       isConfigured: hasConfiguredAcledRefresh,
@@ -106,27 +107,27 @@ const datasetDescriptors: DatasetDescriptor[] = [
     tableName: "rainfall_data",
     latestExpression: "MAX(ref_date)::text",
     staleAfterMinutes: 48 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so rainfall overlays can only use packaged fallback points.",
-    emptyState: "fallback",
+      "No rainfall archive is configured. Stored rainfall observations are unavailable.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The rainfall table is empty, so map overlays are currently using packaged fallback points.",
+      "The rainfall archive is empty. No packaged rainfall points are substituted.",
   },
   {
     id: "fires",
-    label: "Thermal hotspots",
+    label: "Thermal archive",
     source: "Postgres `fire_events`",
     criticality: "optional",
     tableName: "fire_events",
     latestExpression: "MAX(acq_date)::text",
     staleAfterMinutes: 24 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so thermal layers can only use packaged fallback hotspots.",
-    emptyState: "fallback",
+      "No thermal archive is configured. The live FIRMS CSV/area feed is independent of this stored-history check.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The fire-events table is empty, so thermal layers are currently using packaged fallback hotspots.",
+      "The thermal archive is empty. This does not measure the availability of the live FIRMS feed.",
     refreshDependency: {
       label: "FIRMS access credentials",
       isConfigured: hasConfiguredFirmsRefresh,
@@ -375,12 +376,12 @@ async function loadDatasetStatus(
       label: descriptor.label,
       source: descriptor.source,
       criticality: descriptor.criticality,
-      state: "fallback",
+      state: "unavailable",
       latestTimestamp: null,
       ageMinutes: null,
       freshnessTargetMinutes: descriptor.staleAfterMinutes,
       details:
-        "The freshness check could not read this dataset, so operators should assume fallback posture until the database recovers.",
+        "The stored dataset could not be read. Upstream live-feed availability is not established by this check.",
     };
   }
 }
@@ -392,6 +393,7 @@ function computeSignalStrength(datasets: DashboardDatasetStatus[]) {
 
   const weightByState: Record<RuntimeDatasetState, number> = {
     live: 1,
+    unavailable: 0,
     on_demand: 0.8,
     stale: 0.45,
     fallback: 0.2,
@@ -411,16 +413,18 @@ function getDataExplorerState() {
     return "disabled";
   }
 
-  return process.env.DATA_EXPLORER_TOKEN?.trim() ? "secured" : "unprotected";
+  return process.env.DATA_EXPLORER_TOKEN?.trim() ? "secured" : "misconfigured";
 }
 
 export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayload> {
-  const datasets = await Promise.all(datasetDescriptors.map(loadDatasetStatus));
-  const hasMapboxToken = hasUsableMapboxToken(
-    process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN ??
-      process.env.MAPBOX_ACCESS_TOKEN,
-  );
+  const [datasets, crons] = await Promise.all([
+    Promise.all(datasetDescriptors.map(loadDatasetStatus)),
+    loadCronJobStatuses(),
+  ]);
+  // Mapbox is permanently gone (account deleted) — basemaps render on free
+  // raster tiles (ESRI / CARTO / OSM / NASA GIBS), no token required.
   const degradedStates = new Set<RuntimeDatasetState>([
+    "unavailable",
     "stale",
     "fallback",
     "disabled",
@@ -433,20 +437,50 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
     (dataset) =>
       dataset.criticality === "optional" && degradedStates.has(dataset.state),
   );
+  const hasCronIssue = crons.some(
+    (cron) => cron.state === "stale" || cron.state === "missing" || cron.state === "failing",
+  );
+  const posture =
+    hasCoreIssue ? "fallback" : hasOptionalIssue || hasCronIssue ? "hybrid" : "live";
+  const databaseOperational =
+    isDatabaseConfigured &&
+    datasets.some((dataset) =>
+      dataset.state === "live" ||
+      dataset.state === "stale" ||
+      dataset.state === "on_demand",
+    );
 
   return {
-    status: hasCoreIssue ? "degraded" : hasOptionalIssue ? "limited" : "operational",
+    status:
+      hasCoreIssue || hasCronIssue
+        ? "degraded"
+        : hasOptionalIssue
+          ? "limited"
+          : "operational",
     version: DASHBOARD_VERSION,
     signal_strength: computeSignalStrength(datasets),
     checkedAt: new Date().toISOString(),
+    posture,
     services: {
-      database: isDatabaseConfigured ? "configured" : "fallback",
-      basemap: hasMapboxToken ? "configured" : "missing",
-      conflict_ingestion: hasConfiguredAcledRefresh() ? "configured" : "disabled",
+      app_runtime: process.env.APP_RUNTIME?.trim() || (process.env.VERCEL === "1" ? "vercel" : "local"),
+      database: databaseOperational
+        ? "supabase-postgres"
+        : isDatabaseConfigured
+          ? "unavailable"
+          : "not configured",
+      scheduler: process.env.CRON_SECRET?.trim()
+        ? hasCronIssue
+          ? "degraded"
+          : "secured-cron"
+        : "unsecured",
+      basemap: "free-tiles",
       reference_dashboard: process.env.REFERENCE_DASHBOARD_URL
         ? "configured"
         : "default",
-      intelligence_cache: isDatabaseConfigured ? "hybrid" : "memory",
+      fallback_posture: posture,
+      conflict_refresh: hasConfiguredAcledRefresh() ? "configured" : "disabled",
+      thermal_refresh: hasConfiguredFirmsRefresh() ? "configured" : "disabled",
+      intelligence_cache: databaseOperational ? "hybrid" : "memory",
       // determine ai_summary by probing local Ollama first, then OpenAI
       ai_summary: await (async () => {
         const timeoutMs = Number(process.env.AI_REQUEST_TIMEOUT_MS ?? 2500);
@@ -458,10 +492,7 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
           try {
             const res = await fetch(url, {
               method: "GET",
-              signal:
-                typeof AbortSignal !== "undefined" && typeof (AbortSignal as any).timeout === "function"
-                  ? (AbortSignal as any).timeout(timeoutMs)
-                  : undefined,
+              signal: getTimeoutSignal(timeoutMs),
               ...opts,
             });
             return res.ok || res.status === 401 || res.status === 403;
@@ -484,8 +515,8 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
       mock_ingestion: process.env.ALLOW_MOCK_INGESTION === "true"
         ? "enabled"
         : "disabled",
-      thermal_ingestion: hasConfiguredFirmsRefresh() ? "configured" : "disabled",
     },
     datasets,
+    crons,
   };
 }

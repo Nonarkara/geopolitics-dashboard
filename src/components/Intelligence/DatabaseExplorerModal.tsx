@@ -130,13 +130,13 @@ function StatCard({
 }) {
   return (
     <article className="rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4">
-      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
+      <div className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--muted)]">
         {label}
       </div>
-      <div className="mt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+      <div className="mt-2 text-[26px] font-bold tracking-[-0.03em] text-[var(--ink)]">
         {value}
       </div>
-      <p className="mt-2 text-[12px] leading-5 text-[var(--muted)]">{helper}</p>
+      <p className="mt-2 text-[14px] leading-5 text-[var(--muted)]">{helper}</p>
     </article>
   );
 }
@@ -491,19 +491,19 @@ export default function DatabaseExplorerModal({
       >
         <header className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--line)] px-4 py-4 sm:px-6">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
-              <Database size={14} />
+            <div className="flex items-center gap-2 text-[13px] font-bold uppercase tracking-[0.22em] text-[var(--cool)]">
+              <Database size={15} />
               Data Explorer
             </div>
             <h2
               id={titleId}
-              className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[28px]"
+              className="mt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)] sm:text-[30px]"
             >
               Visualize and export the database
             </h2>
             <p
               id={descriptionId}
-              className="mt-1 max-w-3xl text-[12px] leading-5 text-[var(--muted)] sm:text-[13px]"
+              className="mt-1 max-w-3xl text-[14px] leading-5 text-[var(--muted)] sm:text-[15px]"
             >
               Preview stored tables, inspect freshness and row volume, and export
               any surfaced table as CSV or JSON without writing SQL.
@@ -515,12 +515,12 @@ export default function DatabaseExplorerModal({
               <button
                 type="button"
                 onClick={clearToken}
-                className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)] transition-colors hover:text-[var(--cool)]"
+                className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)] transition-colors hover:text-[var(--cool)]"
               >
                 Clear token
               </button>
             ) : null}
-            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+            <div className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-3 py-1.5 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
               {databaseConfigured === null
                 ? "Checking database"
                 : databaseConfigured
@@ -535,10 +535,10 @@ export default function DatabaseExplorerModal({
                   void loadPreview(selectedTableId, previewLimit);
                 }
               }}
-              className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
+              className="inline-flex items-center gap-2 rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-2 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
             >
               <RefreshCw
-                size={14}
+                size={15}
                 className={loadingCatalog || loadingPreview ? "animate-spin" : ""}
               />
               Refresh
@@ -550,7 +550,7 @@ export default function DatabaseExplorerModal({
               className="inline-flex h-10 w-10 items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] transition-colors hover:border-[var(--line-bright)] hover:text-[var(--cool)]"
               aria-label="Close data explorer"
             >
-              <X size={16} />
+              <X size={17} />
             </button>
           </div>
         </header>
@@ -591,12 +591,12 @@ export default function DatabaseExplorerModal({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <div className="eyebrow">Tables</div>
-                  <div className="mt-1 text-[14px] font-semibold text-[var(--ink)]">
+                  <div className="mt-1 text-[16px] font-semibold text-[var(--ink)]">
                     Choose a dataset
                   </div>
                 </div>
                 {loadingCatalog && (
-                  <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+                  <span className="text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
                     Loading
                   </span>
                 )}
@@ -617,20 +617,20 @@ export default function DatabaseExplorerModal({
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <span className="text-[13px] font-semibold text-[var(--ink)]">
+                        <span className="text-[15px] font-semibold text-[var(--ink)]">
                           {table.label}
                         </span>
-                        <span className="text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
+                        <span className="text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--muted)]">
                           {formatCount(table.rowCount)}
                         </span>
                       </div>
-                      <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
+                      <div className="mt-1 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--cool)]">
                         {table.category}
                       </div>
-                      <div className="mt-2 line-clamp-2 text-[11px] leading-4 text-[var(--muted)]">
+                      <div className="mt-2 line-clamp-2 text-[14px] leading-4 text-[var(--muted)]">
                         {table.description}
                       </div>
-                      <div className="mt-2 text-[10px] text-[var(--dim)]">
+                      <div className="mt-2 text-[13px] text-[var(--dim)]">
                         Latest: {formatLatest(table.latestValue)}
                       </div>
                     </button>
@@ -642,7 +642,7 @@ export default function DatabaseExplorerModal({
 
           <main className="min-h-0 overflow-y-auto">
             {error && (
-              <div className="mb-4 rounded-sm border border-[#ef4444] bg-[rgba(127,29,29,0.22)] px-4 py-3 text-[12px] text-[#fecaca]">
+              <div className="mb-4 rounded-sm border border-[#ef4444] bg-[rgba(127,29,29,0.22)] px-4 py-3 text-[14px] text-[#fecaca]">
                 {error}
               </div>
             )}
@@ -650,10 +650,10 @@ export default function DatabaseExplorerModal({
             {authRequired && (
               <section className="mb-4 rounded-sm border border-[var(--line)] bg-[rgba(10,15,26,0.72)] p-4 sm:p-5">
                 <div className="eyebrow">Admin Auth</div>
-                <h3 className="mt-2 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                <h3 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                   Enter the data explorer token
                 </h3>
-                <p className="mt-2 max-w-2xl text-[13px] leading-6 text-[var(--muted)]">
+                <p className="mt-2 max-w-2xl text-[15px] leading-6 text-[var(--muted)]">
                   This deployment protects preview and export endpoints with a
                   server-side bearer token. The token is stored only in this browser
                   session.
@@ -664,12 +664,12 @@ export default function DatabaseExplorerModal({
                     value={tokenDraft}
                     onChange={(event) => setTokenDraft(event.target.value)}
                     placeholder="Paste admin token"
-                    className="min-w-0 flex-1 rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-4 py-3 text-[13px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--dim)] focus:border-[var(--cool)]"
+                    className="min-w-0 flex-1 rounded-sm border border-[var(--line)] bg-[var(--bg-surface)] px-4 py-3 text-[15px] text-[var(--ink)] outline-none transition-colors placeholder:text-[var(--dim)] focus:border-[var(--cool)]"
                   />
                   <button
                     type="button"
                     onClick={submitToken}
-                    className="inline-flex items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-3 text-[12px] font-semibold text-[var(--ink)] transition-colors hover:text-[var(--cool)]"
+                    className="inline-flex items-center justify-center rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-4 py-3 text-[14px] font-semibold text-[var(--ink)] transition-colors hover:text-[var(--cool)]"
                   >
                     Unlock
                   </button>
@@ -680,10 +680,10 @@ export default function DatabaseExplorerModal({
             {databaseConfigured === false && (
               <section className="dashboard-panel rounded-sm p-5">
                 <div className="eyebrow">Database Required</div>
-                <h3 className="mt-2 text-[20px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                <h3 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                   Connect Postgres to unlock previews and exports
                 </h3>
-                <p className="mt-3 max-w-3xl text-[13px] leading-6 text-[var(--muted)]">
+                <p className="mt-3 max-w-3xl text-[15px] leading-6 text-[var(--muted)]">
                   The explorer is ready, but this runtime is not currently connected to
                   a live database. Once <code>DATABASE_URL</code> is configured and the
                   schema is applied, this screen will show row counts, latest snapshots,
@@ -697,15 +697,15 @@ export default function DatabaseExplorerModal({
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <Table2 size={16} className="text-[var(--cool)]" />
-                      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--cool)]">
+                      <Table2 size={17} className="text-[var(--cool)]" />
+                      <span className="text-[13px] font-bold uppercase tracking-[0.18em] text-[var(--cool)]">
                         {selectedTable.category}
                       </span>
                     </div>
-                    <h3 className="mt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+                    <h3 className="mt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                       {selectedTable.label}
                     </h3>
-                    <p className="mt-2 max-w-3xl text-[13px] leading-6 text-[var(--muted)]">
+                    <p className="mt-2 max-w-3xl text-[15px] leading-6 text-[var(--muted)]">
                       {selectedTable.description}
                     </p>
                   </div>
@@ -716,7 +716,7 @@ export default function DatabaseExplorerModal({
                         key={option}
                         type="button"
                         onClick={() => setPreviewLimit(option)}
-                        className={`rounded-sm border px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.16em] transition-colors ${
+                        className={`rounded-sm border px-3 py-1.5 text-[13px] font-bold uppercase tracking-[0.16em] transition-colors ${
                           previewLimit === option
                             ? "border-[var(--cool)] bg-[var(--line-bright)] text-[var(--ink)]"
                             : "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--muted)] hover:text-[var(--ink)]"
@@ -729,26 +729,26 @@ export default function DatabaseExplorerModal({
                       type="button"
                       onClick={() => void downloadExport("csv")}
                       disabled={!selectedTableId || databaseConfigured !== true || downloadingFormat !== null}
-                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[12px] font-semibold transition-colors ${
+                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[14px] font-semibold transition-colors ${
                         selectedTableId && databaseConfigured === true && downloadingFormat === null
                           ? "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--cool)]"
                           : "pointer-events-none border-[var(--line)] bg-[var(--bg-surface)] text-[var(--dim)] opacity-50"
                       }`}
                     >
-                      <FileSpreadsheet size={14} />
+                      <FileSpreadsheet size={15} />
                       CSV
                     </button>
                     <button
                       type="button"
                       onClick={() => void downloadExport("json")}
                       disabled={!selectedTableId || databaseConfigured !== true || downloadingFormat !== null}
-                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[12px] font-semibold transition-colors ${
+                      className={`inline-flex items-center gap-2 rounded-sm border px-4 py-2 text-[14px] font-semibold transition-colors ${
                         selectedTableId && databaseConfigured === true && downloadingFormat === null
                           ? "border-[var(--line-bright)] bg-[var(--bg-surface)] text-[var(--ink)] hover:text-[var(--cool)]"
                           : "pointer-events-none border-[var(--line)] bg-[var(--bg-surface)] text-[var(--dim)] opacity-50"
                       }`}
                     >
-                      <FileJson size={14} />
+                      <FileJson size={15} />
                       JSON
                     </button>
                   </div>
@@ -776,12 +776,12 @@ export default function DatabaseExplorerModal({
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <div className="eyebrow">Preview</div>
-                      <div className="mt-1 text-[14px] font-semibold text-[var(--ink)]">
+                      <div className="mt-1 text-[16px] font-semibold text-[var(--ink)]">
                         Latest {previewLimit} rows
                       </div>
                     </div>
-                    <div className="inline-flex items-center gap-2 text-[10px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
-                      <Download size={12} />
+                    <div className="inline-flex items-center gap-2 text-[13px] font-mono uppercase tracking-[0.16em] text-[var(--dim)]">
+                      <Download size={14} />
                       Export uses the same curated columns
                     </div>
                   </div>
@@ -790,7 +790,7 @@ export default function DatabaseExplorerModal({
                     {selectedTable.columns.map((column) => (
                       <span
                         key={`${selectedTable.id}-${column}`}
-                        className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[10px] font-medium text-[var(--ink)]"
+                        className="rounded-sm border border-[var(--line-bright)] bg-[var(--bg-surface)] px-2.5 py-1 text-[13px] font-medium text-[var(--ink)]"
                       >
                         {column}
                       </span>
@@ -799,13 +799,13 @@ export default function DatabaseExplorerModal({
 
                   <div className="mt-4 overflow-hidden rounded-sm border border-[var(--line)]">
                     <div className="max-h-[520px] overflow-auto">
-                      <table className="min-w-full border-collapse text-left text-[12px]">
+                      <table className="min-w-full border-collapse text-left text-[14px]">
                         <thead className="sticky top-0 bg-[rgba(10,15,26,0.94)]">
                           <tr>
                             {selectedTable.columns.map((column) => (
                               <th
                                 key={`${selectedTable.id}-head-${column}`}
-                                className="border-b border-[var(--line)] px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--muted)]"
+                                className="border-b border-[var(--line)] px-3 py-2 text-[13px] font-bold uppercase tracking-[0.16em] text-[var(--muted)]"
                               >
                                 {column}
                               </th>
@@ -817,7 +817,7 @@ export default function DatabaseExplorerModal({
                             <tr>
                               <td
                                 colSpan={selectedTable.columns.length}
-                                className="px-3 py-10 text-center text-[12px] text-[var(--muted)]"
+                                className="px-3 py-10 text-center text-[14px] text-[var(--muted)]"
                               >
                                 Loading preview…
                               </td>
@@ -826,7 +826,7 @@ export default function DatabaseExplorerModal({
                             <tr>
                               <td
                                 colSpan={selectedTable.columns.length}
-                                className="px-3 py-10 text-center text-[12px] text-[var(--muted)]"
+                                className="px-3 py-10 text-center text-[14px] text-[var(--muted)]"
                               >
                                 No rows are available for this preview yet.
                               </td>
@@ -840,7 +840,7 @@ export default function DatabaseExplorerModal({
                                 {selectedTable.columns.map((column) => (
                                   <td
                                     key={`${selectedTable.id}-row-${rowIndex}-${column}`}
-                                    className="max-w-[260px] px-3 py-2 align-top font-mono text-[11px] leading-5 text-[var(--ink)]"
+                                    className="max-w-[260px] px-3 py-2 align-top font-mono text-[14px] leading-5 text-[var(--ink)]"
                                     title={renderCellValue(row[column])}
                                   >
                                     <div className="line-clamp-3 break-words">

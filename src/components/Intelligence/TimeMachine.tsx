@@ -67,7 +67,7 @@ export default function TimeMachine() {
   const selectedDate = bangkokDay;
 
   return (
-    <div className="relative h-9 shrink-0 flex items-center bg-black border-t border-[var(--line)] px-4 gap-4 select-none">
+    <div className="relative flex h-9 shrink-0 items-center gap-2 border-t border-[var(--line)] bg-black px-2 select-none sm:gap-4 sm:px-4">
       {/* TRANSITION OVERLAY */}
       <AnimatePresence>
         {transitionState === "entering-playback" && (
@@ -86,7 +86,7 @@ export default function TimeMachine() {
               transition={{ duration: 0.6, ease: "easeOut" }}
             />
             <motion.span
-              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[#f59e0b]"
+              className="relative z-10 text-[13px] font-black uppercase tracking-[0.3em] text-[#f59e0b]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
@@ -105,13 +105,13 @@ export default function TimeMachine() {
             transition={{ duration: 0.2 }}
           >
             <motion.div
-              className="absolute inset-0 bg-[#22c55e]/15"
+              className="absolute inset-0 bg-[var(--accent)]/10"
               initial={{ scaleX: 0, transformOrigin: "right" }}
               animate={{ scaleX: 1 }}
               transition={{ duration: 0.6, ease: "easeOut" }}
             />
             <motion.span
-              className="relative z-10 text-[9px] font-black uppercase tracking-[0.3em] text-[#22c55e]"
+              className="relative z-10 text-[13px] font-black uppercase tracking-[0.3em] text-[var(--accent)]"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.3 }}
@@ -123,15 +123,34 @@ export default function TimeMachine() {
       </AnimatePresence>
 
       {/* LEFT LABEL */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <Clock size={10} className="text-[var(--tech)]" />
-        <span className="text-[8px] font-black uppercase tracking-widest text-[var(--tech)]">
+      <div className="hidden items-center gap-1.5 shrink-0 sm:flex">
+        <Clock size={12} className="text-[var(--tech)]" />
+        <span className="text-[12px] font-black uppercase tracking-widest text-[var(--tech)]">
           Time Machine
         </span>
       </div>
 
       {/* CENTER: DAY CELLS */}
-      <div className="flex items-end gap-[2px] h-6 flex-1 justify-center">
+      <div
+        className="no-scrollbar flex h-6 flex-1 items-end justify-start gap-[2px] overflow-x-auto sm:justify-center"
+        role="listbox"
+        aria-label="Select historical date"
+        onKeyDown={(e) => {
+          if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+            e.preventDefault();
+            const currentIdx = selectedDate ? days.indexOf(selectedDate) : -1;
+            const nextIdx = e.key === "ArrowRight"
+              ? Math.min(days.length - 1, currentIdx + 1)
+              : Math.max(0, currentIdx - 1);
+            if (nextIdx >= 0 && nextIdx < days.length) {
+              selectBangkokDay(days[nextIdx]);
+              const container = e.currentTarget;
+              const buttons = container.querySelectorAll<HTMLButtonElement>('[role="option"]');
+              buttons[nextIdx]?.focus();
+            }
+          }
+        }}
+      >
         {days.map((day, i) => {
           const bucket = buckets[i];
           const count = bucket?.count ?? 0;
@@ -143,15 +162,17 @@ export default function TimeMachine() {
             <button
               key={day}
               type="button"
+              role="option"
               title={`${formatBangkokDayLabel(day)} — ${count} signals`}
               aria-label={`Replay ${formatBangkokDayLabel(day)}`}
-              aria-pressed={isSelected}
+              aria-selected={isSelected}
+              tabIndex={isSelected ? 0 : -1}
               data-testid={`time-machine-day-${day}`}
-              className="group relative flex flex-col items-center justify-end w-[16px] h-full cursor-pointer"
+              className="group relative flex h-full w-[14px] min-w-[14px] cursor-pointer flex-col items-center justify-end sm:w-[16px] sm:min-w-[16px]"
               onClick={() => selectBangkokDay(day)}
             >
               <div
-                className="w-[6px] rounded-[1px] transition-all duration-150"
+                className="w-[6px] transition-all duration-150 ease-out"
                 style={{
                   height: `${heightPct}%`,
                   backgroundColor: isSelected
@@ -161,10 +182,10 @@ export default function TimeMachine() {
                 }}
               />
               {isToday && (
-                <div className="absolute bottom-0 w-1 h-1 rounded-full bg-white/50" />
+                <div className="absolute bottom-0 h-1 w-1 bg-white/50" />
               )}
               {/* hover highlight */}
-              <div className="absolute inset-0 bg-white/[0.05] opacity-0 group-hover:opacity-100 transition-opacity rounded-sm" />
+              <div className="absolute inset-0 bg-white/[0.05] opacity-0 transition-opacity duration-150 ease-out group-hover:opacity-100" />
             </button>
           );
         })}
@@ -172,7 +193,7 @@ export default function TimeMachine() {
 
       {/* SELECTED DATE LABEL */}
       {selectedDate && (
-        <span className="text-[8px] font-mono tabular-nums uppercase tracking-wider text-white/50 shrink-0">
+        <span className="text-[12px] font-mono tabular-nums uppercase tracking-wider text-white/50 shrink-0">
           {formatBangkokDayLabel(selectedDate)}
         </span>
       )}
@@ -181,15 +202,15 @@ export default function TimeMachine() {
       <button
         type="button"
         onClick={clearTimeWindow}
-        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[8px] font-black uppercase tracking-widest transition-all shrink-0 ${
+        className={`flex shrink-0 items-center gap-1.5 border px-2.5 py-1 text-[12px] font-black uppercase tracking-widest transition-all duration-150 ease-out ${
           isLive
-            ? "border-[#22c55e]/40 bg-[#22c55e]/10 text-[#22c55e]"
+            ? "border-[var(--accent)] bg-black text-[var(--accent)]"
             : "border-white/15 bg-white/5 text-white/40 hover:text-white/70 hover:border-white/30"
         }`}
       >
         <span
-          className={`w-1.5 h-1.5 rounded-full ${
-            isLive ? "bg-[#22c55e] animate-pulse" : "bg-white/30"
+          className={`h-1.5 w-1.5 ${
+            isLive ? "bg-[var(--accent)] animate-pulse" : "bg-white/30"
           }`}
         />
         Live

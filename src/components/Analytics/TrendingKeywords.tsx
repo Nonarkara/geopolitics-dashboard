@@ -89,13 +89,13 @@ export default function TrendingKeywords() {
       <div className="flex items-center justify-between pb-2">
         <div>
           <div className="eyebrow">Local pulse</div>
-          <h3 className="pt-0.5 text-[13px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+          <h3 className="pt-0.5 text-[15px] font-bold tracking-[-0.02em] text-[var(--ink)]">
             Trending keywords
           </h3>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors" title="Refresh trends">
-            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
           <span className="live-badge">LIVE</span>
         </div>
@@ -115,18 +115,18 @@ export default function TrendingKeywords() {
               key={`${item.keyword}-${idx}`}
               className="flex items-center gap-2 py-2"
             >
-              <span className="text-[8px] font-mono tabular-nums text-[var(--dim)] w-3">
+              <span className="text-[12px] font-mono tabular-nums text-[var(--dim)] w-3">
                 {idx + 1}
               </span>
 
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`text-[7px] font-bold uppercase tracking-[0.12em] px-1 py-0 rounded ${CATEGORY_BG[item.category]} ${CATEGORY_COLORS[item.category]}`}
+                    className={`text-[12px] font-bold uppercase tracking-[0.12em] px-1 py-0 rounded ${CATEGORY_BG[item.category]} ${CATEGORY_COLORS[item.category]}`}
                   >
                     {item.category}
                   </span>
-                  <span className="truncate text-[10px] font-medium text-[var(--ink)]">
+                  <span className="truncate text-[13px] font-medium text-[var(--ink)]">
                     {item.keyword}
                   </span>
                 </div>
@@ -145,14 +145,14 @@ export default function TrendingKeywords() {
                       style={{ width: `${trafficToWidth(item.traffic)}%` }}
                     />
                   </div>
-                  <span className="text-[7px] font-mono tabular-nums text-[var(--muted)] shrink-0">
+                  <span className="text-[12px] font-mono tabular-nums text-[var(--muted)] shrink-0">
                     {item.traffic}
                   </span>
                 </div>
               </div>
 
               <DirIcon
-                size={10}
+                size={12}
                 className={
                   item.trendDirection === "up"
                     ? "text-[#f59e0b] shrink-0"
@@ -166,7 +166,7 @@ export default function TrendingKeywords() {
         })}
       </div>
 
-      <div className="mt-1 text-[7px] font-mono tracking-[0.1em] text-[var(--dim)]">
+      <div className="mt-1 text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
         Source: Google Trends TH + curated Phuket/Andaman topics · 5-min refresh
       </div>
     </section>

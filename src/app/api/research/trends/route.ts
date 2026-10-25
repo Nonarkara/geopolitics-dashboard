@@ -1,6 +1,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { queryTrends } from "../../../../lib/signal-archive";
+import { researchAnalysisDeps, researchUnavailable } from "../../../../lib/research-analysis";
 
 /**
  * GET /api/research/trends
@@ -14,21 +15,25 @@ import { queryTrends } from "../../../../lib/signal-archive";
  *   to      - ISO date (e.g. 2025-12-31)
  */
 export async function GET(request: NextRequest) {
+  if (!researchAnalysisDeps.isDatabaseConfigured()) return researchUnavailable({ trends: [], total: null });
   const { searchParams } = request.nextUrl;
+  try {
+    const trends = await queryTrends({
+      region: searchParams.get("region") ?? undefined,
+      from: searchParams.get("from") ?? undefined,
+      to: searchParams.get("to") ?? undefined,
+    });
 
-  const trends = await queryTrends({
-    region: searchParams.get("region") ?? undefined,
-    from: searchParams.get("from") ?? undefined,
-    to: searchParams.get("to") ?? undefined,
-  });
-
-  return NextResponse.json({
-    trends,
-    total: trends.length,
-    query: {
-      region: searchParams.get("region"),
-      from: searchParams.get("from"),
-      to: searchParams.get("to"),
-    },
-  });
+    return NextResponse.json({
+      trends,
+      total: trends.length,
+      query: {
+        region: searchParams.get("region"),
+        from: searchParams.get("from"),
+        to: searchParams.get("to"),
+      },
+    }, { headers: { "cache-control": "no-store" } });
+  } catch {
+    return researchUnavailable({ trends: [], total: null });
+  }
 }

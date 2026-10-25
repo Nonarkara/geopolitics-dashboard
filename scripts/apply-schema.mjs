@@ -9,6 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, "..");
 const ENV_PATH = path.join(ROOT_DIR, ".env");
+const ENV_LOCAL_PATH = path.join(ROOT_DIR, ".env.local");
 
 /** Schema files applied in order */
 const SCHEMA_FILES = [
@@ -53,6 +54,7 @@ function loadDotEnvFile(filepath) {
 
 async function main() {
   loadDotEnvFile(ENV_PATH);
+  loadDotEnvFile(ENV_LOCAL_PATH);
 
   const connectionString = process.env.DATABASE_URL?.trim();
   if (!connectionString) {

@@ -1,12 +1,10 @@
 import os
 import requests
 import psycopg2
-from datetime import datetime
 from dotenv import load_dotenv
 from common import (
     REQUEST_TIMEOUT_SECONDS,
     exit_with_error,
-    fallback_or_raise,
     is_value_configured,
     skip_job,
 )
@@ -14,54 +12,27 @@ from common import (
 load_dotenv()
 
 DB_URL = os.getenv('DATABASE_URL')
-# NASA FIRMS API requires a map_key
+# NASA FIRMS API requires a map_key for the area API. Without a key, the
+# live /api/fires route falls back to the keyless SE Asia CSV — the same
+# approach this script would take, but via the live route on the Worker.
+# The script below is the historical batch-ingest path; keep it as a
+# one-time operator tool for when a future Postgres is wired to the
+# production Worker.
 FIRMS_KEY = os.getenv('FIRMS_KEY', 'your_firms_key_here')
 
-def fetch_firms_data(area="Thailand"):
-    """Fetch fire data from NASA FIRMS (VIIRS/MODIS)."""
-    # Using the CSV API for simplicity, or JSON if preferred
-    # Area bounding box for Thailand roughly: 97, 5, 106, 21
-    url = f"https://firms.modaps.eosdis.nasa.gov/api/country/csv/{FIRMS_KEY}/VIIRS_SNPP/THA/1"
-    
-    if FIRMS_KEY == 'your_firms_key_here':
-        return fallback_or_raise(
-            "FIRMS_KEY is not configured.",
-            mock_firms_data,
-        )
+CSV_URL = "https://firms.modaps.eosdis.nasa.gov/data/active_fire/suomi-npp-viirs-c2/csv/SUOMI_VIIRS_C2_SouthEast_Asia_24h.csv"
 
-    try:
-        response = requests.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
-        response.raise_for_status()
-        import csv
-        from io import StringIO
-        f = StringIO(response.text)
-        reader = csv.DictReader(f)
-        return list(reader)
-    except Exception as e:
-        return fallback_or_raise(
-            f"Error fetching FIRMS data: {e}",
-            mock_firms_data,
-        )
 
-def mock_firms_data():
-    return [
-        {
-            "latitude": "7.8804",
-            "longitude": "98.3923",
-            "bright_ti4": "310.5",
-            "acq_date": datetime.now().strftime('%Y-%m-%d'),
-            "acq_time": "0400",
-            "confidence": "nominal"
-        },
-        {
-            "latitude": "8.1132",
-            "longitude": "98.3057",
-            "bright_ti4": "308.2",
-            "acq_date": datetime.now().strftime('%Y-%m-%d'),
-            "acq_time": "1230",
-            "confidence": "low"
-        }
-    ]
+def fetch_firms_csv():
+    """Fetch the keyless SE Asia VIIRS CSV. Public, no key required."""
+    response = requests.get(CSV_URL, timeout=REQUEST_TIMEOUT_SECONDS)
+    response.raise_for_status()
+    import csv
+    from io import StringIO
+    f = StringIO(response.text)
+    reader = csv.DictReader(f)
+    return list(reader)
+
 
 def ingest_firms_data(data):
     if not data or not DB_URL:
@@ -96,20 +67,24 @@ def ingest_firms_data(data):
 
 def main():
     try:
-        if not is_value_configured(FIRMS_KEY, 'your_firms_key_here'):
+        # Note: this script now exclusively uses the keyless public CSV.
+        # The area API path (FIRMS_KEY-gated) lives in /api/fires on the
+        # Worker where it can also serve the 15-min cached response to
+        # the dashboard. The CSV path is the universal fallback and is
+        # the same data source the live route uses when no key is set.
+        if not is_value_configured(DB_URL, ''):
             return skip_job(
-                "Skipping FIRMS ingestion: FIRMS_KEY is not configured. Thermal hotspots remain an optional feed."
+                "Skipping FIRMS ingestion: DATABASE_URL is not configured. "
+                "Live /api/fires route on the Worker continues to serve the "
+                "keyless SE Asia VIIRS CSV directly to the dashboard."
             )
 
-        data = fetch_firms_data()
-        if not DB_URL:
-            print(f"Dry run: fetched {len(data)} fire events but no DATABASE_URL found.")
-            return 0
-
+        data = fetch_firms_csv()
         ingest_firms_data(data)
         return 0
     except Exception as error:
         return exit_with_error("FIRMS ingestion failed", error)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

@@ -1,11 +1,9 @@
 import { query } from "./db";
+import { loadStoredMarketIndicatorSnapshot } from "./history-store";
 import { getErrorMessage } from "./errors";
 import {
   fallbackBriefing,
-  fallbackEconomicIndicators,
   fallbackIncidents,
-  fallbackNews,
-  fallbackTicker,
 } from "./mock-data";
 import { fetchReferenceEconomicIndicators } from "./reference-data";
 import type {
@@ -28,16 +26,6 @@ interface IncidentRow {
   lat: number | null;
   location: string | null;
   event_date: string | null;
-}
-
-interface MarketIndicatorRow {
-  label: string;
-  value: number;
-  unit: string | null;
-  category: string | null;
-  source: string | null;
-  province: string | null;
-  previous_value: number | null;
 }
 
 function formatIndicatorValue(value: number | string, unit?: string | null) {
@@ -117,12 +105,15 @@ export async function loadThailandIncidents(): Promise<IncidentFeature[]> {
         };
       });
 
-    return incidents.length > 0 ? incidents : fallbackIncidents;
+    // A genuinely empty result set is not fabricated — return it as-is so the
+    // caller (and the API boundary's X-Data-Source header) reports it as live.
+    return incidents;
   } catch (error) {
-    // Never swallow the DB failure silently — the caller substitutes mock
-    // data, so the real error must at least reach the server logs.
+    // Never swallow the DB failure silently. The fallbackIncidents reference
+    // is a sentinel: /api/incidents detects it and fails closed with an empty
+    // payload; only the static demo renders the mock records.
     console.error(
-      "Incident query failed — serving mock incidents:",
+      "Incident query failed — API will report unavailable:",
       getErrorMessage(error),
     );
     return fallbackIncidents;
@@ -137,65 +128,12 @@ export async function loadThailandEconomics(): Promise<EconomicIndicator[]> {
       return indicators;
     }
   } catch {
-    // Fall through to DB-backed and mock values.
+    // Fall through to DB-backed values.
   }
 
-  try {
-    const res = await query<MarketIndicatorRow>(`
-      WITH ranked_market_data AS (
-        SELECT
-          indicator as label,
-          value,
-          unit,
-          category,
-          source,
-          province,
-          LAG(value) OVER (
-            PARTITION BY indicator, COALESCE(province, '')
-            ORDER BY ref_date, created_at
-          ) as previous_value,
-          ROW_NUMBER() OVER (
-            PARTITION BY indicator, COALESCE(province, '')
-            ORDER BY ref_date DESC, created_at DESC
-          ) as latest_rank
-        FROM market_data
-      )
-      SELECT
-        label,
-        value,
-        unit,
-        category,
-        source,
-        province,
-        previous_value
-      FROM ranked_market_data
-      WHERE latest_rank = 1
-      ORDER BY category NULLS LAST, label
-      LIMIT 10
-    `);
+  const storedSnapshot = await loadStoredMarketIndicatorSnapshot();
 
-    const indicators = res.rows.map((row) => {
-      const change =
-        row.previous_value === null
-          ? 0
-          : Number((row.value - row.previous_value).toFixed(2));
-
-      return {
-        label: row.label,
-        value: row.value,
-        unit: row.unit,
-        category: row.category,
-        source: row.source,
-        province: row.province,
-        change,
-        up: change >= 0,
-      };
-    });
-
-    return indicators.length > 0 ? indicators : fallbackEconomicIndicators;
-  } catch {
-    return fallbackEconomicIndicators;
-  }
+  return storedSnapshot?.data ?? [];
 }
 
 export function buildThailandNews(
@@ -203,7 +141,11 @@ export function buildThailandNews(
   indicators: EconomicIndicator[],
 ): NewsResponse {
   if (incidents.length === 0) {
-    return fallbackNews;
+    return {
+      generatedAt: new Date().toISOString(),
+      news: [],
+      errorCode: "LIVE_DATA_UNAVAILABLE",
+    };
   }
 
   const fieldItems = incidents.slice(0, 4).map<NewsItem>((incident) => ({
@@ -247,7 +189,10 @@ export function buildThailandTicker(
   indicators: EconomicIndicator[],
 ): TickerResponse {
   if (incidents.length === 0 && indicators.length === 0) {
-    return fallbackTicker;
+    return {
+      generatedAt: new Date().toISOString(),
+      items: [],
+    };
   }
 
   const latestIncident = incidents[0];
@@ -275,7 +220,6 @@ export function buildThailandTicker(
         value: `${incidents.length} active`,
         delta:
           latestIncident?.properties.location ??
-          fallbackTicker.items[0]?.delta ??
           "monitor",
         tone: incidents.length >= 4 ? "up" : "neutral",
       },

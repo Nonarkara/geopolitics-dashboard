@@ -1,12 +1,24 @@
 
 import { NextResponse } from "next/server";
-import { fallbackNews } from "../../../lib/mock-data";
+import type { NewsResponse } from "../../../types/dashboard";
 import { buildNewsFromPackages } from "../../../lib/intelligence";
 
 export async function GET() {
   try {
-    return NextResponse.json(await buildNewsFromPackages());
+    const payload = await buildNewsFromPackages();
+    return NextResponse.json(payload, {
+      headers: {
+        "X-Data-Source": payload.news.length > 0 ? "live" : "unavailable",
+      },
+    });
   } catch {
-    return NextResponse.json(fallbackNews, { status: 200 });
+    const empty: NewsResponse = {
+      news: [],
+      generatedAt: new Date().toISOString(),
+      errorCode: "LIVE_DATA_UNAVAILABLE",
+    };
+    return NextResponse.json(empty, {
+      headers: { "X-Data-Source": "unavailable" },
+    });
   }
 }

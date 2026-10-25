@@ -4,8 +4,12 @@ import Image from "next/image";
 import { useState } from "react";
 import { Camera, ExternalLink, MapPin, RefreshCw } from "lucide-react";
 import type { PublicCamera } from "../../types/dashboard";
+import { CameraSkeleton } from "../Common/LoadingSkeleton";
 import { FreshnessDot } from "../Common/ProvenanceBadge";
 import { useCriticalCameras } from "./useCriticalCameras";
+import { useTimeWindow } from "../../contexts/TimeWindowContext";
+import { formatBangkokDayLabel } from "../../lib/time-window";
+import { useNow } from "../../hooks/useNow";
 
 function formatGeneratedAt(value: string | null) {
   if (!value) {
@@ -31,8 +35,12 @@ function formatAbsoluteTime(value: string) {
   return `${day} ${mon} ${time}`;
 }
 
-function formatRelativeAge(value: string) {
-  const diffMs = Math.max(0, Date.now() - new Date(value).getTime());
+function formatRelativeAge(value: string, nowMs: number | null) {
+  if (nowMs === null) {
+    return "(syncing)";
+  }
+
+  const diffMs = Math.max(0, nowMs - new Date(value).getTime());
   const diffMinutes = Math.round(diffMs / 60000);
 
   if (diffMinutes <= 1) {
@@ -75,14 +83,14 @@ function validationClass(validationState: PublicCamera["validationState"]) {
   return validationState === "candidate" ? "stat-pill warning" : "stat-pill safe";
 }
 
-function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
+function CriticalCameraCard({ camera, nowMs }: { camera: PublicCamera; nowMs: number | null }) {
   const [imageFailed, setImageFailed] = useState(false);
   const resolvedStatus = imageFailed ? "offline" : camera.status;
 
   return (
     <article
       data-testid={`critical-camera-card-${camera.id}`}
-      className="flex h-full w-[200px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[linear-gradient(180deg,#0b1018_0%,#121925_100%)] text-white"
+      className="flex h-full w-[200px] shrink-0 flex-col overflow-hidden border border-[rgba(255,255,255,0.08)] bg-[var(--bg-panel)] text-white"
     >
       <div className="relative h-[110px] overflow-hidden bg-black">
         {camera.snapshotUrl && !imageFailed ? (
@@ -99,20 +107,20 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
         ) : (
           <div className="flex h-full w-full items-center justify-center bg-[rgba(255,255,255,0.04)]">
             <div className="flex flex-col items-center gap-1 text-white/45">
-              <Camera size={18} />
-              <span className="text-[8px] font-black uppercase tracking-[0.16em]">
+              <Camera size={19} />
+              <span className="text-[12px] font-black uppercase tracking-[0.16em]">
                 Feed unavailable
               </span>
             </div>
           </div>
         )}
 
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(4,8,15,0.18)_0%,rgba(4,8,15,0.1)_35%,rgba(4,8,15,0.88)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-black/45" />
         <div className="absolute inset-x-0 top-0 flex items-center justify-between gap-2 px-2 py-2">
-          <span className={`${statusClass(resolvedStatus)} text-[7px]`}>
+          <span className={`${statusClass(resolvedStatus)} text-[12px]`}>
             {resolvedStatus}
           </span>
-          <span className={`${focusClass(camera.category)} text-[7px]`}>
+          <span className={`${focusClass(camera.category)} text-[12px]`}>
             {camera.focusArea ?? camera.category}
           </span>
         </div>
@@ -121,35 +129,35 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
       <div className="flex flex-1 flex-col gap-1.5 px-2.5 py-2">
         <div className="min-h-0">
           <div className="flex items-center justify-between gap-2">
-            <div className="text-[8px] font-black uppercase tracking-[0.18em] text-white/40">
+            <div className="text-[12px] font-black uppercase tracking-[0.18em] text-white/40">
               {camera.locationLabel ?? camera.provider}
             </div>
-            <span className={`${validationClass(camera.validationState)} text-[7px]`}>
+            <span className={`${validationClass(camera.validationState)} text-[12px]`}>
               {camera.validationState}
             </span>
           </div>
-          <h3 className="mt-1 text-[12px] font-black uppercase leading-tight tracking-tight text-white">
+          <h3 className="mt-1 text-[14px] font-black uppercase leading-tight tracking-tight text-white">
             {camera.label}
           </h3>
         </div>
 
-        <p className="h-[38px] overflow-hidden text-[9px] leading-[1.35] text-white/64">
+        <p className="h-[38px] overflow-hidden text-[13px] leading-[1.35] text-white/64">
           {camera.strategicNote ?? camera.provider}
         </p>
 
-        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[8px] font-mono tabular-nums text-white/38">
+        <div className="mt-auto flex items-center justify-between gap-2 border-t border-white/10 pt-1.5 text-[12px] font-mono tabular-nums text-white/38">
           <span>
             {formatAbsoluteTime(camera.lastCheckedAt)}{" "}
-            <span className="text-white/25">{formatRelativeAge(camera.lastCheckedAt)}</span>
+            <span className="text-white/25">{formatRelativeAge(camera.lastCheckedAt, nowMs)}</span>
           </span>
           <a
             href={camera.sourcePageUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-white/82 transition-colors hover:text-[#fda4af]"
+            className="inline-flex items-center gap-1 text-white/82 transition-colors hover:text-[var(--accent)]"
             aria-label={`Open source feed for ${camera.label}`}
           >
-            <ExternalLink size={11} />
+            <ExternalLink size={13} />
             Source
           </a>
         </div>
@@ -159,7 +167,9 @@ function CriticalCameraCard({ camera }: { camera: PublicCamera }) {
 }
 
 export default function CriticalCameraRail() {
+  const { isHistorical, timeWindow } = useTimeWindow();
   const { cameras, generatedAt, reload } = useCriticalCameras();
+  const nowMs = useNow(60_000);
   const verifiedCount = cameras.filter(
     (camera) => camera.validationState === "verified",
   ).length;
@@ -170,14 +180,19 @@ export default function CriticalCameraRail() {
   return (
     <section
       data-testid="critical-camera-rail"
-      className="flex h-full flex-col overflow-hidden bg-[linear-gradient(180deg,#05070b_0%,#0b1017_100%)] text-white select-none"
+      className="flex h-full flex-col overflow-hidden bg-[var(--bg-panel)] text-white select-none"
     >
       <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2.5">
         <div>
           <div className="eyebrow mb-1">Critical CCTV</div>
-          <div className="text-[11px] font-black uppercase tracking-[0.03em] text-white">
+          <div className="text-[14px] font-black uppercase tracking-[0.03em] text-white">
             Border chokepoints, scout coverage, and live visual confirmation
           </div>
+          {isHistorical && timeWindow ? (
+            <div className="mt-1 text-[12px] font-black uppercase tracking-[0.18em] text-[var(--accent)]">
+              Live reference only during playback for {formatBangkokDayLabel(timeWindow.bangkokDay)}
+            </div>
+          ) : null}
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
@@ -185,22 +200,22 @@ export default function CriticalCameraRail() {
           <button
             type="button"
             onClick={() => void reload()}
-            className="inline-flex items-center gap-2 border border-white/12 bg-white/5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-white/65 transition-colors hover:border-white/25 hover:text-white"
+            className="inline-flex items-center gap-2 border border-white/12 bg-white/5 px-3 py-1 text-[13px] font-black uppercase tracking-[0.16em] text-white/65 transition-colors hover:border-white/25 hover:text-white"
             aria-label="Refresh critical camera feeds"
           >
-            <RefreshCw size={12} />
+            <RefreshCw size={14} />
             {formatGeneratedAt(generatedAt)}
           </button>
         </div>
       </div>
 
-      <div className="flex items-center gap-4 border-b border-white/10 px-3 py-2 text-[8px] font-mono uppercase tracking-[0.14em] text-white/42">
+      <div className="flex items-center gap-4 border-b border-white/10 px-3 py-2 text-[12px] font-mono uppercase tracking-[0.14em] text-white/42">
         <div className="inline-flex items-center gap-1.5">
-          <Camera size={11} className="text-[#f97316]" />
+          <Camera size={13} className="text-[var(--accent)]" />
           {cameras.length || 0} feeds
         </div>
         <div className="inline-flex items-center gap-1.5">
-          <MapPin size={11} className="text-[#67e8f9]" />
+          <MapPin size={13} className="text-white/60" />
           {verifiedCount} verified / {candidateCount} scout
         </div>
       </div>
@@ -209,12 +224,14 @@ export default function CriticalCameraRail() {
         {cameras.length > 0 ? (
           <div className="no-scrollbar flex h-full gap-2.5 overflow-x-auto">
             {cameras.map((camera) => (
-              <CriticalCameraCard key={camera.id} camera={camera} />
+              <CriticalCameraCard key={camera.id} camera={camera} nowMs={nowMs} />
             ))}
           </div>
         ) : (
-          <div className="flex h-full items-center justify-center border border-white/10 bg-white/5">
-            <span className="eyebrow">Pulling public camera feeds</span>
+          <div className="flex gap-2 px-3 py-2">
+            <CameraSkeleton />
+            <CameraSkeleton />
+            <CameraSkeleton />
           </div>
         )}
       </div>

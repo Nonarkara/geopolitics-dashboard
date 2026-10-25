@@ -67,12 +67,12 @@ export default function EconomicMonitor() {
         {indicators.slice(0, 5).map((item) => (
           <div key={item.label} className="flex items-center justify-between border-b border-[var(--line-dim)] pb-1">
             <div className="min-w-0">
-              <div className="text-[7px] font-black uppercase tracking-widest opacity-30">{item.category ?? "REF"}</div>
-              <div className="text-[10px] font-black truncate">{item.label}</div>
+              <div className="text-[12px] font-black uppercase tracking-widest opacity-30">{item.category ?? "REF"}</div>
+              <div className="text-[13px] font-black truncate">{item.label}</div>
             </div>
             <div className="text-right shrink-0 ml-2">
-              <div className="text-[13px] font-black tabular-nums leading-none">{item.value}</div>
-              <span className={`text-[8px] font-black tabular-nums ${item.up ? "text-[var(--safe)]" : "text-[var(--accent)]"}`}>
+              <div className="text-[15px] font-black tabular-nums leading-none">{item.value}</div>
+              <span className={`text-[12px] font-black tabular-nums ${item.up ? "text-[var(--safe)]" : "text-[var(--accent)]"}`}>
                 {item.up ? "\u25B2" : "\u25BC"} {item.change}
               </span>
             </div>
@@ -82,12 +82,12 @@ export default function EconomicMonitor() {
 
       {/* GDP mini strip */}
       <div className="shrink-0 pt-1 border-t border-[var(--line-dim)]">
-        <div className="text-[6px] font-black opacity-25 uppercase tracking-widest mb-0.5">ASEAN GDP TOP 5</div>
+        <div className="text-[11px] font-black opacity-25 uppercase tracking-widest mb-0.5">ASEAN GDP TOP 5</div>
         <div className="flex gap-2">
           {gdpData.slice(0, 5).map((d) => (
             <div key={d.countryCode} className="text-center">
-              <div className="text-[7px] font-black opacity-40">{d.countryCode}</div>
-              <div className="text-[8px] font-black tabular-nums">{formatGdpCompact(d.gdpUsd)}</div>
+              <div className="text-[12px] font-black opacity-40">{d.countryCode}</div>
+              <div className="text-[12px] font-black tabular-nums">{formatGdpCompact(d.gdpUsd)}</div>
             </div>
           ))}
         </div>

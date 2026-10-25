@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { archiveSignalBatch, type ArchiveSignal } from "../../../../lib/signal-archive";
 import { logFeedHealth } from "../../../../lib/supabase";
+import type { TrafficIncident } from "../../../../types/dashboard";
 
 export const revalidate = 120;
 
@@ -18,18 +19,6 @@ interface LongdoEvent {
   stop: string;
   icon: string;
   severity: number | string;
-}
-
-export interface TrafficIncident {
-  id: string;
-  title: string;
-  description: string;
-  lat: number;
-  lng: number;
-  category: string;
-  severity: number;
-  start: string;
-  stop: string;
 }
 
 const BORDER_BOUNDS = {

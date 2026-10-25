@@ -35,13 +35,13 @@ export default function GlobalPulse() {
   }, []);
 
   const WeatherIcon = ({ condition }: { condition?: string }) => {
-    if (!condition) return <Minus size={10} className="opacity-20" />;
+    if (!condition) return <Minus size={12} className="opacity-20" />;
     const c = condition.toLowerCase();
-    if (c.includes("clear") || c.includes("sun")) return <Sun size={10} className="text-orange-400" />;
-    if (c.includes("rain") || c.includes("shower")) return <CloudRain size={10} className="text-blue-400" />;
-    if (c.includes("storm")) return <Zap size={10} className="text-yellow-400" />;
-    if (c.includes("wind")) return <Wind size={10} className="text-teal-400" />;
-    return <Cloud size={10} className="text-gray-400" />;
+    if (c.includes("clear") || c.includes("sun")) return <Sun size={12} className="text-orange-400" />;
+    if (c.includes("rain") || c.includes("shower")) return <CloudRain size={12} className="text-blue-400" />;
+    if (c.includes("storm")) return <Zap size={12} className="text-yellow-400" />;
+    if (c.includes("wind")) return <Wind size={12} className="text-teal-400" />;
+    return <Cloud size={12} className="text-gray-400" />;
   };
 
   const getAqiColor = (aqi: number) => {
@@ -59,10 +59,10 @@ export default function GlobalPulse() {
     <div className="flex items-center gap-0 h-full overflow-hidden bg-white border-x border-[var(--line-dim)]">
       <div className="flex bg-black text-white h-full px-6 items-center gap-4 border-r border-black shrink-0 relative z-10">
          <div className="flex flex-col">
-            <span className="text-[9px] font-black opacity-40 uppercase tracking-widest leading-none mb-1">REGION MAX AQI</span>
+            <span className="text-[13px] font-black opacity-40 uppercase tracking-widest leading-none mb-1">REGION MAX AQI</span>
             <div className="flex items-center gap-3">
-               <span className="text-[17px] font-black leading-none text-[var(--accent)] tabular-nums">{maxAqi?.aqi || "--"}</span>
-               <span className="text-[11px] font-black uppercase opacity-60 truncate max-w-[100px]">{maxAqi?.label || "SYSTEM"}</span>
+               <span className="text-[19px] font-black leading-none text-[var(--accent)] tabular-nums">{maxAqi?.aqi || "--"}</span>
+               <span className="text-[14px] font-black uppercase opacity-60 truncate max-w-[100px]">{maxAqi?.label || "SYSTEM"}</span>
             </div>
          </div>
       </div>
@@ -79,22 +79,22 @@ export default function GlobalPulse() {
           return (
             <div key={i} className="flex items-center gap-3 shrink-0 py-2">
               <div className="flex flex-col">
-                <span className="text-[9px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
-                <span className="text-[11px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
+                <span className="text-[13px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
+                <span className="text-[14px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
               </div>
               
               <div className="h-4 w-[1px] bg-black opacity-5" />
               
               <div className="flex items-center gap-2">
                  <div className="flex flex-col items-center">
-                    <span className="text-[8px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
-                    <span className={`text-[11px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
+                    <span className="text-[12px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
+                    <span className={`text-[14px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
                        {p.aqi}
                     </span>
                  </div>
                  <div className="flex flex-col items-center">
                     <WeatherIcon condition={p.condition} />
-                    <span className="text-[11px] font-bold tabular-nums leading-none mt-0.5">
+                    <span className="text-[14px] font-bold tabular-nums leading-none mt-0.5">
                        {p.temp ?? "--"}°
                     </span>
                  </div>
@@ -117,20 +117,20 @@ export default function GlobalPulse() {
           return (
             <div key={`dup-${i}`} className="flex items-center gap-3 shrink-0 py-2">
               <div className="flex flex-col">
-                <span className="text-[7px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
-                <span className="text-[10px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
+                <span className="text-[12px] font-black opacity-30 uppercase tracking-widest">{p.label}</span>
+                <span className="text-[13px] font-black tabular-nums tracking-tighter leading-none">{localTime}</span>
               </div>
               <div className="h-4 w-[1px] bg-black opacity-5" />
               <div className="flex items-center gap-2">
                  <div className="flex flex-col items-center">
-                    <span className="text-[7px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
-                    <span className={`text-[9px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
+                    <span className="text-[12px] font-black opacity-20 uppercase leading-none mb-0.5">AQI</span>
+                    <span className={`text-[13px] font-black tabular-nums leading-none ${getAqiColor(p.aqi)}`}>
                        {p.aqi}
                     </span>
                  </div>
                  <div className="flex flex-col items-center">
                     <WeatherIcon condition={p.condition} />
-                    <span className="text-[9px] font-bold tabular-nums leading-none mt-0.5">
+                    <span className="text-[13px] font-bold tabular-nums leading-none mt-0.5">
                        {p.temp ?? "--"}°
                     </span>
                  </div>

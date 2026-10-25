@@ -5,12 +5,13 @@ import { fallbackIncidents } from "../../../lib/mock-data";
 
 export async function GET() {
   const data = await loadThailandIncidents();
-  // loadThailandIncidents() returns the fallbackIncidents reference on both the
-  // empty-rows and DB-error paths, so reference equality tells us the response
-  // is fabricated. Mark it at the API boundary so a caller (or a screenshot
-  // consumer) can never mistake mock records for real observations.
+  // loadThailandIncidents() returns the fallbackIncidents reference on the
+  // DB-error path. Fabricated records must never leave this boundary: fail
+  // closed with an empty payload and an honest header instead.
   const isMock = data === fallbackIncidents;
-  return NextResponse.json(data, {
-    headers: { "X-Data-Source": isMock ? "mock" : "live" },
+  return NextResponse.json(isMock ? [] : data, {
+    headers: {
+      "X-Data-Source": !isMock && data.length > 0 ? "live" : "unavailable",
+    },
   });
 }

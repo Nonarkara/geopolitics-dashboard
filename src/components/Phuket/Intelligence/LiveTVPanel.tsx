@@ -157,7 +157,7 @@ function TVSlot({
         {error ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
             <Tv size={compact ? 14 : 16} className="text-[#ef4444]" />
-            <span className="text-[9px] text-[var(--muted)]">Offline</span>
+            <span className="text-[13px] text-[var(--muted)]">Offline</span>
           </div>
         ) : visible && embedUrl ? (
           <iframe
@@ -197,20 +197,20 @@ function TVSlot({
         <div className="flex min-w-0 flex-col">
           <div className="flex items-center gap-1">
             <span
-              className={`${compact ? "text-[6px]" : "text-[7px]"} font-bold uppercase tracking-[0.1em]`}
+              className={`${compact ? "text-[11px]" : "text-[12px]"} font-bold uppercase tracking-[0.1em]`}
               style={{ color: channel.color }}
             >
               {channel.code}
             </span>
             <span
-              className={`${compact ? "text-[7px]" : "text-[8px]"} truncate font-bold uppercase tracking-[0.1em] text-[var(--muted)]`}
+              className={`${compact ? "text-[12px]" : "text-[12px]"} truncate font-bold uppercase tracking-[0.1em] text-[var(--muted)]`}
             >
               {channel.name}
             </span>
           </div>
           <span className="mt-0.5 flex items-center gap-0.5">
             <span className="inline-block h-1 w-1 animate-pulse rounded-full bg-[#ef4444]" />
-            <span className="text-[6px] font-bold uppercase tracking-[0.15em] text-[var(--dim)]">
+            <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-[var(--dim)]">
               LIVE
             </span>
           </span>
@@ -270,10 +270,10 @@ export default function LiveTVPanel({
         }`}
       >
         <div className="flex items-center gap-2">
-          <Tv size={12} className="text-[var(--cool)]" />
+          <Tv size={14} className="text-[var(--cool)]" />
           <div className="eyebrow">Thailand / south</div>
         </div>
-        <span className="text-[7px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
+        <span className="text-[12px] font-mono uppercase tracking-[0.12em] text-[var(--dim)]">
           6 channels
         </span>
       </div>
@@ -289,7 +289,7 @@ export default function LiveTVPanel({
       </div>
 
       <div
-        className={`${compact ? "mt-1 text-[6px]" : "mt-1 text-[7px]"} font-mono tracking-[0.1em] text-[var(--dim)]`}
+        className={`${compact ? "mt-1 text-[11px]" : "mt-1 text-[12px]"} font-mono tracking-[0.1em] text-[var(--dim)]`}
       >
         Source: YouTube Live feeds with strong Phuket and southern Thailand coverage
       </div>

@@ -14,6 +14,7 @@ interface MarketIndicatorRow {
   source: string | null;
   province: string | null;
   previous_value: number | null;
+  snapshot_at?: string | null;
 }
 
 interface MacroCountryRow {
@@ -24,6 +25,17 @@ interface MacroCountryRow {
   gdp_year: number;
   gdp_per_capita_year: number;
   source: string;
+  snapshot_at?: string | null;
+}
+
+export interface StoredMarketIndicatorSnapshot {
+  generatedAt: string | null;
+  data: EconomicIndicator[];
+}
+
+export interface StoredAseanGdpSnapshot {
+  generatedAt: string | null;
+  data: AseanGdpDatum[];
 }
 
 interface CountryEconomicIndicatorRow {
@@ -125,6 +137,12 @@ export async function persistMarketIndicators(
 }
 
 export async function loadStoredMarketIndicators() {
+  const snapshot = await loadStoredMarketIndicatorSnapshot();
+
+  return snapshot?.data ?? null;
+}
+
+export async function loadStoredMarketIndicatorSnapshot() {
   if (!isDatabaseConfigured) {
     return null;
   }
@@ -139,6 +157,7 @@ export async function loadStoredMarketIndicators() {
           category,
           source,
           province,
+          created_at,
           LAG(value) OVER (
             PARTITION BY indicator, COALESCE(province, '')
             ORDER BY ref_date, created_at
@@ -154,16 +173,23 @@ export async function loadStoredMarketIndicators() {
         value,
         unit,
         category,
-        source,
-        province,
-        previous_value
+          source,
+          province,
+          previous_value,
+          created_at as snapshot_at
       FROM ranked_market_data
       WHERE latest_rank = 1
       ORDER BY category NULLS LAST, label
       LIMIT 10
     `);
 
-    return res.rows.map(mapMarketIndicatorRow);
+    return {
+      generatedAt:
+        res.rows
+          .map((row) => row.snapshot_at)
+          .find((value): value is string => typeof value === "string") ?? null,
+      data: res.rows.map(mapMarketIndicatorRow),
+    } satisfies StoredMarketIndicatorSnapshot;
   } catch {
     return null;
   }
@@ -216,6 +242,12 @@ export async function persistAseanGdpSnapshot(
 }
 
 export async function loadLatestStoredAseanGdpSnapshot() {
+  const snapshot = await loadLatestStoredAseanGdpSnapshotWithTimestamp();
+
+  return snapshot?.data ?? null;
+}
+
+export async function loadLatestStoredAseanGdpSnapshotWithTimestamp() {
   if (!isDatabaseConfigured) {
     return null;
   }
@@ -231,6 +263,7 @@ export async function loadLatestStoredAseanGdpSnapshot() {
           gdp_year,
           gdp_per_capita_year,
           source,
+          captured_at,
           ROW_NUMBER() OVER (
             PARTITION BY country_code
             ORDER BY GREATEST(gdp_year, gdp_per_capita_year) DESC, captured_at DESC
@@ -244,23 +277,30 @@ export async function loadLatestStoredAseanGdpSnapshot() {
         gdp_per_capita_usd,
         gdp_year,
         gdp_per_capita_year,
-        source
+        source,
+        captured_at as snapshot_at
       FROM ranked_macro
       WHERE latest_rank = 1
       ORDER BY gdp_usd DESC, country_code ASC
     `);
 
-    return res.rows.map(
-      (row): AseanGdpDatum => ({
-        countryCode: row.country_code,
-        country: row.country,
-        gdpUsd: row.gdp_usd,
-        gdpPerCapitaUsd: row.gdp_per_capita_usd,
-        gdpYear: row.gdp_year,
-        gdpPerCapitaYear: row.gdp_per_capita_year,
-        source: row.source,
-      }),
-    );
+    return {
+      generatedAt:
+        res.rows
+          .map((row) => row.snapshot_at)
+          .find((value): value is string => typeof value === "string") ?? null,
+      data: res.rows.map(
+        (row): AseanGdpDatum => ({
+          countryCode: row.country_code,
+          country: row.country,
+          gdpUsd: row.gdp_usd,
+          gdpPerCapitaUsd: row.gdp_per_capita_usd,
+          gdpYear: row.gdp_year,
+          gdpPerCapitaYear: row.gdp_per_capita_year,
+          source: row.source,
+        }),
+      ),
+    } satisfies StoredAseanGdpSnapshot;
   } catch {
     return null;
   }

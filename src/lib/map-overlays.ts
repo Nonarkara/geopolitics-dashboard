@@ -4,10 +4,10 @@ import type {
   MapOverlayKind,
 } from "../types/dashboard";
 
-const NASA_GIBS_SAFE_DATE = "2024-03-01";
-
 function getSafeDate() {
-  return NASA_GIBS_SAFE_DATE;
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - 2);
+  return date.toISOString().slice(0, 10);
 }
 
 function rasterOverlay(overlay: Omit<MapOverlay, "kind" | "updatedAt">): MapOverlay {
@@ -72,9 +72,9 @@ export function buildMapOverlayCatalog(
       defaultOpacity: 0.72,
       enabledByDefault: false,
       maxZoom: 8,
-      timeMode: "dated",
+      timeMode: "default",
       tileTemplate:
-        `https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief/default/${focusDate}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpeg`,
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/BlueMarble_ShadedRelief/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",
     }),
     rasterOverlay({
       id: "vegetationIndex",
@@ -106,7 +106,7 @@ export function buildMapOverlayCatalog(
       maxZoom: 8,
       timeMode: "default",
       tileTemplate:
-        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_AtSensor_M15/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png",
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_SNPP_DayNightBand_AtSensor_M15/default/default/GoogleMapsCompatible_Level8/{z}/{y}/{x}.jpg",
     }),
     rasterOverlay({
       id: "precipitationRate",

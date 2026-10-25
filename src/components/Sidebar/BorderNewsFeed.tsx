@@ -25,12 +25,14 @@ const FRONTIER_COLORS: Record<BorderAreaId, string> = {
   "myanmar-frontier": "var(--accent)",
   "cambodia-frontier": "var(--hazard)",
   "malaysia-frontier": "var(--tech)",
+  "deep-south": "var(--hazard)",
 };
 
 const FRONTIER_LABELS: Record<BorderAreaId, string> = {
   "myanmar-frontier": "MYA",
   "cambodia-frontier": "KHM",
   "malaysia-frontier": "MYS",
+  "deep-south": "DPS",
 };
 
 function timeAgo(isoDate: string) {
@@ -89,7 +91,7 @@ export default function BorderNewsFeed() {
     <section className="pt-3 border-t border-white/10">
       <div className="flex items-center justify-between mb-3">
         <div className="eyebrow text-white/90 flex items-center gap-2">
-          <Newspaper size={10} className="text-[var(--tech)]" />
+          <Newspaper size={12} className="text-[var(--tech)]" />
           Border News Feed
         </div>
         <span className="live-badge scale-75">LIVE</span>
@@ -103,10 +105,10 @@ export default function BorderNewsFeed() {
             className="flex items-center gap-1 px-1.5 py-0.5 border border-white/10"
             style={{ borderLeftColor: FRONTIER_COLORS[id], borderLeftWidth: "2px" }}
           >
-            <span className="text-[8px] font-black tracking-wider" style={{ color: FRONTIER_COLORS[id] }}>
+            <span className="text-[12px] font-black tracking-wider" style={{ color: FRONTIER_COLORS[id] }}>
               {FRONTIER_LABELS[id]}
             </span>
-            <span className="text-[8px] font-black tabular-nums opacity-40">
+            <span className="text-[12px] font-black tabular-nums opacity-40">
               {id === "myanmar-frontier" ? counts.myanmar : id === "cambodia-frontier" ? counts.cambodia : counts.malaysia}
             </span>
           </div>
@@ -116,11 +118,11 @@ export default function BorderNewsFeed() {
       {/* News items */}
       <div className="space-y-1">
         {loading && allSignals.length === 0 ? (
-          <div className="border border-white/10 bg-white/[0.06] p-2 text-[8px] text-white/30 animate-pulse">
+          <div className="border border-white/10 bg-white/[0.06] p-2 text-[12px] text-white/30 animate-pulse">
             Fetching border headlines…
           </div>
         ) : allSignals.length === 0 ? (
-          <div className="border border-white/10 bg-white/[0.06] p-2 text-[8px] text-white/30">
+          <div className="border border-white/10 bg-white/[0.06] p-2 text-[12px] text-white/30">
             No signals in current window
           </div>
         ) : (
@@ -135,22 +137,22 @@ export default function BorderNewsFeed() {
             >
               <div className="flex items-start gap-1.5">
                 <div className="flex-1 min-w-0">
-                  <div className="text-[9px] font-bold text-white/80 leading-tight line-clamp-2 group-hover:text-white">
+                  <div className="text-[13px] font-bold text-white/80 leading-tight line-clamp-2 group-hover:text-white">
                     {signal.title}
                   </div>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span
-                      className="text-[7px] font-black uppercase tracking-wider"
+                      className="text-[12px] font-black uppercase tracking-wider"
                       style={{ color: FRONTIER_COLORS[signal.areaId] }}
                     >
                       {FRONTIER_LABELS[signal.areaId]}
                     </span>
-                    <span className="text-[7px] text-white/25">{signal.source}</span>
-                    <span className="text-[7px] text-white/20">{timeAgo(signal.publishedAt)}</span>
+                    <span className="text-[12px] text-white/25">{signal.source}</span>
+                    <span className="text-[12px] text-white/20">{timeAgo(signal.publishedAt)}</span>
                   </div>
                 </div>
                 <ExternalLink
-                  size={7}
+                  size={10}
                   className="mt-0.5 shrink-0 text-white/15 group-hover:text-white/40"
                 />
               </div>

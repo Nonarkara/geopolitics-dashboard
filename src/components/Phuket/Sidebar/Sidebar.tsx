@@ -52,13 +52,13 @@ export default function Sidebar() {
         <div className="flex items-center justify-between">
             <div>
               <div className="eyebrow">Command</div>
-              <h1 className="pt-2 text-[22px] font-bold tracking-[-0.03em] text-[var(--ink)]">
+              <h1 className="pt-2 text-[24px] font-bold tracking-[-0.03em] text-[var(--ink)]">
                 Phuket Ops
               </h1>
             </div>
           <div className="live-badge">LIVE</div>
         </div>
-        <p className="pt-3 text-[12px] leading-5 text-[var(--muted)]">
+        <p className="pt-3 text-[14px] leading-5 text-[var(--muted)]">
           Map-led operating view for Phuket, Phang Nga, Krabi, Ranong, Surat
           Thani, and Trang. Read weather, tourism, safety, and economy together
           instead of in isolation.
@@ -108,11 +108,11 @@ export default function Sidebar() {
                       feed.status === "live" ? "bg-[#22c55e] animate-pulse" : "bg-[#ef4444]"
                     }`}
                   />
-                  <span className="text-[10px] font-medium text-[var(--ink)]">
+                  <span className="text-[13px] font-medium text-[var(--ink)]">
                     {feed.name}
                   </span>
                 </div>
-                <span className="text-[8px] font-mono tracking-[0.1em] text-[var(--dim)]">
+                <span className="text-[12px] font-mono tracking-[0.1em] text-[var(--dim)]">
                   {feed.interval}
                 </span>
               </div>
@@ -133,13 +133,13 @@ export default function Sidebar() {
                 className="border-b border-[var(--line)] pb-4 last:border-b-0"
               >
                 <div className="flex items-start gap-3">
-                  <span className="pt-0.5 text-[10px] font-mono tabular-nums text-[var(--dim)]">
+                  <span className="pt-0.5 text-[13px] font-mono tabular-nums text-[var(--dim)]">
                     {String(idx + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-3">
                       <span
-                        className={`text-[9px] font-semibold uppercase tracking-[0.16em] ${
+                        className={`text-[13px] font-semibold uppercase tracking-[0.16em] ${
                           incident.severity === "high"
                             ? "text-[#f59e0b]"
                             : "text-[var(--cool)]"
@@ -147,17 +147,17 @@ export default function Sidebar() {
                       >
                         {incident.type}
                       </span>
-                      <span className="text-[9px] font-mono tabular-nums text-[var(--dim)]">
+                      <span className="text-[13px] font-mono tabular-nums text-[var(--dim)]">
                         {incident.time}
                       </span>
                     </div>
-                    <p className="pt-2 text-[12px] leading-5 text-[var(--muted)]">
+                    <p className="pt-2 text-[14px] leading-5 text-[var(--muted)]">
                       {incident.notes.length > 100
                         ? `${incident.notes.substring(0, 100)}...`
                         : incident.notes}
                     </p>
-                    <div className="pt-2 flex items-center gap-2 text-[10px] text-[var(--dim)]">
-                      <MapPin size={10} />
+                    <div className="pt-2 flex items-center gap-2 text-[13px] text-[var(--dim)]">
+                      <MapPin size={12} />
                       <span>{incident.location}</span>
                     </div>
                   </div>
@@ -170,12 +170,12 @@ export default function Sidebar() {
 
       <div className="border-t border-[var(--line)] p-5">
         <div className="flex items-start gap-3">
-          <Info size={14} className="mt-0.5 text-[var(--cool)]" />
+          <Info size={15} className="mt-0.5 text-[var(--cool)]" />
           <div>
-            <div className="text-[11px] font-medium text-[var(--ink)]">
+            <div className="text-[14px] font-medium text-[var(--ink)]">
               Data from weather, air-quality, mapping, mobility, and regional economics feeds
             </div>
-            <p className="pt-1 text-[11px] leading-4 text-[var(--dim)]">
+            <p className="pt-1 text-[14px] leading-4 text-[var(--dim)]">
               Phuket and Andaman operating starter system
             </p>
           </div>

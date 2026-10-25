@@ -1,16 +1,9 @@
-import type { Metadata } from "next";
-import { Josefin_Sans, Source_Sans_3, JetBrains_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
 
-const display = Josefin_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "700"],
-  variable: "--font-display-family",
-  display: "swap",
-});
-
-const body = Source_Sans_3({
+const body = Jost({
   subsets: ["latin"],
   weight: ["300", "400", "600", "700"],
   variable: "--font-body-family",
@@ -24,9 +17,72 @@ const mono = JetBrains_Mono({
   display: "swap",
 });
 
+const metadataBase = (() => {
+  const candidate =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+
+  if (!candidate) {
+    return undefined;
+  }
+
+  try {
+    return new URL(candidate);
+  } catch {
+    return undefined;
+  }
+})();
+
 export const metadata: Metadata = {
-  title: `Thailand Geopolitics ${formatDashboardVersion()} | Border Command Dashboard`,
-  description: "Advanced monitoring platform for regional stability and economic development.",
+  metadataBase,
+  title: {
+    default: `Thailand Geopolitical Watch ${formatDashboardVersion()}`,
+    template: `%s | Thailand Geopolitical Watch`,
+  },
+  description:
+    "Tri-border command dashboard for Thailand's Myanmar, Cambodia, and southern frontier theatres, combining live operations, historical playback, and executive-grade intelligence design.",
+  applicationName: "Thailand Geopolitical Watch",
+  keywords: [
+    "Thailand",
+    "geopolitics",
+    "border dashboard",
+    "Myanmar frontier",
+    "Cambodia frontier",
+    "southern theatre",
+    "command center",
+    "operations map",
+  ],
+  openGraph: {
+    title: "Thailand Geopolitical Watch",
+    description:
+      "Tri-border command dashboard for Thailand's live and archived border intelligence picture.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Thailand Geopolitical Watch",
+    description:
+      "Executive-grade tri-border operations dashboard for live monitoring and playback.",
+  },
+};
+
+// Responsive viewport config — supports iPad (768-1366 CSS px) and foldable
+// phones (Z Fold cover ~452 CSS px folded, main display ~1088+ CSS px unfolded).
+// `viewport-fit=cover` lets us draw under the iPad status bar / camera notch
+// when we want to. `interactive-widget=resizes-content` keeps the keyboard from
+// obscuring form inputs on foldable in laptop posture.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0a0e14" },
+    { media: "(prefers-color-scheme: light)", color: "#f8fafc" },
+  ],
 };
 
 export default function RootLayout({
@@ -35,8 +91,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
-      <body className="antialiased overflow-hidden">
+    <html lang="en" className={`${body.variable} ${mono.variable}`}>
+      <body className="overflow-hidden antialiased">
         {children}
       </body>
     </html>

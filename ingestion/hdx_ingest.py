@@ -136,22 +136,23 @@ def build_world_bank_indicator_url(indicator_id):
     return f"{WORLD_BANK_API_URL}/country/{countries}/indicator/{indicator_id}"
 
 
-def fetch_world_bank_series(indicator_id, max_rows="100"):
+def fetch_world_bank_series(indicator_id, max_rows="200"):
     payload = request_json(
         build_world_bank_indicator_url(indicator_id),
         params={
             "format": "json",
-            "mrnev": "1",
             "per_page": max_rows,
-            "source": "2",
+            "date": "2018:2024",
         },
     )
 
     if not isinstance(payload, list) or len(payload) < 2 or not isinstance(payload[1], list):
-        return fallback_or_raise(
-            "World Bank payload was not recognized.",
-            lambda: [],
-        )
+        # An indicator the World Bank has archived (e.g. GC.BAL.CASH.GD.ZS)
+        # or rate-limited will return a non-list / single-element payload.
+        # Skip per indicator rather than aborting the whole profile build,
+        # so other indicators in PROFILE_INDICATORS still land.
+        print(f"World Bank payload not recognized for {indicator_id}; skipping indicator.")
+        return []
 
     return payload[1]
 

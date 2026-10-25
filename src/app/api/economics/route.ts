@@ -2,7 +2,6 @@
 import { NextResponse } from "next/server";
 import { query } from "../../../lib/db";
 import { getErrorMessage } from "../../../lib/errors";
-import { fallbackEconomicIndicators } from "../../../lib/mock-data";
 import { fetchReferenceEconomicIndicators } from "../../../lib/reference-data";
 import type { EconomicIndicator } from "../../../types/dashboard";
 
@@ -79,11 +78,16 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json(
-      indicators.length > 0 ? indicators : fallbackEconomicIndicators,
-    );
+    return NextResponse.json(indicators, {
+      headers: {
+        "X-Data-Source": indicators.length > 0 ? "live" : "unavailable",
+      },
+    });
   } catch (error: unknown) {
     console.error("Economic query error:", getErrorMessage(error));
-    return NextResponse.json(fallbackEconomicIndicators, { status: 200 });
+    const empty: EconomicIndicator[] = [];
+    return NextResponse.json(empty, {
+      headers: { "X-Data-Source": "unavailable" },
+    });
   }
 }

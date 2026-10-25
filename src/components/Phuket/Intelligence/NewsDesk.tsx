@@ -77,10 +77,10 @@ export default function NewsDesk() {
           <div className="eyebrow">Live feed</div>
           <span className="live-badge">LIVE</span>
           <button type="button" onClick={handleRefresh} className="text-[var(--dim)] hover:text-[var(--cool)] transition-colors ml-auto" title="Refresh news feed">
-            <RefreshCw size={12} className={refreshing ? "animate-spin" : ""} />
+            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
           </button>
         </div>
-        <div className="pt-2 text-[16px] font-bold tracking-[-0.02em] text-[var(--ink)]">
+        <div className="pt-2 text-[18px] font-bold tracking-[-0.02em] text-[var(--ink)]">
           Local signal stream
         </div>
       </div>
@@ -94,25 +94,25 @@ export default function NewsDesk() {
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <span
-                  className={`rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-[0.18em] ${severityClass(item.severity)}`}
+                  className={`rounded-full px-2 py-0.5 text-[12px] font-bold uppercase tracking-[0.18em] ${severityClass(item.severity)}`}
                 >
                   {item.tag}
                 </span>
               </div>
-              <span className="text-[9px] font-mono tabular-nums text-[var(--dim)]">
+              <span className="text-[13px] font-mono tabular-nums text-[var(--dim)]">
                 {new Date(item.publishedAt).toLocaleDateString("en-US", {
                   month: "short",
                   day: "2-digit",
                 })}
               </span>
             </div>
-            <h3 className="pt-2 text-[13px] font-semibold leading-5 text-[var(--ink)]">
+            <h3 className="pt-2 text-[15px] font-semibold leading-5 text-[var(--ink)]">
               {item.title}
             </h3>
-            <p className="pt-1 text-[11px] leading-5 text-[var(--muted)]">
+            <p className="pt-1 text-[14px] leading-5 text-[var(--muted)]">
               {item.summary}
             </p>
-            <div className="pt-2 text-[9px] uppercase tracking-[0.16em] text-[var(--dim)]">
+            <div className="pt-2 text-[13px] uppercase tracking-[0.16em] text-[var(--dim)]">
               {item.source}
             </div>
           </article>
