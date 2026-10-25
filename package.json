@@ -19,6 +19,7 @@
     "test:ui": "playwright test",
     "test:layout": "node scripts/research-layout-gate.mjs",
     "test:map-layout": "node scripts/map-layout-gate.mjs",
+    "test:evidence-layout": "node scripts/evidence-layout-gate.mjs",
     "ingest:all": "python3 ingestion/run_all.py",
     "ingest:list": "python3 ingestion/run_all.py --list",
     "db:schema": "node scripts/apply-schema.mjs",

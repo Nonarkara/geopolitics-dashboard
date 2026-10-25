@@ -185,6 +185,7 @@ function buildFeedAlerts(
         Boolean(
           dataset &&
             (dataset.state === "stale" ||
+              dataset.state === "unavailable" ||
               dataset.state === "fallback" ||
               dataset.state === "disabled"),
         ),

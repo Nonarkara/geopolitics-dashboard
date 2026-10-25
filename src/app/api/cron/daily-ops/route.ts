@@ -2,6 +2,8 @@ import { NextRequest } from "next/server";
 import {
   runCronJobRequest,
   runMaintenanceCronRequest,
+  isAuthorizedCronRequest,
+  unauthorizedCronResponse,
 } from "../../../../lib/cron-jobs";
 
 export const dynamic = "force-dynamic";
@@ -9,6 +11,7 @@ export const revalidate = 0;
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
+  if (!await isAuthorizedCronRequest(request)) return unauthorizedCronResponse();
   const results: { job: string; ok: boolean; error?: string }[] = [];
 
   // Run daily-summary via standard cron handler
@@ -44,6 +47,6 @@ export async function GET(request: NextRequest) {
       jobs: results,
       completedAt: new Date().toISOString(),
     },
-    { status: allOk ? 200 : 207 },
+    { status: allOk ? 200 : 503, headers: { "cache-control": "no-store" } },
   );
 }

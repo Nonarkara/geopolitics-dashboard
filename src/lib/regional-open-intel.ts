@@ -8,6 +8,7 @@ import type {
 const OSIRIS_API = "https://osirisai.live/api";
 const SOURCE_URL = "https://osirisai.live/docs";
 const CACHE_TTL_MS = 5 * 60 * 1000;
+const RECOVERY_TTL_MS = 60 * 1000;
 const REGION = { west: 85, east: 115, south: 0, north: 30 } as const;
 
 let cache: { expiresAt: number; payload: RegionalOpenIntelResponse } | null = null;
@@ -48,7 +49,12 @@ async function fetchJson(path: "/satellites" | "/maritime") {
     throw new Error(`${path.slice(1)} upstream returned HTTP ${response.status}`);
   }
 
-  return response.json() as Promise<unknown>;
+  const payload: unknown = await response.json();
+  const valid = isRecord(payload) && (path === "/satellites"
+    ? Array.isArray(payload.satellites)
+    : Array.isArray(payload.ports) && Array.isArray(payload.chokepoints));
+  if (!valid) throw new Error(`${path.slice(1)} upstream schema mismatch`);
+  return payload;
 }
 
 function normalizeOrbitals(payload: unknown): OrbitalObject[] {
@@ -181,7 +187,10 @@ export async function loadRegionalOpenIntel(): Promise<RegionalOpenIntelResponse
 
   inFlight = loadFresh()
     .then((payload) => {
-      cache = { expiresAt: Date.now() + CACHE_TTL_MS, payload };
+      cache = payload.status === "unavailable" ? null : {
+        expiresAt: Date.now() + (payload.status === "live" ? CACHE_TTL_MS : RECOVERY_TTL_MS),
+        payload,
+      };
       return payload;
     })
     .finally(() => {

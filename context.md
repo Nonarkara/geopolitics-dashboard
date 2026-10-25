@@ -130,7 +130,7 @@ across intermediate widths using controlled short evidence, with captures at
 
 ## Existing regression suites
 
-- `npm run test:backend` — node:test unit suite (31 tests).
+- `npm run test:backend` — node:test unit suite (37 tests).
 - `npx playwright test tests/border-dashboard.spec.ts tests/phuket-dashboard.spec.ts`
   — browser suites (4 + 5). Playwright now collects only `.spec.ts` files;
   backend `.test.mts` files stay in the Node runner.
@@ -145,3 +145,57 @@ routes must pass before deploy. `follow-redirects` is patched to 1.16.1.
 Production npm audit: zero reported vulnerabilities. Full development-tool audit
 still reports seven findings (five high/two moderate); do not force its suggested
 adapter/CLI downgrades, which would undo the verified runtime repair.
+
+## MSH and pipeline audit, second wave — 2026-10-25
+
+Conservation: no production package may manufacture observations when an input
+is absent; no layout change may remove map layers, charts or source provenance.
+Design reference remains Braun ET66 / Reuters. Composition chosen: compact news
+identity plus native source-health disclosure, then a visible cited headline.
+Rejected: permanently expanded source chips that displace the headline, or
+moving all news into a modal. Jost/Mono remains the closed two-family stack.
+
+Borrowed mechanism: v3-global's `functions/_lib/edgeCache.mjs` distinguishes
+healthy/non-live caching and never caches errors. Regional OSIRIS results now
+cache live for5min, partial for1min, unavailable not at all; invalid JSON shapes
+are errors, not successful zero observations. Raw intelligence feed promises are
+shared per build, then scored independently per package; entire concurrent
+package builds coalesce. Offline payloads cannot be promoted to live by caching.
+
+Internal fires/rainfall/refugee fallback rows are static-demo only. Production
+package builds also reject the incident loader's fallback sentinel. Stored-history
+status uses `unavailable` and identifies the archive separately from live FIRMS.
+Grouped cron endpoints reject unauthenticated callers before work and return503
+on child failure; scheduled jobs no longer suppress failures or duplicate grouped
+and individual work. No database was provisioned and no backfill was invented.
+
+Map deep-zoom/category captions now have explicit dark text on white; dense
+toggle groups use three columns with32px targets and4px gaps instead of a single
+clipped row. Source-health disclosure preserves every provider and status.
+`npm run test:evidence-layout` checks these actual rendered relationships with
+controlled news; map/research gates remain separate. Tests do not certify taste.
+
+Still open: dense horizontally scrolling bottom status, map-HUD missing-vs-zero
+semantics, provider observation timestamps, static-build error swallowing,
+Worker self-fetch cron execution, existing archived snapshot provenance, and
+the full public-data/satellite inventory. PR4 remains a draft by owner's workflow.
+
+Second-wave evidence:37 backend tests pass, including successful-feed sharing
+with distinct per-package scores, offline/no-mock behavior, one-minute partial
+recovery and grouped-cron401/503. TypeScript and packaged Worker build pass.
+Actual WebGL captures at390/1024/1440 preserve map height766.25/381.25/381.25px.
+Controlled evidence gate at375/390/768/1024/1280/1440 puts the first headline at
+114–124px into its pane, preserves expanded source details, checks16 toggles
+at32px minimum, and rejects a white-caption mutation. Research141width gate passes.
+
+Independent review closes news-first visibility, dark caption contrast, archive/
+live-FIRMS distinction and scoped three-column readability. Geometry checks
+explicitly clear intentional hover disclosures; they do not certify every hover
+state. A targeted real-hover test opens a source tooltip, scrolls its trigger
+away and verifies the old link is detached. Scroll/resize now dismisses tooltips;
+new stationary-pointer hover disclosures remain interaction debt, not claimed fixed.
+Rules1–7: content-sized news header; map remains dominant; existing prose measures
+and two fonts preserved; no added ornament (tooltip shadow removed); clearer
+headline hierarchy; deep-zoom contrast fixed. Bottom-band density remains open.
+Human usability and enlarged-text studies remain unverified. Changed code lint
+passes except the pre-existing map dams effect rule; no blanket lint pass claimed.

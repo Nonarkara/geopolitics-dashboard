@@ -407,6 +407,7 @@ export interface ApiSourceResponse {
 
 export type RuntimeDatasetState =
   | "live"
+  | "unavailable"
   | "stale"
   | "fallback"
   | "on_demand"

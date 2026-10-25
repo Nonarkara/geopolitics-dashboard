@@ -140,40 +140,36 @@ export default function BorderNewsDesk() {
       data-testid="border-news-desk"
       className="flex h-full flex-col overflow-hidden border-l border-white/10 bg-[var(--bg-panel)] select-none"
     >
-      <div className="flex items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/10 px-3 py-2">
         <div className="min-w-0">
           <div className="eyebrow text-white/90 mb-0.5">Border News Wire</div>
-          <div className="text-[13px] font-black uppercase tracking-[0.03em] text-white/90">
-            Cited headlines with source links
-          </div>
-          {sources.length > 0 ? (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {sources.map((source) => (
-                <span
-                  key={source.id}
-                  className={`inline-flex items-center gap-1 border px-1.5 py-0.5 text-[12px] font-black uppercase tracking-[0.12em] ${sourceChipClass(source.status)}`}
-                  title={source.message ?? source.label}
-                >
-                  {source.label}
-                  <span className="opacity-50">· {source.status}</span>
-                </span>
-              ))}
-            </div>
-          ) : null}
         </div>
         <div className="inline-flex flex-col items-end gap-0.5 text-[12px] font-mono uppercase tracking-[0.14em] text-white/35 shrink-0">
           <span className="inline-flex items-center gap-1.5">
             <FreshnessDot lastUpdated={display.generatedAt} />
             <RefreshCw size={12} />
-            {display.generatedAt === EMPTY_LIVE.generatedAt
-              ? "—"
-              : formatHeaderTime(display.generatedAt)}
+            <time dateTime={display.generatedAt} title={formatHeaderTime(display.generatedAt)}>
+              {display.generatedAt === EMPTY_LIVE.generatedAt ? "—" : ageLabel(display.generatedAt)}
+            </time>
           </span>
-          {display.generatedAt !== EMPTY_LIVE.generatedAt ? (
-            <span className="opacity-50">{ageLabel(display.generatedAt)}</span>
-          ) : null}
         </div>
       </div>
+
+      {sources.length > 0 ? (
+        <details className="shrink-0 border-b border-white/10 px-3 text-[12px] text-white/70">
+          <summary className="cursor-pointer py-2" aria-label="News source health">
+            Sources · {sources.filter((source) => source.status === "live").length}/{sources.length} live
+          </summary>
+          <div className="flex flex-wrap gap-1 pb-2">
+            {sources.map((source) => (
+              <span key={source.id} title={source.message ?? source.label}
+                className={`inline-flex items-center gap-1 border px-1.5 py-0.5 ${sourceChipClass(source.status)}`}>
+                {source.label} · {source.status}
+              </span>
+            ))}
+          </div>
+        </details>
+      ) : null}
 
       {!hasLoaded ? (
         <div className="flex h-full flex-col gap-2 p-2.5">
@@ -188,8 +184,8 @@ export default function BorderNewsDesk() {
           </div>
         ) : null}
         {display.news.length > 0 ? (
-          <div className="flex h-full flex-col gap-2">
-            <article className="relative overflow-hidden border border-white/10 bg-white/[0.03] p-3">
+          <div className="flex flex-col gap-2">
+            <article className="relative shrink-0 border border-white/10 bg-white/[0.03] p-3">
               <div className="pointer-events-none absolute inset-y-0 left-0 w-1 bg-[var(--accent)]" />
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5">

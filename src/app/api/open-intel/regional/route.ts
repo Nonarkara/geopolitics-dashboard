@@ -10,7 +10,9 @@ export async function GET() {
   return NextResponse.json(payload, {
     status: payload.status === "unavailable" ? 503 : 200,
     headers: {
-      "cache-control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",
+      "cache-control": payload.status === "unavailable" ? "no-store"
+        : payload.status === "partial" ? "public, max-age=0, s-maxage=60"
+        : "public, max-age=0, s-maxage=300",
       "x-data-source": payload.status,
     },
   });

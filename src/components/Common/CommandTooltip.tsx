@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { TooltipContent } from "../../lib/tooltip-catalog";
 
 interface CommandTooltipProps {
@@ -30,6 +30,19 @@ export default function CommandTooltip({
 }: CommandTooltipProps) {
   const triggerRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    // A fixed source link must not remain over unrelated controls after its
+    // trigger scrolls away. Capture also sees nested panel scrolling.
+    if (!coords) return;
+    const dismiss = () => setCoords(null);
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
+  }, [coords]);
 
   const show = () => {
     const rect = triggerRef.current?.getBoundingClientRect();
@@ -67,7 +80,7 @@ export default function CommandTooltip({
       {coords && (
         <div
           style={{ position: "fixed", top: coords.top, left: coords.left, width: TOOLTIP_WIDTH }}
-          className="z-[60] pointer-events-none border border-white/20 bg-black text-white shadow-xl"
+          className="z-[60] pointer-events-none border border-white/20 bg-black text-white"
         >
           <div className="px-2.5 py-2 space-y-1.5">
             {/* FUNCTION */}

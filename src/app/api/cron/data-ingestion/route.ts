@@ -1,5 +1,5 @@
 import { NextRequest } from "next/server";
-import { runCronJobRequest } from "../../../../lib/cron-jobs";
+import { runCronJobRequest, isAuthorizedCronRequest, unauthorizedCronResponse } from "../../../../lib/cron-jobs";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +11,7 @@ export const maxDuration = 60;
  * Runs sequentially to stay within Vercel Hobby's 2 cron limit.
  */
 export async function GET(request: NextRequest) {
+  if (!await isAuthorizedCronRequest(request)) return unauthorizedCronResponse();
   const jobs = [
     "conflict-intel",
     "environment-thermal",
@@ -43,6 +44,6 @@ export async function GET(request: NextRequest) {
       jobs: results,
       completedAt: new Date().toISOString(),
     },
-    { status: allOk ? 200 : 207 },
+    { status: allOk ? 200 : 503, headers: { "cache-control": "no-store" } },
   );
 }

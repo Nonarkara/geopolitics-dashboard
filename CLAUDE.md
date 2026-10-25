@@ -6,7 +6,7 @@ Live: Cloudflare Worker `geopolitics-dashboard` (deployed from the `overhaul` br
 
 ## Tech Stack
 
-Next.js 16 + React 19 + TypeScript + Tailwind 4 + Deck.gl 9.2 + Mapbox GL + Supabase + Framer Motion
+Next.js16.4.3 + React19 + TypeScript + Tailwind4 + Deck.gl9.4 + MapLibre6 + OpenNext1.20.13. Mapbox is retired. Production Postgres is not configured; see context.md before making infrastructure claims.
 
 ## Build & Deploy
 
@@ -25,7 +25,8 @@ Deployment: Cloudflare Workers via OpenNext (`wrangler.jsonc` + `open-next.confi
 ### Tokens (in `src/app/globals.css`)
 
 ```css
-/* Tactical Precision Palette */
+/* Historical palette recipe, superseded by globals.css and workspace design law.
+   Active surface is monochrome with amber #f59e0b; do not restore these colors. */
 --bg: #f2f2f0;        --bg-raised: #ffffff;   --bg-surface: #ffffff;
 --ink: #000000;       --muted: #555552;        --dim: #999994;
 --line: #000000;      --line-dim: #e0e0dc;
@@ -58,10 +59,10 @@ Fonts (owner-requested update 2026-10-25): `--font-display` and `--font-ui`: Jos
 
 ### Layout Rules
 
-- **1920×1080 base** — CSS `transform: scale()` auto-scales to any screen
+- **Phone-first MSH** — actual390×844,1024×900,1440×900 compositions; never scale a desktop canvas to fit
 - **Zero border-radius** — `border-radius: 0 !important` across all elements
 - **Connected grid** — `1.5px` gap on `var(--line)` background; cells use `var(--bg-surface)`
-- **Glass morphism** — `backdrop-filter: blur(20px) saturate(180%)` via `var(--glass)`
+- **No decorative glass, shadows or gradients** — grouping and hierarchy must carry meaning
 - **Ease** — `--ease: cubic-bezier(0.23, 1, 0.32, 1)` for all transitions
 - **Page entry** — `@keyframes pageEnter { from { opacity:0; translateY(6px) } to { opacity:1; translateY(0) } }` at 400ms
 
@@ -205,13 +206,13 @@ function useInView(threshold = 0.2): [React.RefObject<Element>, boolean] {
 
 ---
 
-## AI Integration (Claude API)
+## AI Integration — server-only
 
-Briefing assistant pattern — port from SCITI GeminiChat, adapted for Claude:
+Active code: `src/lib/ai-config.ts`, `intelligence.ts`, `ai-narrative.ts`. Local Ollama and optional server-side OpenAI-compatible summaries. Secrets stay in Worker bindings/environment variables. Never put provider keys in client code or localStorage. The following old Claude recipe is historical context, not the current implementation or authority to add a browser-key workflow:
 
 - **Model:** `claude-sonnet-4-6` (or latest Sonnet)
-- **Pattern:** Client-side, user-supplied API key stored in `localStorage`
-- **Key storage:** `localStorage.getItem("geopolitics-claude-key")`
+- **Pattern:** Server-side only; current provider/model configuration comes from environment variables
+- **Key storage:** Worker secrets; never browser storage
 - **RAG context:** Inject per turn — top 5 incidents + active theater briefing + data source list
 - **History:** Last 6 messages (sliding window)
 - **Config:** `max_tokens: 1024`, `temperature: 0.5` (intelligence, not creative writing)
@@ -292,7 +293,7 @@ Redis optional — degrade gracefully (`REDIS_URL` may not be set on CF Workers)
 
 ## Testing
 
-Framework: **Vitest** + `@testing-library/react`. Playwright for UI tests.
+Active framework: Node `node:test` via `tsx`, and Playwright. The Vitest setup recipe below is historical, not an installed runner. Use package.json and the existing tests rather than adding a second runner.
 
 Test setup mocks (required in `src/test/setup.ts`):
 

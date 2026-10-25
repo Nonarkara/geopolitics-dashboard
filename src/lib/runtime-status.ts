@@ -82,18 +82,18 @@ function hasConfiguredFirmsRefresh() {
 const datasetDescriptors: DatasetDescriptor[] = [
   {
     id: "conflict_events",
-    label: "Conflict events",
+    label: "Conflict archive",
     source: "Postgres `events`",
     criticality: "optional",
     tableName: "events",
     latestExpression: "MAX(event_date)::text",
     staleAfterMinutes: 48 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so incident routes fall back to packaged sample data.",
-    emptyState: "fallback",
+      "No conflict archive is configured. Stored incidents are unavailable; news-derived signals are a separate source.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The event store is empty, so incident surfaces are currently leaning on packaged fallback rows.",
+      "The conflict archive is empty. No packaged incident observations are substituted.",
     refreshDependency: {
       label: "ACLED access credentials",
       isConfigured: hasConfiguredAcledRefresh,
@@ -107,27 +107,27 @@ const datasetDescriptors: DatasetDescriptor[] = [
     tableName: "rainfall_data",
     latestExpression: "MAX(ref_date)::text",
     staleAfterMinutes: 48 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so rainfall overlays can only use packaged fallback points.",
-    emptyState: "fallback",
+      "No rainfall archive is configured. Stored rainfall observations are unavailable.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The rainfall table is empty, so map overlays are currently using packaged fallback points.",
+      "The rainfall archive is empty. No packaged rainfall points are substituted.",
   },
   {
     id: "fires",
-    label: "Thermal hotspots",
+    label: "Thermal archive",
     source: "Postgres `fire_events`",
     criticality: "optional",
     tableName: "fire_events",
     latestExpression: "MAX(acq_date)::text",
     staleAfterMinutes: 24 * 60,
-    noDatabaseState: "fallback",
+    noDatabaseState: "unavailable",
     noDatabaseDetails:
-      "No database is configured, so thermal layers can only use packaged fallback hotspots.",
-    emptyState: "fallback",
+      "No thermal archive is configured. The live FIRMS CSV/area feed is independent of this stored-history check.",
+    emptyState: "unavailable",
     emptyDetails:
-      "The fire-events table is empty, so thermal layers are currently using packaged fallback hotspots.",
+      "The thermal archive is empty. This does not measure the availability of the live FIRMS feed.",
     refreshDependency: {
       label: "FIRMS access credentials",
       isConfigured: hasConfiguredFirmsRefresh,
@@ -376,12 +376,12 @@ async function loadDatasetStatus(
       label: descriptor.label,
       source: descriptor.source,
       criticality: descriptor.criticality,
-      state: "fallback",
+      state: "unavailable",
       latestTimestamp: null,
       ageMinutes: null,
       freshnessTargetMinutes: descriptor.staleAfterMinutes,
       details:
-        "The freshness check could not read this dataset, so operators should assume fallback posture until the database recovers.",
+        "The stored dataset could not be read. Upstream live-feed availability is not established by this check.",
     };
   }
 }
@@ -393,6 +393,7 @@ function computeSignalStrength(datasets: DashboardDatasetStatus[]) {
 
   const weightByState: Record<RuntimeDatasetState, number> = {
     live: 1,
+    unavailable: 0,
     on_demand: 0.8,
     stale: 0.45,
     fallback: 0.2,
@@ -423,6 +424,7 @@ export async function buildRuntimeStatusPayload(): Promise<DashboardStatusPayloa
   // Mapbox is permanently gone (account deleted) — basemaps render on free
   // raster tiles (ESRI / CARTO / OSM / NASA GIBS), no token required.
   const degradedStates = new Set<RuntimeDatasetState>([
+    "unavailable",
     "stale",
     "fallback",
     "disabled",

@@ -245,6 +245,8 @@ export async function loadCachedIntelligencePayload(
 export async function storeCachedIntelligencePayload(
   payload: IntelligencePackageResponse,
 ) {
+  // Never let an empty outage payload be promoted to live by cache freshness.
+  if (payload.mode === "offline") return;
   const updatedAt =
     getLatestTimestamp(payload.packages) ||
     payload.generatedAt ||

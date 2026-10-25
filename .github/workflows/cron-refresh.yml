@@ -3,9 +3,7 @@ name: Cron Refresh (Cloudflare Worker)
 # Cloudflare Workers can't run Next.js route handlers on a schedule
 # (@opennextjs/cloudflare has no `scheduled` support), so GitHub Actions
 # calls the secured cron route groups instead. CRON_SECRET lives in
-# GitHub repo secrets. continue-on-error keeps pre-existing data issues
-# from spamming failure notifications; the runs still warm caches and
-# record feed-health once the database is connected.
+# GitHub repo secrets. Failures remain visible; no duplicate grouped jobs.
 
 on:
   schedule:
@@ -22,7 +20,6 @@ jobs:
   refresh-frequent:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '*/30 * * * *'
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -37,11 +34,10 @@ jobs:
   refresh-daily:
     if: github.event_name == 'workflow_dispatch' || github.event.schedule == '17 1 * * *'
     runs-on: ubuntu-latest
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
-        group: [daily-ops, daily-summary, markets-macro, movements-maritime, maintenance-cleanup, data-ingestion, snapshot]
+        group: [daily-ops, markets-macro, movements-maritime, snapshot]
     steps:
       - name: Call /api/cron/${{ matrix.group }}
         run: |

@@ -127,6 +127,7 @@ function stateBadgeClasses(value: string) {
     case "degraded":
     case "failing":
     case "fallback":
+    case "unavailable":
     case "missing":
     case "unprotected":
     case "enabled":

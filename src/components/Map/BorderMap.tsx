@@ -250,6 +250,7 @@ function buildFeedAlerts(
         Boolean(
           dataset &&
             (dataset.state === "stale" ||
+              dataset.state === "unavailable" ||
               dataset.state === "fallback" ||
               dataset.state === "disabled"),
         ),
@@ -845,9 +846,9 @@ export default function BorderMap({
               </button>
             ))}
           </div>
-          <div className="border-t border-black/10 px-3 py-2">
+          <div className="border-t border-black/10 px-3 py-2 text-black">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-[12px] font-black uppercase tracking-[0.22em] opacity-40">
+              <div data-testid="zoom-gates-label" className="text-[12px] font-black uppercase tracking-[0.22em] text-black/70">
                 Deep zoom gates
               </div>
               <div className={`text-[12px] font-black uppercase tracking-[0.18em] ${deepZoomUnlocked ? "text-[#ea580c]" : "text-black/35"}`}>
@@ -915,7 +916,7 @@ export default function BorderMap({
           <div className="max-h-[240px] overflow-y-auto no-scrollbar">
             {Object.entries(overlaysByCategory).map(([cat, overlays]) => (
               <div key={cat} className="border-b border-black/10 last:border-0">
-                <div className="px-3 py-1 text-[12px] font-black uppercase tracking-[0.3em] opacity-30 bg-gray-50">{cat}</div>
+                <div className="px-3 py-1 text-[12px] font-black uppercase tracking-[0.3em] text-black/70 bg-gray-50">{cat}</div>
                 <div className="grid grid-cols-3 gap-[1px] bg-black/5 px-[1px] pb-[1px]">
                   {overlays.map(ov => {
                     const active = activeOverlayIds.has(ov.id);
@@ -940,7 +941,7 @@ export default function BorderMap({
           </div>
         </div>
 
-        <div className="flex bg-white h-8 border border-black overflow-hidden divide-x divide-black">
+        <div className="grid grid-cols-3 gap-1 bg-white p-1 border border-black text-black">
           {[
             { active: showRegionalFrame, set: setShowRegionalFrame, label: "FRAME", icon: Globe },
             { active: showOperationalSpines, set: setShowOperationalSpines, label: "SPINE", icon: Route },
@@ -955,7 +956,7 @@ export default function BorderMap({
               aria-pressed={toggle.active}
               aria-label={`Toggle ${toggle.label} map layer`}
               onClick={() => toggle.set(!toggle.active)}
-              className={`flex-1 flex items-center justify-center gap-1 transition-all ${toggle.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
+              className={`min-h-[32px] flex items-center justify-center gap-1 transition-all ${toggle.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}
             >
               <toggle.icon size={12} />
               <span className="text-[12px] font-black tracking-wider">{toggle.label}</span>
@@ -964,7 +965,7 @@ export default function BorderMap({
         </div>
 
         {/* ── Intelligence Overlays ── */}
-        <div className="flex bg-white h-8 border border-black overflow-hidden divide-x divide-black">
+        <div className="grid grid-cols-3 gap-1 bg-white p-1 border border-black text-black">
           {[
             { active: showHeatmap, set: setShowHeatmap, label: "HEAT", icon: Layers },
             { active: showFires, set: setShowFires, label: "THRM", icon: Flame },
@@ -979,7 +980,7 @@ export default function BorderMap({
           ].map((t) => {
             const tip = INTEL_TOGGLE_TOOLTIPS[t.label];
             const btn = (
-              <button type="button" aria-pressed={t.active} aria-label={`Toggle ${t.label} map layer`} onClick={() => t.set(!t.active)} className={`min-h-[44px] flex-1 flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
+              <button type="button" aria-pressed={t.active} aria-label={`Toggle ${t.label} map layer`} onClick={() => t.set(!t.active)} className={`min-h-[32px] w-full flex items-center justify-center gap-1 transition-all ${t.active ? "bg-black text-white" : "bg-white text-black hover:bg-gray-100"}`}>
                 <t.icon size={12} />
                 <span className="text-[12px] font-black tracking-wider">{t.label}</span>
               </button>
@@ -1017,7 +1018,7 @@ export default function BorderMap({
 
         {feedAlerts.length > 0 && (
           <div className="border border-black bg-[#fff7ed] px-3 py-2 text-[#9a3412]">
-            <div className="text-[12px] font-black uppercase tracking-[0.22em]">Feed Integrity</div>
+            <div className="text-[12px] font-black uppercase tracking-[0.22em]">Stored coverage · not live feed health</div>
             <div className="mt-1 flex flex-wrap gap-1.5">
               {feedAlerts.map((alert) => (
                 <span
@@ -1033,7 +1034,7 @@ export default function BorderMap({
         )}
 
         {/* ── Opacity slider ── */}
-        <div className="flex bg-white h-7 items-center border border-black px-3 gap-2">
+        <div className="flex bg-white min-h-[44px] items-center border border-black px-3 gap-2 text-black">
           <Eye size={12} className="opacity-40" />
           <span className="text-[12px] font-black uppercase opacity-30 shrink-0">Base</span>
           <input type="range" className="flex-1 accent-black h-1" value={baseMapOpacity} onChange={e => setBaseMapOpacity(parseInt(e.target.value))} />

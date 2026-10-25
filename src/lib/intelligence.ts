@@ -45,6 +45,16 @@ const INTELLIGENCE_CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 min — keeps news/pul
 const REQUEST_TIMEOUT_MS = 12_000;
 const FEED_LOOKBACK_DAYS = 45;
 const FEED_FUTURE_SKEW_MS = 24 * 60 * 60 * 1000;
+let packageInFlight: Promise<IntelligencePackageResponse> | null = null;
+
+export function loadIntelligencePackages(): Promise<IntelligencePackageResponse> {
+  if (!packageInFlight) {
+    packageInFlight = loadIntelligencePackagesUnshared().finally(() => {
+      packageInFlight = null;
+    });
+  }
+  return packageInFlight;
+}
 
 type SeedKind = IntelligenceItem["kind"];
 
@@ -933,21 +943,19 @@ function matchesPackage(item: SeedItem, definition: PackageDefinition) {
 async function fetchSourceSeeds(
   source: FeedSource,
   focusTags: string[],
-  sourceCache: Map<string, { items: SeedItem[]; health: SourceHealth }>,
+  sourceCache: Map<string, Promise<FeedItem[]>>,
 ): Promise<{ items: SeedItem[]; health: SourceHealth }> {
-  const cached = sourceCache.get(source.id);
-
-  if (cached) {
-    return cached;
-  }
-
   const startedAt = Date.now();
 
   try {
-    const feedItems =
-      source.kind === "json"
-        ? await fetchJsonSource(source)
-        : await fetchRssSource(source);
+    const key = `${source.kind}:${source.url}`;
+    let pending = sourceCache.get(key);
+    if (!pending) {
+      pending = source.kind === "json" ? fetchJsonSource(source) : fetchRssSource(source);
+      sourceCache.set(key, pending);
+    }
+    // Share raw retrieval, not package-specific tag/score interpretation.
+    const feedItems = await pending;
     const currentFeedItems = feedItems.filter(isFeedItemInWindow);
     const seeds = currentFeedItems.map((item) =>
       buildSeedFromFeedItem(item, source, focusTags),
@@ -969,7 +977,6 @@ async function fetchSourceSeeds(
     };
 
     const result = { items: seeds, health };
-    sourceCache.set(source.id, result);
     return result;
   } catch (error: unknown) {
     const result = {
@@ -985,7 +992,6 @@ async function fetchSourceSeeds(
       },
     };
 
-    sourceCache.set(source.id, result);
     return result;
   }
 }
@@ -1020,6 +1026,7 @@ function buildRankedNewsItems(items: SeedItem[], limit: number) {
 }
 
 export async function loadFires(): Promise<FireEvent[]> {
+  const fallback = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackFires : [];
   try {
     const res = await query<FireEvent>(`
       SELECT latitude, longitude, brightness, confidence, acq_date
@@ -1029,13 +1036,14 @@ export async function loadFires(): Promise<FireEvent[]> {
       LIMIT 80
     `);
 
-    return res.rows.length > 0 ? res.rows : fallbackFires;
+    return res.rows.length > 0 ? res.rows : fallback;
   } catch {
-    return fallbackFires;
+    return fallback;
   }
 }
 
 export async function loadRainfall(): Promise<RainfallPoint[]> {
+  const fallback = process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackRainfall : [];
   try {
     const res = await query<RainfallRow>(`
       SELECT location, value
@@ -1044,8 +1052,9 @@ export async function loadRainfall(): Promise<RainfallPoint[]> {
       LIMIT 40
     `);
 
-    const rows = res.rows.map((row) => {
-      const coords = LOCATION_COORDS[row.location] || { lat: 15, lng: 100 };
+    const rows = res.rows.flatMap((row) => {
+      const coords = LOCATION_COORDS[row.location];
+      if (!coords || !Number.isFinite(row.value)) return [];
 
       return {
         lat: coords.lat,
@@ -1055,14 +1064,14 @@ export async function loadRainfall(): Promise<RainfallPoint[]> {
       };
     });
 
-    return rows.length > 0 ? rows : fallbackRainfall;
+    return rows.length > 0 ? rows : fallback;
   } catch {
-    return fallbackRainfall;
+    return fallback;
   }
 }
 
 export async function loadRefugeeMovements(): Promise<RefugeeMovement[]> {
-  return fallbackRefugees;
+  return process.env.NEXT_PUBLIC_STATIC_EXPORT === "true" ? fallbackRefugees : [];
 }
 
 function buildIncidentSeeds(incidents: IncidentFeature[]): SeedItem[] {
@@ -1420,7 +1429,7 @@ function buildPackageStats(items: SeedItem[]) {
 
 async function buildPackage(
   definition: PackageDefinition,
-  sourceCache: Map<string, { items: SeedItem[]; health: SourceHealth }>,
+  sourceCache: Map<string, Promise<FeedItem[]>>,
   syntheticItems: SeedItem[],
 ): Promise<{ pkg: IntelligencePackage; sources: SourceHealth[] }> {
   const sources = FEED_SOURCES.filter((source) =>
@@ -1498,9 +1507,9 @@ async function buildLivePackagePayload(): Promise<IntelligencePackageResponse> {
     loadRainfall(),
     loadRefugeeMovements(),
   ]);
-  const sourceCache = new Map<string, { items: SeedItem[]; health: SourceHealth }>();
+  const sourceCache = new Map<string, Promise<FeedItem[]>>();
   const syntheticItems = [
-    ...buildIncidentSeeds(incidents),
+    ...buildIncidentSeeds(incidents === fallbackIncidents && process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true" ? [] : incidents),
     ...buildMarketSeeds(indicators),
     ...buildRainfallSeeds(rainfall),
     ...buildFireSeeds(fires),
@@ -1527,13 +1536,13 @@ async function buildLivePackagePayload(): Promise<IntelligencePackageResponse> {
         .map((pkg) => pkg.updatedAt)
         .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ??
       new Date().toISOString(),
-    mode: "live",
+    mode: packages.some((pkg) => pkg.items.length > 0) ? "live" : "offline",
     packages,
     sources,
   };
 }
 
-export async function loadIntelligencePackages(): Promise<IntelligencePackageResponse> {
+async function loadIntelligencePackagesUnshared(): Promise<IntelligencePackageResponse> {
   const cached = await loadCachedIntelligencePayload(INTELLIGENCE_CACHE_MAX_AGE_MS);
 
   if (cached?.fresh) {
@@ -1547,6 +1556,10 @@ export async function loadIntelligencePackages(): Promise<IntelligencePackageRes
   } catch {
     if (cached?.payload) {
       return synthesizeStalePayload(cached.payload);
+    }
+
+    if (process.env.NEXT_PUBLIC_STATIC_EXPORT !== "true") {
+      return { generatedAt: new Date().toISOString(), mode: "offline", packages: [], sources: [] };
     }
 
     return {
