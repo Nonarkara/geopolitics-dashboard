@@ -147,7 +147,7 @@ export default async function BriefingPage() {
           h2 { page-break-after: avoid; }
         }
         .briefing-page {
-          font-family: "Source Sans 3", "Helvetica Neue", sans-serif;
+          font-family: "Jost", "Helvetica Neue", sans-serif;
           color: #111;
           line-height: 1.6;
         }

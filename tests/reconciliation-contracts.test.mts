@@ -18,6 +18,9 @@ test("operator typography uses two families without a separate decorative displa
   assert.match(layout, /import \{ Jost, JetBrains_Mono \}/);
   assert.doesNotMatch(layout, /Josefin_Sans|Source_Sans_3/);
   assert.match(css, /--font-display: var\(--font-body-family/);
+  for (const path of ["src/services/map-engine.ts", "src/app/briefing/page.tsx"]) {
+    assert.ok(!read(path).includes("Source Sans 3"), `old family in ${path}`);
+  }
 });
 
 test("Playwright does not accidentally collect Node backend suites", () => {
