@@ -156,7 +156,7 @@ function BorderDashboardContent() {
         </button>
 
         {/* ROW 3: Insight Lab + news only. Markets/cameras stay in the Intel drawer. */}
-        <div className="!hidden h-[220px] shrink-0 connected-grid overflow-hidden bg-black min-[744px]:!flex md:!flex md:h-[240px] lg:h-[340px]">
+        <div data-testid="evidence-comparison" className="!hidden h-[clamp(180px,28dvh,260px)] shrink-0 connected-grid overflow-hidden bg-black min-[744px]:!flex md:!flex">
           <div className="flex-1 min-w-0 grid-cell overflow-hidden">
             <ErrorBoundary name="Border Insight Lab">
               <BorderInsightLab brief={brief} />

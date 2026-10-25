@@ -266,12 +266,12 @@ export default function BorderInsightLab({
           </div>
 
           {/* SPIDER */}
-          <div className="col-span-1 flex min-h-[360px] flex-col bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:min-h-0 xl:overflow-hidden">
+          <div className="col-span-1 flex min-h-[360px] flex-col bg-[var(--bg-panel)] p-3 xl:col-span-4 xl:min-h-0 xl:overflow-y-auto">
             <div className="eyebrow text-white/80 mb-2">Compare · spider</div>
             <p className="text-[14px] leading-snug text-white/45 mb-2">
               GDP growth, urbanisation, forest cover, air clarity, and calm score (inverse frontier pressure). China sits upstream on water politics; Myanmar leads conflict pressure.
             </p>
-            <div className="min-h-0 flex-1 relative">
+            <div data-testid="comparison-radar" className="h-[180px] shrink-0 relative">
               {spider ? (
                 <Radar
                   data={spider}
@@ -303,7 +303,7 @@ export default function BorderInsightLab({
                         angleLines: { color: "rgba(255,255,255,0.08)" },
                         pointLabels: {
                           color: "rgba(255,255,255,0.55)",
-                          font: { size: 10, family: "Source Sans 3" },
+                          font: { size: 10, family: "Jost" },
                         },
                       },
                     },

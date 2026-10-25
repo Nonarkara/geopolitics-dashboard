@@ -52,7 +52,7 @@ Deployment: Cloudflare Workers via OpenNext (`wrangler.jsonc` + `open-next.confi
 --text-2xl: 2rem;       --text-3xl: 2.5rem;
 ```
 
-Fonts: `--font-display: "Josefin Sans"` (headings), `--font-ui: "Source Sans 3"` (body/UI), `--font-mono: "JetBrains Mono"` (data/code)
+Fonts (owner-requested update 2026-10-25): `--font-display` and `--font-ui`: Jost (headings/body/UI); `--font-mono`: JetBrains Mono (data/code). Two families; preserve readable text and measured numeric alignment.
 
 **Banned fonts (§11.10):** Never use Roboto, Inter, Poppins, Montserrat, Open Sans, or Lato.
 

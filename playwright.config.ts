@@ -4,6 +4,7 @@ const PORT = 3015;
 
 export default defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.spec.ts",
   timeout: 60_000,
   fullyParallel: false,
   retries: 0,

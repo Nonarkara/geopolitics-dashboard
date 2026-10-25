@@ -1,16 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Josefin_Sans, Source_Sans_3, JetBrains_Mono } from "next/font/google";
+import { Jost, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { formatDashboardVersion } from "../lib/dashboard-version";
 
-const display = Josefin_Sans({
-  subsets: ["latin"],
-  weight: ["300", "400", "600", "700"],
-  variable: "--font-display-family",
-  display: "swap",
-});
-
-const body = Source_Sans_3({
+const body = Jost({
   subsets: ["latin"],
   weight: ["300", "400", "600", "700"],
   variable: "--font-body-family",
@@ -98,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+    <html lang="en" className={`${body.variable} ${mono.variable}`}>
       <body className="overflow-hidden antialiased">
         {children}
       </body>

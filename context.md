@@ -1,6 +1,16 @@
 # Geopolitics Dashboard — Live Context
 
-Updated 2026-10-21.
+Updated 2026-10-25.
+
+## Multi-agent reconciliation and typography
+
+See `docs/RECONCILIATION-2026-10-25.md` for all six PRs, branch/stash dispositions,
+preserved candidates and outstanding audit work. The parked stash is untouched.
+Main's missing keyless basemap repair is incorporated without restoring obsolete
+deployment docs. Design Read: geographic instrument first, readable evidence desk
+second; Braun ET66 control restraint / Reuters attribution hierarchy. Jost now
+supplies body and display roles; JetBrains Mono remains numeric. This intentional
+two-family change follows the owner's request and Palette's contextual type rules.
 
 ## Deployment
 
@@ -110,9 +120,8 @@ news terminal. The report title dominates each result, while filters stay in one
 group above results. A 2px view boundary separates navigation from the 1px report
 separators. The dialog follows content height up to the viewport cap.
 
-The existing Josefin Sans / Source Sans 3 / JetBrains Mono stack is retained:
-display, reading and scientific data have distinct jobs. This is a deliberate
-exception to the generic two-family ceiling, not a new font addition.
+The 21 October release retained the three-family stack. The owner-requested
+25 October update supersedes that exception with Jost + JetBrains Mono.
 
 `node scripts/research-layout-gate.mjs` checks rendered geometry and hit targets
 across intermediate widths using controlled short evidence, with captures at
@@ -121,7 +130,18 @@ across intermediate widths using controlled short evidence, with captures at
 
 ## Existing regression suites
 
-- `npm run test:backend` — node:test unit suite (27 tests).
+- `npm run test:backend` — node:test unit suite (31 tests).
 - `npx playwright test tests/border-dashboard.spec.ts tests/phuket-dashboard.spec.ts`
-  — browser suites (4 + 5). Note: a bare `npx playwright test` also collects the
-  `.test.mts` node:test files and crashes on them; run the spec files explicitly.
+  — browser suites (4 + 5). Playwright now collects only `.spec.ts` files;
+  backend `.test.mts` files stay in the Node runner.
+- `npm run test:map-layout` — real rendered first-screen geometry, final selector
+  hit target and unbounded-selector mutation; actual-source screenshots require review.
+
+## Security runtime update — 2026-10-25
+
+Next 16.4.3 + OpenNext 1.20.13 replaces the former compatibility pin. The adapter
+now includes `preview-props.json`; packaged Worker dynamic status and cron-auth
+routes must pass before deploy. `follow-redirects` is patched to 1.16.1.
+Production npm audit: zero reported vulnerabilities. Full development-tool audit
+still reports seven findings (five high/two moderate); do not force its suggested
+adapter/CLI downgrades, which would undo the verified runtime repair.
