@@ -102,5 +102,12 @@ at the dams effect, which this release does not alter. Full browser suite was
 discovered (9 tests), not claimed executed. Phuket loaded its real content with
 no page errors at the diagnostic visit; a full alternate-surface audit is pending.
 
+Upstream security references: [Next October security update](https://nextjs.org/blog/nextjs-security-update-october-14-2026),
+[OpenNext preview-manifest repair](https://github.com/opennextjs/opennextjs-cloudflare/pull/1356),
+[redirect credential stripping advisory](https://github.com/advisories/GHSA-q3jh-wrc6-jgq8).
+Font-blocked375/768/1280px probes kept Research hit-testable with no document overflow.
+Both GitHub verification jobs passed on5e67dd8. This does not erase the remaining
+development-tool advisories or inherited MSH issues listed above.
+
 This reconciliation is not a claim that every public dataset has been exhausted,
 the historical production database is repaired, or the full system audit is done.

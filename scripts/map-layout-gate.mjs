@@ -51,6 +51,7 @@ try {
       if (await radar.count()) {
         assert.ok(await radar.evaluate(el => el.clientHeight >= 180), 'comparison chart collapsed');
         await radar.scrollIntoViewIfNeeded();
+        await page.screenshot({ path: '/tmp/geo-comparison-audit-1440.png' });
       }
       const controls = page.getByTestId('map-controls');
       const last = controls.getByRole('button').last();
@@ -59,6 +60,7 @@ try {
         const r = el.getBoundingClientRect();
         return el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
       }), 'last map control is unreachable after scrolling');
+      await page.screenshot({ path: '/tmp/geo-map-controls-audit-1440.png' });
       const mutant = await page.addStyleTag({ content: '[data-testid="map-controls"] { max-height:none !important; overflow:visible !important; }' });
       let rejected = false;
       try { check(await measure()); } catch { rejected = true; }
