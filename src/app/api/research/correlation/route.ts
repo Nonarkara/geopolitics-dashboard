@@ -1,78 +1,79 @@
 
 import { NextRequest, NextResponse } from "next/server";
-import { isDatabaseConfigured, query } from "../../../../lib/db";
+import { parseIntegerParam } from "../../../../lib/http";
+import {
+  completeUtcWindow,
+  sharedTypeDayOverlap,
+  researchAnalysisDeps,
+  researchUnavailable,
+  type DailyResearchActivity,
+} from "../../../../lib/research-analysis";
 
 /**
  * GET /api/research/correlation
  *
- * Finds co-occurring signal activity across regions to identify
- * cross-border conflict spillover and correlated escalation patterns.
+ * Describes shared-type activity across complete UTC days.
+ * Screening only: no causal or calibrated spillover inference.
  *
  * Query params:
  *   days        - lookback window (default 30, max 365)
  *   min_overlap - minimum co-occurring days to report (default 3)
  */
 export async function GET(request: NextRequest) {
-  if (!isDatabaseConfigured) {
-    return NextResponse.json({ correlations: [], source: "unavailable" });
+  if (!researchAnalysisDeps.isDatabaseConfigured()) {
+    return researchUnavailable({ correlations: [] });
   }
 
   const { searchParams } = request.nextUrl;
-  const days = Math.min(parseInt(searchParams.get("days") ?? "30", 10) || 30, 365);
-  const minOverlap = parseInt(searchParams.get("min_overlap") ?? "3", 10) || 3;
+  const days = parseIntegerParam(searchParams.get("days"), {
+    defaultValue: 30,
+    min: 1,
+    max: 365,
+  });
+  const minOverlap = parseIntegerParam(searchParams.get("min_overlap"), {
+    defaultValue: Math.min(3, days),
+    min: 1,
+    max: days,
+  });
+  const now = researchAnalysisDeps.now();
+  const window = completeUtcWindow(days, now);
 
   try {
-    // Try the database function first
-    const result = await query<{
-      region_a: string;
-      region_b: string;
-      co_occurring_days: number;
-      shared_signal_types: string[];
-      correlation_strength: number;
-    }>(
-      `SELECT * FROM fn_signal_correlation($1, $2)`,
-      [days, minOverlap],
-    );
+    // The legacy function counted shared types as days. Fetch daily activity
+    // and use the same bounded calculation exercised by fixture tests.
+    const result = await researchAnalysisDeps.query<DailyResearchActivity>(`
+      SELECT COALESCE(region, 'general') AS region,
+             to_char(published_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS day,
+             array_agg(DISTINCT signal_type) AS types
+      FROM signal_archive
+      WHERE published_at >= $1::timestamptz AND published_at < $2::timestamptz
+      GROUP BY 1, 2
+      ORDER BY 2, 1
+      LIMIT 10001
+    `, [window.from, window.to]);
 
     return NextResponse.json({
-      correlations: result.rows,
+      correlations: sharedTypeDayOverlap(result.rows, days, minOverlap, now),
       params: { days, minOverlap },
-      source: "database_function",
-    });
+      window: {
+        ...window,
+        toExclusive: true,
+        timezone: "UTC",
+        includesToday: false,
+      },
+      method: {
+        id: "shared-type-day-overlap-v1",
+        unit: "distinct UTC days",
+        formula: "shared-type active days / complete days in window",
+        causal: false,
+        calibratedProbability: false,
+        maximumRegions: 25,
+        maximumDailyRows: 10000,
+      },
+      source: "daily_activity_query",
+    }, { headers: { "cache-control": "no-store" } });
   } catch {
-    // Fall back to inline query if function not available
-    try {
-      const result = await query<{
-        region_a: string;
-        region_b: string;
-        co_occurring_days: number;
-      }>(`
-        WITH daily_activity AS (
-          SELECT
-            COALESCE(region, 'general') AS region,
-            published_at::date AS day
-          FROM signal_archive
-          WHERE published_at >= NOW() - ($1 || ' days')::interval
-          GROUP BY 1, 2
-        )
-        SELECT
-          a.region AS region_a,
-          b.region AS region_b,
-          COUNT(*)::int AS co_occurring_days
-        FROM daily_activity a
-        JOIN daily_activity b ON a.day = b.day AND a.region < b.region
-        GROUP BY a.region, b.region
-        HAVING COUNT(*) >= $2
-        ORDER BY co_occurring_days DESC
-      `, [days, minOverlap]);
-
-      return NextResponse.json({
-        correlations: result.rows,
-        params: { days, minOverlap },
-        source: "live_query",
-      });
-    } catch {
-      return NextResponse.json({ correlations: [], source: "error" });
-    }
+    // Retain no alternate calculation with different units on failure.
+    return researchUnavailable({ correlations: [], params: { days, minOverlap }, window });
   }
 }

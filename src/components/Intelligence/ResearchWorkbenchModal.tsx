@@ -86,9 +86,10 @@ function asString(value: unknown): string | undefined {
 
 function inferRegion(text: string) {
   const normalized = text.toLowerCase();
+  if (/pattani|patani|yala|narathiwat/.test(normalized)) return "deep-south";
   if (/myanmar|burma|mae sot|tak\b/.test(normalized)) return "myanmar-frontier";
   if (/cambodia|poipet|aranyaprathet|sa kaeo/.test(normalized)) return "cambodia-frontier";
-  if (/malaysia|kelantan|narathiwat|pattani|yala/.test(normalized)) return "malaysia-frontier";
+  if (/malaysia|kelantan|sadao/.test(normalized)) return "malaysia-frontier";
   return "general";
 }
 
@@ -127,7 +128,7 @@ function liveEvidenceFromPayloads(payloads: unknown[]): ResearchSignal[] {
         const title = asString(item.title);
         const publishedAt = asString(item.publishedAt);
         const url = asString(item.sourceUrl);
-        if (!title || !publishedAt || !url) continue;
+        if (!title || !url) continue;
         evidence.push({
           external_id: asString(item.id),
           signal_type: "news",
@@ -136,7 +137,7 @@ function liveEvidenceFromPayloads(payloads: unknown[]): ResearchSignal[] {
           url,
           title,
           summary: asString(item.summary),
-          published_at: publishedAt,
+          published_at: publishedAt ?? "",
           region: inferRegion(`${title} ${asString(item.summary) ?? ""}`),
           severity: asString(item.severity),
           keywords: asString(item.tag) ? [asString(item.tag)!] : undefined,
@@ -151,7 +152,7 @@ function liveEvidenceFromPayloads(payloads: unknown[]): ResearchSignal[] {
         const title = asString(item.title);
         const publishedAt = asString(item.date);
         const url = asString(item.url);
-        if (!title || !publishedAt || !url) continue;
+        if (!title || !url) continue;
         evidence.push({
           external_id: asString(item.id),
           signal_type: "humanitarian",
@@ -159,7 +160,7 @@ function liveEvidenceFromPayloads(payloads: unknown[]): ResearchSignal[] {
           source_url: url,
           url,
           title,
-          published_at: publishedAt,
+          published_at: publishedAt ?? "",
           region: inferRegion(title),
         });
       }
@@ -184,7 +185,7 @@ function formatTime(value?: string | null) {
 }
 
 function sourceState(source: ApiSourceEntry) {
-  return source.health ?? (source.checkedAt ? "live" : "on demand");
+  return source.health ?? "not probed";
 }
 
 async function fetchJson(path: string, unavailableMessage: string): Promise<unknown> {
@@ -228,7 +229,7 @@ async function fetchSignals(
   if (region) signals = signals.filter((signal) => signal.region === region);
   if (signalType) signals = signals.filter((signal) => signal.signal_type === signalType);
   signals = signals
-    .sort((a, b) => Date.parse(b.published_at) - Date.parse(a.published_at))
+    .sort((a, b) => (Date.parse(b.published_at) || 0) - (Date.parse(a.published_at) || 0))
     .slice(0, 50);
   if (signals.length === 0 && settled.every((result) => result.status === "rejected")) {
     throw new Error("Archive and live evidence feeds are unavailable.");
@@ -467,7 +468,7 @@ export default function ResearchWorkbenchModal({
               </form>
                 {signals.mode === "live-fallback" ? (
                   <div className="research-notice text-[13px] leading-5 text-[var(--accent)]">
-                    Current reports from ReliefWeb, USGS and the border desk. No archival matches are available.
+                    Available source records from ReliefWeb, USGS and the border desk. The historical archive is unavailable or has no matches. Region labels in this lane are inferred from text; verify them in the source.
                   </div>
                 ) : null}
               <div className="research-results divide-y divide-white/10" aria-busy={!settled.includes("evidence") || loading}>
@@ -485,7 +486,7 @@ export default function ResearchWorkbenchModal({
                     {signal.summary ? <p className="mt-1 line-clamp-2 text-[13px] leading-5 text-white/48">{signal.summary}</p> : null}
                     {signal.url || signal.source_url ? (
                       <a href={signal.url ?? signal.source_url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-flex items-center gap-1 text-[11px] font-black uppercase tracking-[0.14em] text-[var(--accent)]">
-                        Primary source <ExternalLink size={11} />
+                        Source document <ExternalLink size={11} />
                       </a>
                     ) : null}
                   </article>
@@ -497,7 +498,8 @@ export default function ResearchWorkbenchModal({
           {tab === "coverage" ? (
             <div className="p-4">
               <div className="mb-4 border border-white/10 bg-black p-4 text-[13px] leading-5 text-white/55">
-                Coverage is an inventory, not a claim of completeness. Each endpoint shows its intended target and observed health; duplicated aggregators are retained as corroboration, not counted as independent evidence.
+                Coverage is an inventory, not a claim of completeness. Each endpoint shows its intended target and reported health. Duplicate aggregators are alternative access paths, not independent corroboration.
+                {" "}<a href="/research" className="text-[var(--accent)] underline">Read the research note, methods and source-access ledger.</a>
               </div>
               <div className="space-y-5">
                 {groupedSources.map(([kind, entries]) => (

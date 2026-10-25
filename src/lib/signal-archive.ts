@@ -377,7 +377,7 @@ export async function queryTrends(params: {
   from?: string;
   to?: string;
 }): Promise<TrendPoint[]> {
-  if (!isDatabaseConfigured) return [];
+  if (!isDatabaseConfigured) throw new Error("Research archive is not configured.");
 
   const conditions: string[] = [];
   const values: unknown[] = [];
@@ -409,7 +409,7 @@ export async function queryTrends(params: {
     );
     return result.rows;
   } catch {
-    return [];
+    throw new Error("Research trend query failed.");
   }
 }
 

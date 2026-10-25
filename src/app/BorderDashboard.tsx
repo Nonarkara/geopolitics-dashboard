@@ -57,7 +57,9 @@ function BorderDashboardContent() {
   const [isManualOpen, setIsManualOpen] = useState(false);
   const [isArchitectureOpen, setIsArchitectureOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
-  const [isResearchOpen, setIsResearchOpen] = useState(false);
+  const [isResearchOpen, setIsResearchOpen] = useState(() =>
+    typeof window !== "undefined" && new URLSearchParams(window.location.search).get("research") === "1",
+  );
   const [isPanelsOpen, setIsPanelsOpen] = useState(false);
   const [mobilePanel, setMobilePanel] = useState<MobilePanel>("brief");
   const [brief, setBrief] = useState<BorderCommandBrief | null>(null);

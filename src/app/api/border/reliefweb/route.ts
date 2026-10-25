@@ -7,8 +7,9 @@ export const revalidate = 0;
 export async function GET() {
   const data = await loadReliefWebReports();
   return NextResponse.json(
-    { success: true, data },
+    { success: data.source.status !== "offline", data },
     {
+      status: data.source.status === "offline" ? 503 : 200,
       headers: {
         "Cache-Control": "no-store",
         "X-Data-Source": data.source.status,

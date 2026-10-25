@@ -199,3 +199,43 @@ and two fonts preserved; no added ornament (tooltip shadow removed); clearer
 headline hierarchy; deep-zoom contrast fixed. Bottom-band density remains open.
 Human usability and enlarged-text studies remain unverified. Changed code lint
 passes except the pre-existing map dams effect rule; no blanket lint pass claimed.
+
+## Cited research reading surface — 2026-10-25, release in verification
+
+Design read: let a reader follow a claim to a dated source without mistaking a
+feed refresh for an observation or a proposed method for a completed study.
+Reference: Reuters investigative explainers; one editorial reading column,
+title then section heading then body. Navigation uses a2px boundary, contents
+uses1px, scope uses an amber edge; no decorative card grid. Existing Jost/Mono
+and monochrome/amber tokens remain. The map and every earned dashboard feature
+stay in place; long research belongs in a reading route, not an inflated modal.
+
+Independent review found87–94 actual characters on full desktop lines despite
+70ch CSS. Narrow the column to56ch and remeasure rather than treating CSS units
+as rendered proof. Print subtitle needed an explicit black override. Final
+screens/PDF and live verification are still pending at this entry.
+
+Research integrity: distinct complete UTC-day overlap replaces legacy repeated
+type/day counting. Unavailable archives return503, not successful zero counts.
+Unknown humanitarian publication dates stay unknown; catalog modification time
+is separate. RSS challenge documents are failures; partial feeds have short
+cache recovery. Public signal-query errors no longer expose database details.
+Canonical cited publication and Markdown/JSON exports share content; a frozen
+metadata-only endpoint capture documents observed coverage limits, not an event
+census.44 backend tests, TypeScript and packaged build passed before the final
+print/measure refinements. No archive was provisioned or empirical frontier study
+claimed. Public-data inventory and full professional release acceptance remain open.
+
+Final scoped proof:44 backend tests; TypeScript; packaged Worker build with secret
+scrub; research modal141width sweep; six-width evidence/control gate; publication
+six-width actual-character measurement (desktop full lines69–75),200% text,
+blocked fonts, citation navigation and Evidence deep-link open/close pass.
+Independent reviewer inspected390/1024/1440 screens, enlarged390 and regenerated
+PDFfirst page; print/measure/source findings closed. This is not every PDFpage
+or a whole-system usability certificate. Real map smoke/live shipment pending.
+
+Reconciliation: PR6 basemap and PR5 README are merged. Open PR2's traffic,
+quake/flood/GDACS/commodity strip and map-engine functionality are present in
+the evolved branch. PR3's Phuket view-state guard is present too; neither old
+branch should replace current files wholesale. PR4 remains draft. Clocks/equity
+stash and local branches preserved; their full reconciliation is not asserted.

@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured, query } from "../../../../lib/db";
+import { researchUnavailable } from "../../../../lib/research-analysis";
 
 /**
  * GET /api/research/risk-profile
@@ -11,7 +12,7 @@ import { isDatabaseConfigured, query } from "../../../../lib/db";
  */
 export async function GET() {
   if (!isDatabaseConfigured) {
-    return NextResponse.json({ profiles: [], source: "unavailable" });
+    return researchUnavailable({ profiles: [] });
   }
 
   try {
@@ -69,7 +70,7 @@ export async function GET() {
         source: "live_query",
       });
     } catch {
-      return NextResponse.json({ profiles: [], source: "error" });
+      return researchUnavailable({ profiles: [] });
     }
   }
 }

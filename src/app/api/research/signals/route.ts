@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server.js";
 import { getErrorMessage } from "../../../../lib/errors";
 import { createRequestId, parseIntegerParam } from "../../../../lib/http";
 import { querySignals } from "../../../../lib/signal-archive";
+import { researchAnalysisDeps, researchUnavailable } from "../../../../lib/research-analysis";
 
 /**
  * GET /api/research/signals
@@ -22,6 +23,7 @@ import { querySignals } from "../../../../lib/signal-archive";
  *   offset         - pagination offset
  */
 export async function GET(request: NextRequest) {
+  if (!researchAnalysisDeps.isDatabaseConfigured()) return researchUnavailable({ signals: [], total: null });
   const requestId = createRequestId("signals");
   const { searchParams } = request.nextUrl;
   const limit = parseIntegerParam(searchParams.get("limit"), {
@@ -77,17 +79,8 @@ export async function GET(request: NextRequest) {
       getErrorMessage(error),
     );
 
-    return NextResponse.json(
-      {
-        error: getErrorMessage(error),
-      },
-      {
-        status: 503,
-        headers: {
-          "cache-control": "no-store",
-          "x-request-id": requestId,
-        },
-      },
-    );
+    const response = researchUnavailable({ signals: [], total: null, requestId });
+    response.headers.set("x-request-id", requestId);
+    return response;
   }
 }

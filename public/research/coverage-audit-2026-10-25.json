@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "kind": "system-coverage-audit",
+  "capturedAt": "2026-10-25T05:03:31.865Z",
+  "origin": "https://geo.nonarkara.org",
+  "scope": "One retrieval per listed dashboard endpoint. Not an exhaustive provider audit or an event census.",
+  "databaseState": "not configured",
+  "observations": [
+    {
+      "path": "/api/research/signals?limit=50",
+      "retrievedAt": "2026-10-25T05:03:08.326Z",
+      "httpStatus": 200,
+      "declaredSource": null,
+      "count": 0,
+      "generatedAt": null,
+      "bodySha256": "40c8b7f4c5b9b74a17b671975ff1cf5283d4af38d6d143b69a071b11eadcd6d3",
+      "records": []
+    },
+    {
+      "path": "/api/border/news",
+      "retrievedAt": "2026-10-25T05:03:17.436Z",
+      "httpStatus": 200,
+      "declaredSource": null,
+      "count": 1,
+      "generatedAt": "2026-10-25T05:03:29.582Z",
+      "bodySha256": "d5aa8130e063a8a2189e472cc68f9187942bfe358a2e85f2fa8ba769bd079f5a",
+      "records": [
+        {
+          "id": "unhcr-mmr-tha",
+          "title": "Myanmar displacement into Thailand",
+          "date": "2025-01-01T00:00:00.000Z",
+          "url": "https://api.unhcr.org/population/v1/population/?cf_type=ISO&coo=MMR&coa=THA&yearFrom=2024&yearTo=2026&limit=10",
+          "source": "UNHCR Refugee Data Finder",
+          "dateKind": null
+        }
+      ]
+    },
+    {
+      "path": "/api/border/reliefweb",
+      "retrievedAt": "2026-10-25T05:03:29.754Z",
+      "httpStatus": 200,
+      "declaredSource": "live",
+      "count": 9,
+      "generatedAt": "2026-10-25T04:44:26.730Z",
+      "bodySha256": "a6d51c968de9c4c2b2435f38b97bc8818ba70ae706b690880b504999c367373f",
+      "records": [
+        {
+          "id": "rw-rss-0-yanmar-30-september-2026",
+          "title": "A Route-Based Snapshot: Data & Trends for Refugees from Myanmar (as of 30 September 2026)",
+          "date": "2026-10-22T10:04:17.000Z",
+          "url": "https://reliefweb.int/report/myanmar/route-based-snapshot-data-trends-refugees-myanmar-30-september-2026",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-1-silient-agrifood-systems",
+          "title": "Thailand: FAO promotes Food Security Green Bonds to scale finance for sustainable, climate-resilient agrifood systems",
+          "date": "2026-10-21T07:41:36.000Z",
+          "url": "https://reliefweb.int/report/thailand/fao-promotes-food-security-green-bonds-scale-finance-sustainable-climate-resilient-agrifood-systems",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-2-e-week-42-12-18-oct-2026",
+          "title": "Thailand: ASEAN Weekly Disaster Update Week 42 | 12 - 18 Oct 2026",
+          "date": "2026-10-19T13:25:22.000Z",
+          "url": "https://reliefweb.int/report/thailand/asean-weekly-disaster-update-week-42-12-18-oct-2026",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-3-ea-route-may-august-2026",
+          "title": "Myanmar: Asia–Pacific — Intraregional Mixed Migration Factsheet: South and South-East Asia (SSEA) Route (May – August 2026)",
+          "date": "2026-10-19T02:03:31.000Z",
+          "url": "https://reliefweb.int/report/myanmar/asia-pacific-intraregional-mixed-migration-factsheet-south-and-south-east-asia-ssea-route-may-august-2026",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-4-wnships-january-may-2026",
+          "title": "Myanmar: Dooplaya District Situation Update: Challenges related to militarisation, displacement, air strikes, shelling, education, travel restrictions, drug issues, and livelihoods in Kaw T’Ree and Ra M’Tee Townships (January to May 2026)",
+          "date": "2026-10-16T06:33:08.000Z",
+          "url": "https://reliefweb.int/report/myanmar/dooplaya-district-situation-update-challenges-related-militarisation-displacement-air-strikes-shelling-education-travel-restrictions-drug-issues-and-livelihoods-kaw-tree-and-ra-mtee-townships-january-may-2026",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-5-price-report-august-2026",
+          "title": "Myanmar monthly food price report - August 2026",
+          "date": "2026-10-14T13:04:08.000Z",
+          "url": "https://reliefweb.int/report/myanmar/myanmar-monthly-food-price-report-august-2026",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-6-repare-natural-disasters",
+          "title": "World: Save the Children joins HSBC’s Disaster Relief Partnership to help communities prepare for natural disasters",
+          "date": "2026-10-13T06:03:04.000Z",
+          "url": "https://reliefweb.int/report/world/save-children-joins-hsbcs-disaster-relief-partnership-help-communities-prepare-natural-disasters",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "rw-rss-7-ans-developing-economies",
+          "title": "World: No Time to Recover: Compounding Crises, Depleted Fiscal Buffers, and What It Means for Developing Economies",
+          "date": "2026-10-12T03:21:07.000Z",
+          "url": "https://reliefweb.int/report/world/no-time-recover-compounding-crises-depleted-fiscal-buffers-and-what-it-means-developing-economies",
+          "source": "ReliefWeb - Updates",
+          "dateKind": null
+        },
+        {
+          "id": "hdx-sind-protection-in-danger-monthly-news-briefs-dataset",
+          "title": "Protection in Danger Data",
+          "date": "2026-10-25T04:44:27.831Z",
+          "url": "https://data.humdata.org/dataset/sind-protection-in-danger-monthly-news-briefs-dataset",
+          "source": "Insecurity Insight",
+          "dateKind": null
+        }
+      ]
+    },
+    {
+      "path": "/api/border/earthquakes",
+      "retrievedAt": "2026-10-25T05:03:29.956Z",
+      "httpStatus": 200,
+      "declaredSource": null,
+      "count": 17,
+      "generatedAt": null,
+      "bodySha256": "87401dc819e5d8589b0c6c7ca0ebb96c5e7543e533d251096fe603f708632593",
+      "records": [
+        {
+          "id": "us6000u4lz",
+          "title": "76 km S of Mawlaik, Burma (Myanmar)",
+          "date": "2026-10-24T10:16:23.478Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4lz",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u4g1",
+          "title": "37 km ESE of Sainyabuli, Laos",
+          "date": "2026-10-23T19:31:21.121Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u4g1",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u3nc",
+          "title": "21 km SW of Meulaboh, Indonesia",
+          "date": "2026-10-20T16:29:38.818Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u3nc",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u38y",
+          "title": "33 km SE of Sơn La, Vietnam",
+          "date": "2026-10-18T23:59:22.511Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u38y",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u321",
+          "title": "66 km WSW of Nuofu, China",
+          "date": "2026-10-17T21:08:23.729Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u321",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u31a",
+          "title": "29 km SW of Trà My, Vietnam",
+          "date": "2026-10-17T18:48:10.802Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u31a",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u1sk",
+          "title": "170 km SSE of Port Blair, India",
+          "date": "2026-10-12T15:37:21.474Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u1sk",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u0x2",
+          "title": "70 km W of Banda Aceh, Indonesia",
+          "date": "2026-10-08T07:45:11.354Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u0x2",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tzh0",
+          "title": "125 km WNW of Chauk, Burma (Myanmar)",
+          "date": "2026-10-04T05:55:07.280Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzh0",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tzfg",
+          "title": "85 km SSW of Banda Aceh, Indonesia",
+          "date": "2026-10-03T23:37:34.268Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzfg",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tzdp",
+          "title": "85 km NE of Sittwe, Burma (Myanmar)",
+          "date": "2026-10-03T18:12:50.143Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tzdp",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tz6z",
+          "title": "58 km S of Mawlaik, Burma (Myanmar)",
+          "date": "2026-10-02T16:55:33.845Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tz6z",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000u16d",
+          "title": "250 km N of Bamboo Flat, India",
+          "date": "2026-10-02T00:52:33.122Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000u16d",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tyjl",
+          "title": "46 km S of Trà My, Vietnam",
+          "date": "2026-09-30T11:24:41.526Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tyjl",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tyh0",
+          "title": "96 km SSW of Banda Aceh, Indonesia",
+          "date": "2026-09-30T02:35:53.161Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tyh0",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000ty5h",
+          "title": "112 km WSW of Banda Aceh, Indonesia",
+          "date": "2026-09-28T14:43:11.391Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000ty5h",
+          "source": null,
+          "dateKind": null
+        },
+        {
+          "id": "us6000tz30",
+          "title": "36 km SW of Monywa, Burma (Myanmar)",
+          "date": "2026-09-25T02:13:56.627Z",
+          "url": "https://earthquake.usgs.gov/earthquakes/eventpage/us6000tz30",
+          "source": null,
+          "dateKind": null
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Only returned metadata retained; no source documents independently verified by this capture.",
+    "Response hashes fingerprint the original bodies, which may change on subsequent requests.",
+    "Counts describe returned records, not independent events or complete coverage."
+  ]
+}

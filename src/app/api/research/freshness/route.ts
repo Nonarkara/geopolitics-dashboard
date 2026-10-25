@@ -1,6 +1,7 @@
 
 import { NextResponse } from "next/server";
 import { isDatabaseConfigured, query } from "../../../../lib/db";
+import { researchUnavailable } from "../../../../lib/research-analysis";
 
 /**
  * GET /api/research/freshness
@@ -10,7 +11,7 @@ import { isDatabaseConfigured, query } from "../../../../lib/db";
  */
 export async function GET() {
   if (!isDatabaseConfigured) {
-    return NextResponse.json({ datasets: [], source: "unavailable" });
+    return researchUnavailable({ datasets: [] });
   }
 
   try {
@@ -28,6 +29,6 @@ export async function GET() {
       source: "database_function",
     });
   } catch {
-    return NextResponse.json({ datasets: [], source: "error" });
+    return researchUnavailable({ datasets: [] });
   }
 }

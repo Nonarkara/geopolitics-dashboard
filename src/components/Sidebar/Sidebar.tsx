@@ -648,7 +648,7 @@ export default function Sidebar({ brief }: SidebarProps) {
               Humanitarian Desk
             </div>
             <span className="live-badge scale-75">
-              {relief?.source.status === "live" ? "RELIEFWEB" : "RW OFF"}
+              {relief?.source.status === "live" ? "RELIEFWEB" : relief?.source.status === "partial" ? "RW PARTIAL" : "RW OFF"}
             </span>
           </div>
           {relief && relief.reports.length > 0 ? (
@@ -669,10 +669,10 @@ export default function Sidebar({ brief }: SidebarProps) {
                   <SourceAttr
                     href={report.url}
                     label={report.source}
-                    date={new Date(report.date).toLocaleDateString("en-GB", {
+                    date={report.date && Number.isFinite(Date.parse(report.date)) ? new Date(report.date).toLocaleDateString("en-GB", {
                       day: "2-digit",
                       month: "short",
-                    })}
+                    }) : "Publication date unknown"}
                   />
                 </div>
               ))}
