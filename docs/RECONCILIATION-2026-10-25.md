@@ -117,5 +117,31 @@ and extended the width gate to assert unclipped text. Inherited weak selector
 contrast, low first-news visibility and horizontally dense bottom status remain
 open. Radar detail capture is required to close the compact-chart review.
 
+## Final scoped visual closure and live receipt
+
+Independent reviewer inspected the settled three-size captures and scrolled
+radar/selector details. Phone text-fit finding closed: full NO DATABASE, Research
+and brand remain visible. Full radar polygon, five axis labels and legend visible;
+lower selector controls contained and reachable. No introduced blocker remains
+in the reviewed changes. This is explicitly not an overall MSH pass.
+
+Rules1–7 disposition:1) oversized evidence band reduced and selector contained;
+2) map restored as the larger geographic surface, crowded lower controls remain;
+3) existing readable prose measures preserved, no wide full-screen prose added;
+4) actual Jost/Mono loaded, fallback probes passed;5) no decorative elements added;
+6) map height293→381.25px, live overlays preserved;7) inherited low-contrast
+selector caption, first-news displacement and dense horizontal status remain.
+Feed-integrity labeling still needs a separate semantic audit. Enlarged-text and
+human task testing are unverified, not represented by automated geometry checks.
+
+Worker`9b1bc000-468d-4dcc-9913-447b93a1b085` deployed with source`aee9184`;
+subsequent changes are test/receipt only. Both live domains returned200, served
+CSS`bc6ccf60e56dc76c.css` matching the packaged artifact SHA256, returned200 for
+dynamic status and401 for unauthenticated snapshot cron. Live research gate
+passed141widths with the loaded phone-status fixture and stretched-dialog mutant.
+The runtime still truthfully reports no production database; deployment did not
+repair the historical archive. The shared-memory compatibility lesson was updated
+only after these live checks.
+
 This reconciliation is not a claim that every public dataset has been exhausted,
 the historical production database is repaired, or the full system audit is done.
