@@ -21,7 +21,7 @@ await page.route('**/api/**', async (route) => {
   if (path === '/api/sources') payload = { generatedAt: stamp, sources: [] };
   if (path === '/api/copernicus/preview') payload = { focusDate: '2026-10-19', imagerySources: [] };
   if (path === '/api/open-intel/regional') payload = { status: 'live', orbitals: [], maritimePoints: [] };
-  if (path === '/api/status') payload = { status: 'degraded', posture: 'fallback', services: { database: 'not configured' } };
+  if (path === '/api/status') payload = { status: 'degraded', posture: 'fallback', datasets: [], services: { database: 'not configured' } };
   await route.fulfill({ json: payload });
 });
 
