@@ -109,5 +109,13 @@ Font-blocked375/768/1280px probes kept Research hit-testable with no document ov
 Both GitHub verification jobs passed on5e67dd8. This does not erase the remaining
 development-tool advisories or inherited MSH issues listed above.
 
+Final independent-review disposition: settled map/overlays preserved at all three
+sizes; desktop map and selector repair accepted. Reviewer found phone database
+status truncation introduced by the wider brand. Replaced only “not configured”
+with truthful “no database”, kept full status in title, prevented status shrink,
+and extended the width gate to assert unclipped text. Inherited weak selector
+contrast, low first-news visibility and horizontally dense bottom status remain
+open. Radar detail capture is required to close the compact-chart review.
+
 This reconciliation is not a claim that every public dataset has been exhausted,
 the historical production database is repaired, or the full system audit is done.

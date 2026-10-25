@@ -21,6 +21,7 @@ await page.route('**/api/**', async (route) => {
   if (path === '/api/sources') payload = { generatedAt: stamp, sources: [] };
   if (path === '/api/copernicus/preview') payload = { focusDate: '2026-10-19', imagerySources: [] };
   if (path === '/api/open-intel/regional') payload = { status: 'live', orbitals: [], maritimePoints: [] };
+  if (path === '/api/status') payload = { status: 'degraded', posture: 'fallback', services: { database: 'not configured' } };
   await route.fulfill({ json: payload });
 });
 
@@ -72,6 +73,12 @@ try {
       return r.left >= 0 && r.right <= innerWidth && el.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2));
     }), `Research unreachable at ${width}`);
     if (width < 500) {
+      const database = page.getByTestId('phone-database-status');
+      assert.equal(await database.textContent(), 'no database');
+      assert.ok(await database.evaluate(el => {
+        const r = el.getBoundingClientRect();
+        return el.scrollWidth <= el.clientWidth && r.left >= 0 && r.right <= innerWidth;
+      }), `database status clipped at ${width}`);
       const status = page.locator('header').first().getByText('fallback', { exact: true });
       assert.ok(await status.isVisible(), `runtime status hidden at ${width}`);
       assert.ok(await status.evaluate((el) => {

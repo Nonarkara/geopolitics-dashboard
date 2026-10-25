@@ -111,6 +111,7 @@ export default function TopBar({
 
   const runtimePosture = status?.posture ?? (status?.status === "ok" ? "live" : "fallback");
   const databasePosture = status?.services.database ?? "checking";
+  const compactDatabasePosture = databasePosture === "not configured" ? "no database" : databasePosture;
 
   return (
     <header className="flex h-16 w-full items-stretch justify-between overflow-hidden border-b border-white/10 bg-[#090a0e] select-none sm:h-[72px]">
@@ -302,14 +303,14 @@ export default function TopBar({
         </div>
       </div>
 
-      <div className="flex min-w-[80px] flex-col items-end justify-center px-2 md:hidden">
+      <div className="flex min-w-[80px] shrink-0 flex-col items-end justify-center px-2 md:hidden">
         <div className={`text-[13px] font-black uppercase tracking-[0.16em] ${
           runtimePosture === "live" ? "text-white/70" : "text-[var(--accent)]"
         }`}>
           {runtimePosture}
         </div>
-        <div className="mt-1 max-w-[112px] truncate text-[12px] uppercase tracking-[0.1em] text-white/35">
-          {databasePosture}
+        <div title={databasePosture} data-testid="phone-database-status" className="mt-1 whitespace-nowrap text-[12px] uppercase tracking-[0.1em] text-white/35">
+          {compactDatabasePosture}
         </div>
       </div>
     </header>
